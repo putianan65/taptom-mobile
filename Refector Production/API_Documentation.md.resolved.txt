@@ -1,0 +1,2220 @@
+# Drug Plant API - Complete Documentation for Frontend Team
+
+> **API Version:** 1.0  
+> **Base URL:** `http://localhost:3000/api/v1`  
+> **Authentication:** JWT Bearer Token  
+> **Date:** 2026-01-29
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Authentication](#authentication)
+3. [Core Concepts](#core-concepts)
+4. [API Endpoints](#api-endpoints)
+   - [Authentication](#1-authentication-endpoints)
+   - [Users Management](#2-users-management-endpoints)
+   - [Admin Management](#3-admin-management-endpoints)
+   - [Locations](#4-locations-endpoints)
+   - [Plots](#5-plots-endpoints)
+   - [Field Management (GAP 1.3)](#6-field-management-endpoints)
+   - [GAP Records (GAP 1.1)](#7-gap-records-endpoints)
+   - [GAP Inputs (GAP 1.2)](#8-gap-inputs-endpoints)
+   - [GAP Compliance](#9-gap-compliance-endpoints)
+   - [Harvests (GAP 1.4)](#10-harvests-endpoints)
+   - [Post-Harvest (GAP 1.5)](#11-post-harvest-endpoints)
+   - [Worker Training (GAP 1.6)](#12-worker-training-endpoints)
+   - [Traceability (GAP 1.7)](#13-traceability-endpoints)
+   - [Reports](#14-reports-endpoints)
+   - [Notifications](#15-notifications-endpoints)
+   - [File Upload](#16-file-upload-endpoints)
+5. [Error Handling](#error-handling)
+6. [Data Models](#data-models)
+
+---
+
+## Overview
+
+This API provides comprehensive backend services for the Drug Plant Management System with GAP (Good Agricultural Practices) compliance tracking. The system supports three user roles with different permission levels:
+
+- **USER**: Regular farmers who manage their own plots
+- **ADMIN**: Regional administrators who oversee specific geographical areas (province/district/subdistrict)
+- **SUPER_ADMIN**: System administrators with full access
+
+### Key Features
+
+- JWT-based authentication with PIN verification for admin roles
+- Location-based access control (Admin can only access users/plots in their assigned region)
+- Complete GAP compliance tracking (Categories 1.1-1.7)
+- Traceability system with QR code support
+- File upload for images and documents
+- Real-time notifications
+
+---
+
+## Authentication
+
+The API uses JWT (JSON Web Token) for authentication. Admin and Super Admin roles require additional PIN verification.
+
+### Authentication Flow
+
+#### For Regular Users (USER role):
+1. **Signup** → Receive access token + refresh token
+2. **Signin** → Receive access token + refresh token
+3. Use access token in `Authorization: Bearer <token>` header
+
+#### For Admin/Super Admin roles:
+1. **Signin** → Receive `tempToken` + `requiresPin: true`
+2. **Verify PIN** → Receive access token + refresh token
+3. Use access token in subsequent requests
+
+### Token Refresh
+- Access tokens expire after a set duration
+- Use refresh token to obtain new access token without re-authentication
+
+---
+
+## Core Concepts
+
+### Role-Based Access Control
+
+| Role | Permissions |
+|------|------------|
+| **USER** | - Manage own profile<br/>- Create/edit/delete own plots<br/>- Manage GAP records for own plots |
+| **ADMIN** | - View/manage users in assigned region<br/>- View/approve plots in assigned region<br/>- Generate reports for assigned region |
+| **SUPER_ADMIN** | - Full system access<br/>- Create/manage admin accounts<br/>- View all users and plots |
+
+### Admin Scoped Permission
+
+Admins can only access data within their assigned geographical scope:
+- **Province Level**: Access all districts and subdistricts in the province
+- **District Level**: Access all subdistricts in the district
+- **Subdistrict Level**: Access only that specific subdistrict
+
+### Soft Delete
+
+Most resources use soft delete (set `deletedAt` timestamp) rather than permanent deletion, allowing data recovery.
+
+---
+
+## API Endpoints
+
+## 1. Authentication Endpoints
+
+### POST /api/v1/auth/signup
+Register a new user account.
+
+**Authentication:** None (Public)
+
+**Request Body:**
+```json
+{
+  "phone": "0812345678",
+  "birthday": "1990-01-15",
+  "firstName": "สมชาย",
+  "lastName": "ใจดี",
+  "idCard": "1234567890123",
+  "province": "เชียงใหม่",
+  "district": "เมืองเชียงใหม่",
+  "subDistrict": "ศรีภูมิ",
+  "address": "123 หมู่ 5",
+  "postalCode": "50200"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "clxxx123",
+    "phone": "0812345678",
+    "firstName": "สมชาย",
+    "lastName": "ใจดี",
+    "role": "USER"
+  }
+}
+```
+
+**Error Responses:**
+- `400`: Invalid input data
+- `409`: Phone number already exists
+- `429`: Too many signup attempts
+
+---
+
+### POST /api/v1/auth/signin
+Sign in to existing account.
+
+**Authentication:** None (Public)
+
+**Request Body:**
+```json
+{
+  "phone": "0812345678",
+  "birthday": "1990-01-15"
+}
+```
+
+**Success Response for USER (200):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "clxxx123",
+    "phone": "0812345678",
+    "firstName": "สมชาย",
+    "lastName": "ใจดี",
+    "role": "USER"
+  }
+}
+```
+
+**Success Response for ADMIN/SUPER_ADMIN (200):**
+```json
+{
+  "requiresPin": true,
+  "tempToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "message": "Please enter your PIN to continue."
+}
+```
+
+**Error Responses:**
+- `401`: Invalid credentials
+- `429`: Too many login attempts
+
+---
+
+### POST /api/v1/auth/verify-pin
+Verify PIN for Admin/Super Admin after signin.
+
+**Authentication:** None (uses tempToken from signin)
+
+**Request Body:**
+```json
+{
+  "tempToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "pin": "123456"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "clxxx456",
+    "phone": "0823456789",
+    "firstName": "ผู้ดูแล",
+    "lastName": "ระบบ",
+    "role": "ADMIN"
+  }
+}
+```
+
+**Error Responses:**
+- `401`: Invalid PIN or temp token
+- `429`: Too many PIN attempts
+
+---
+
+### POST /api/v1/auth/set-pin
+Set initial PIN for Admin/Super Admin account (self-service).
+
+**Authentication:** Required (Bearer Token or set_pin temp token)
+
+**Request Body:**
+```json
+{
+  "pin": "123456",
+  "confirmPin": "123456"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "clxxx456",
+    "phone": "0823456789",
+    "firstName": "ผู้ดูแล",
+    "lastName": "ระบบ",
+    "role": "ADMIN"
+  }
+}
+```
+
+**Error Responses:**
+- `400`: PIN mismatch or invalid format
+- `403`: USER role not allowed (PIN is for admin only)
+- `401`: Unauthorized
+
+---
+
+### PATCH /api/v1/auth/change-pin
+Change existing PIN.
+
+**Authentication:** Required (Bearer Token)
+
+**Request Body:**
+```json
+{
+  "currentPin": "123456",
+  "newPin": "654321",
+  "confirmNewPin": "654321"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "PIN changed successfully."
+}
+```
+
+**Error Responses:**
+- `400`: Invalid current PIN or PIN mismatch
+- `403`: USER role not allowed
+- `401`: Unauthorized
+
+---
+
+### POST /api/v1/auth/refresh
+Refresh access token using refresh token.
+
+**Authentication:** None (uses refresh token)
+
+**Request Body:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Responses:**
+- `401`: Invalid or expired refresh token
+
+---
+
+## 2. Users Management Endpoints
+
+### GET /api/v1/users/me
+Get current user profile.
+
+**Authentication:** Required
+
+**Success Response (200):**
+```json
+{
+  "id": "clxxx123",
+  "phone": "0812345678",
+  "firstName": "สมชาย",
+  "lastName": "ใจดี",
+  "idCard": "1234567890123",
+  "birthday": "1990-01-15",
+  "role": "USER",
+  "province": "เชียงใหม่",
+  "district": "เมืองเชียงใหม่",
+  "subDistrict": "ศรีภูมิ",
+  "address": "123 หมู่ 5",
+  "postalCode": "50200",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+---
+
+### PATCH /api/v1/users/me
+Update current user profile (partial update).
+
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "firstName": "สมชาย",
+  "lastName": "ใจดีมาก",
+  "address": "456 หมู่ 7"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "id": "clxxx123",
+  "phone": "0812345678",
+  "firstName": "สมชาย",
+  "lastName": "ใจดีมาก",
+  "address": "456 หมู่ 7",
+  ...
+}
+```
+
+---
+
+### PUT /api/v1/users/me
+Update current user profile (full update).
+
+**Authentication:** Required
+
+**Request Body:** Same as signup (all fields required except role)
+
+---
+
+### DELETE /api/v1/users/me
+Delete current user account (soft delete).
+
+**Authentication:** Required
+
+**Success Response (200):**
+```json
+{
+  "message": "User account deleted successfully"
+}
+```
+
+---
+
+### GET /api/v1/users/statistics
+Get user statistics (Admin/Super Admin only).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Success Response (200):**
+```json
+{
+  "total": 1250,
+  "byRole": {
+    "USER": 1200,
+    "ADMIN": 45,
+    "SUPER_ADMIN": 5
+  },
+  "byStatus": {
+    "PENDING": 50,
+    "APPROVED": 1150,
+    "REJECTED": 50
+  },
+  "recentSignups": 25
+}
+```
+
+---
+
+### GET /api/v1/users
+List all users with filtering and pagination (Admin/Super Admin only).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Query Parameters:**
+- `page` (number): Page number (default: 1)
+- `limit` (number): Items per page (default: 20, max: 100)
+- `role` (enum): Filter by role (USER, ADMIN, SUPER_ADMIN)
+- `includeDeleted` (boolean): Include soft-deleted users
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "clxxx123",
+      "phone": "0812345678",
+      "firstName": "สมชาย",
+      "lastName": "ใจดี",
+      "role": "USER",
+      "province": "เชียงใหม่",
+      "district": "เมืองเชียงใหม่",
+      "subDistrict": "ศรีภูมิ",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1250,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 63
+  }
+}
+```
+
+> **Note for ADMIN:** Results are automatically filtered to show only users within your assigned region.
+
+---
+
+### GET /api/v1/users/:id
+Get specific user by ID (Admin/Super Admin only).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `id` (string): User ID
+
+**Query Parameters:**
+- `includeDeleted` (boolean): Include if user is soft-deleted
+
+**Success Response (200):** Same as GET /users/me
+
+---
+
+### PATCH /api/v1/users/:id
+Update specific user (Admin/Super Admin only).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `id` (string): User ID
+
+**Request Body:** Partial user update (same fields as PATCH /users/me)
+
+---
+
+### PATCH /api/v1/users/:id/role
+Update user role (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Path Parameters:**
+- `id` (string): User ID
+
+**Request Body:**
+```json
+{
+  "role": "ADMIN"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "User role updated successfully",
+  "user": {
+    "id": "clxxx123",
+    "role": "ADMIN"
+  }
+}
+```
+
+---
+
+### DELETE /api/v1/users/:id
+Delete specific user (Admin/Super Admin only, soft delete).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `id` (string): User ID
+
+**Success Response (200):**
+```json
+{
+  "message": "User deleted successfully"
+}
+```
+
+---
+
+### POST /api/v1/users/:id/restore
+Restore soft-deleted user (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Path Parameters:**
+- `id` (string): User ID
+
+**Success Response (200):**
+```json
+{
+  "message": "User restored successfully",
+  "user": { ... }
+}
+```
+
+---
+
+## 3. Admin Management Endpoints
+
+### POST /api/v1/admin/create
+Create new admin account (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Request Body:**
+```json
+{
+  "phone": "0898765432",
+  "birthday": "1985-05-20",
+  "firstName": "ผู้ดูแล",
+  "lastName": "ภาคเหนือ",
+  "province": "เชียงใหม่",
+  "district": "เมืองเชียงใหม่",
+  "subDistrict": "ศรีภูมิ"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "message": "Admin created successfully",
+  "admin": {
+    "id": "clxxx789",
+    "phone": "0898765432",
+    "role": "ADMIN",
+    "province": "เชียงใหม่",
+    "district": "เมืองเชียงใหม่",
+    "subDistrict": "ศรีภูมิ"
+  }
+}
+```
+
+> **Note:** The new admin will need to set their PIN on first login.
+
+---
+
+### GET /api/v1/admin/list
+List all admin accounts (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "clxxx789",
+      "phone": "0898765432",
+      "firstName": "ผู้ดูแล",
+      "lastName": "ภาคเหนือ",
+      "role": "ADMIN",
+      "province": "เชียงใหม่",
+      "district": "เมืองเชียงใหม่",
+      "subDistrict": "ศรีภูมิ",
+      "createdAt": "2024-01-10T00:00:00.000Z"
+    }
+  ],
+  "total": 45
+}
+```
+
+---
+
+### DELETE /api/v1/admin/:id
+Delete admin account (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Path Parameters:**
+- `id` (string): Admin ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Admin deleted successfully"
+}
+```
+
+---
+
+### POST /api/v1/admin/:id/assign-users
+Assign users to admin for management (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Path Parameters:**
+- `id` (string): Admin ID
+
+**Request Body:**
+```json
+{
+  "userIds": ["user1", "user2", "user3"]
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Users assigned successfully",
+  "assignedCount": 3
+}
+```
+
+---
+
+### POST /api/v1/admin/reassign/:userId
+Reassign user to different admin (Super Admin only).
+
+**Authentication:** Required (SUPER_ADMIN only)
+
+**Path Parameters:**
+- `userId` (string): User ID to reassign
+
+**Request Body:**
+```json
+{
+  "newAdminId": "admin123"
+}
+```
+
+---
+
+### GET /api/v1/admin/stats
+Get dashboard statistics for admin region.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Success Response (200):**
+```json
+{
+  "totalUsers": 120,
+  "totalPlots": 85,
+  "pendingApprovals": 12,
+  "approvedPlots": 70,
+  "rejectedPlots": 3,
+  "gapCompliance": {
+    "full": 45,
+    "partial": 30,
+    "none": 10
+  }
+}
+```
+
+> **Note for ADMIN:** Statistics are calculated only for your assigned region.
+
+---
+
+### GET /api/v1/admin/plots
+Get plots pending approval in admin region.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Query Parameters:**
+- `status` (enum): PENDING, APPROVED, REJECTED (default: PENDING)
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "plot123",
+      "name": "แปลงข้าวโพด 1",
+      "owner": {
+        "id": "user123",
+        "firstName": "สมชาย",
+        "lastName": "ใจดี"
+      },
+      "province": "เชียงใหม่",
+      "district": "เมืองเชียงใหม่",
+      "area": 5.5,
+      "status": "PENDING",
+      "createdAt": "2024-01-20T00:00:00.000Z"
+    }
+  ],
+  "total": 12
+}
+```
+
+---
+
+### POST /api/v1/admin/plots/:id/approve
+Approve plot registration.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `id` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Plot approved successfully",
+  "plot": { ... }
+}
+```
+
+---
+
+### POST /api/v1/admin/plots/:id/reject
+Reject plot registration.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `id` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "reason": "ข้อมูลพิกัดไม่ถูกต้อง กรุณาตรวจสอบใหม่"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Plot rejected successfully"
+}
+```
+
+---
+
+### GET /api/v1/admin/users
+Get users in admin region with filtering.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Query Parameters:**
+- `status` (enum): PENDING, APPROVED, REJECTED
+- `q` (string): Search by name, phone
+- `page` (number): Page number
+- `limit` (number): Items per page
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "user123",
+      "firstName": "สมชาย",
+      "lastName": "ใจดี",
+      "phone": "0812345678",
+      "province": "เชียงใหม่",
+      "status": "APPROVED",
+      "plotCount": 3
+    }
+  ],
+  "meta": {
+    "total": 120,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 6
+  }
+}
+```
+
+---
+
+### POST /api/v1/admin/users/:userId/approve
+Approve user registration.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `userId` (string): User ID
+
+**Success Response (200):**
+```json
+{
+  "message": "User approved successfully"
+}
+```
+
+---
+
+### POST /api/v1/admin/users/:userId/reject
+Reject user registration.
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `userId` (string): User ID
+
+**Request Body:**
+```json
+{
+  "reason": "เอกสารไม่ครบถ้วน"
+}
+```
+
+---
+
+## 4. Locations Endpoints
+
+### GET /api/v1/locations/provinces
+Get all provinces with optional region filter.
+
+**Authentication:** None (Public)
+
+**Query Parameters:**
+- `region` (string, optional): Filter by region (e.g., "ภาคเหนือ")
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "50",
+      "nameTh": "เชียงใหม่",
+      "nameEn": "Chiang Mai",
+      "region": "ภาคเหนือ"
+    }
+  ],
+  "total": 77
+}
+```
+
+---
+
+### GET /api/v1/locations/districts
+Get all districts by province.
+
+**Authentication:** None (Public)
+
+**Query Parameters:**
+- `provinceCode` (string, **required**): Province code (e.g., "50")
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "5001",
+      "nameTh": "เมืองเชียงใหม่",
+      "nameEn": "Mueang Chiang Mai",
+      "provinceCode": "50"
+    }
+  ],
+  "total": 25
+}
+```
+
+**Error Responses:**
+- `400`: provinceCode is required
+
+---
+
+### GET /api/v1/locations/subdistricts
+Get all subdistricts by district.
+
+**Authentication:** None (Public)
+
+**Query Parameters:**
+- `districtCode` (string, **required**): District code (e.g., "5001")
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "500101",
+      "nameTh": "ศรีภูมิ",
+      "nameEn": "Si Phum",
+      "districtCode": "5001",
+      "postalCode": "50200"
+    }
+  ],
+  "total": 16
+}
+```
+
+**Error Responses:**
+- `400`: districtCode is required
+
+---
+
+## 5. Plots Endpoints
+
+### GET /api/v1/plots/summary
+Get summary statistics of current user's plots.
+
+**Authentication:** Required
+
+**Success Response (200):**
+```json
+{
+  "total": 5,
+  "byStatus": {
+    "PENDING": 1,
+    "APPROVED": 3,
+    "REJECTED": 1
+  },
+  "totalArea": 25.5,
+  "byCropType": {
+    "ข้าโพด": 2,
+    "กระท่อม": 3
+  }
+}
+```
+
+---
+
+### POST /api/v1/plots
+Create new plot.
+
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "name": "แปลงกระท่อม 1",
+  "plotCode": "CM-001",
+  "cropType": "กระท่อม",
+  "area": 5.5,
+  "province": "เชียงใหม่",
+  "district": "เมืองเชียงใหม่",
+  "subDistrict": "ศรีภูมิ",
+  "address": "123 หมู่ 5",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [98.9876, 18.7890],
+        [98.9880, 18.7890],
+        [98.9880, 18.7895],
+        [98.9876, 18.7895],
+        [98.9876, 18.7890]
+      ]
+    ]
+  },
+  "soilType": "ดินร่วนปนทราย",
+  "waterSource": "บ่อบาดาล"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "id": "plot123",
+  "name": "แปลงกระท่อม 1",
+  "plotCode": "CM-001",
+  "status": "PENDING",
+  "centerLat": 18.78925,
+  "centerLon": 98.9878,
+  "createdAt": "2024-01-20T00:00:00.000Z",
+  ...
+}
+```
+
+> **Important:** Plot status will be "PENDING" until approved by admin.
+
+---
+
+### GET /api/v1/plots
+List plots with filtering and pagination.
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `page` (number): Page number
+- `limit` (number): Items per page
+- `status` (enum): PENDING, APPROVED, REJECTED
+- `cropType` (string): Filter by crop type
+- `q` (string): Search by plot name or code
+- `includeDeleted` (boolean): Include soft-deleted plots
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "plot123",
+      "name": "แปลงกระท่อม 1",
+      "plotCode": "CM-001",
+      "cropType": "กระท่อม",
+      "area": 5.5,
+      "status": "APPROVED",
+      "province": "เชียงใหม่",
+      "centerLat": 18.78925,
+      "centerLon": 98.9878
+    }
+  ],
+  "meta": {
+    "total": 5,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### GET /api/v1/plots/:id
+Get specific plot details.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `id` (string): Plot ID
+
+**Query Parameters:**
+- `includeDeleted` (boolean): Include if plot is soft-deleted
+
+**Success Response (200):**
+```json
+{
+  "id": "plot123",
+  "name": "แปลงกระท่อม 1",
+  "plotCode": "CM-001",
+  "cropType": "กระท่อม",
+  "area": 5.5,
+  "status": "APPROVED",
+  "owner": {
+    "id": "user123",
+    "firstName": "สมชาย",
+    "lastName": "ใจดี"
+  },
+  "province": "เชียงใหม่",
+  "district": "เมืองเชียงใหม่",
+  "subDistrict": "ศรีภูมิ",
+  "address": "123 หมู่ 5",
+  "geometry": { ... },
+  "centerLat": 18.78925,
+  "centerLon": 98.9878,
+  "soilType": "ดินร่วนปนทราย",
+  "waterSource": "บ่อบาดาล",
+  "createdAt": "2024-01-20T00:00:00.000Z",
+  "updatedAt": "2024-01-20T00:00:00.000Z"
+}
+```
+
+---
+
+### PATCH /api/v1/plots/:id
+Update plot information.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `id` (string): Plot ID
+
+**Request Body:** Partial plot update (same fields as create)
+
+**Success Response (200):** Updated plot object
+
+---
+
+### DELETE /api/v1/plots/:id
+Delete plot (soft delete).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `id` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Plot deleted successfully"
+}
+```
+
+---
+
+## 6. Field Management Endpoints
+
+Field management tracks all field activities (GAP 1.3) including soil preparation, watering, pest control, etc.
+
+### GET /api/v1/plots/:plotId/field-activities
+List all field activities for a plot.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Query Parameters:**
+- `page` (number): Page number
+- `limit` (number): Items per page
+- `activityType` (enum): SOIL_PREPARATION, WATERING, WEEDING, IPM, RISK_EVENT
+- `startDate` (date): Filter from date (YYYY-MM-DD)
+- `endDate` (date): Filter to date (YYYY-MM-DD)
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "activity123",
+      "activityType": "SOIL_PREPARATION",
+      "activityDate": "2024-12-01",
+      "description": "ไถพรวนดิน เตรียมแปลงปลูกข้าวโพด",
+      "machineUsed": "รถไถนา",
+      "laborCount": 2,
+      "cost": 1500,
+      "imagesBefore": ["/uploads/before1.jpg"],
+      "imagesAfter": ["/uploads/after1.jpg"]
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 2
+  }
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/field-activities/:id
+Get specific field activity details.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+- `id` (string): Activity ID
+
+---
+
+### POST /api/v1/plots/:plotId/field-activities
+Create new field activity.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "activityType": "SOIL_PREPARATION",
+  "activityDate": "2024-12-01",
+  "description": "ไถพรวนดิน เตรียมแปลงปลูก",
+  "machineUsed": "รถไถนา",
+  "laborCount": 2,
+  "cost": 1500,
+  "imagesBefore": ["/uploads/before1.jpg"],
+  "imagesAfter": ["/uploads/after1.jpg"],
+  "notes": "สภาพดินดี พร้อมปลูก"
+}
+```
+
+**Success Response (201):** Created activity object
+
+---
+
+### PUT /api/v1/plots/:plotId/field-activities/:id
+Update field activity (full update).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+- `id` (string): Activity ID
+
+---
+
+### DELETE /api/v1/plots/:plotId/field-activities/:id
+Delete field activity (soft delete).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+- `id` (string): Activity ID
+
+---
+
+## 7. GAP Records Endpoints
+
+GAP Records track overall GAP compliance information (GAP 1.1).
+
+### GET /api/v1/plots/:plotId/gap
+Get latest GAP record for plot.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "id": "gap123",
+  "plotId": "plot123",
+  "plantingDate": "2024-01-15",
+  "estimatedHarvestDate": "2024-06-15",
+  "cropVariety": "พันธุ์ดี 1",
+  "plantingMethod": "ปลูกกล้า",
+  "status": "GREEN",
+  "createdAt": "2024-01-15T00:00:00.000Z",
+  "updatedAt": "2024-01-20T00:00:00.000Z"
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/gap/all
+Get all GAP records for plot (multiple seasons).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "gap123",
+      "plantingDate": "2024-01-15",
+      "estimatedHarvestDate": "2024-06-15",
+      "status": "GREEN"
+    },
+    {
+      "id": "gap122",
+      "plantingDate": "2023-07-01",
+      "harvestDate": "2023-12-01",
+      "status": "GREEN"
+    }
+  ],
+  "total": 2
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/gap/summary
+Get GAP compliance summary for dashboard.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "total": 3,
+  "statusBreakdown": {
+    "NONE": 0,
+    "GREEN": 2,
+    "YELLOW": 1,
+    "RED": 0
+  },
+  "overallStatus": "YELLOW"
+}
+```
+
+---
+
+### PUT /api/v1/plots/:plotId/gap
+Create or update GAP record (upsert).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "plantingDate": "2024-01-15",
+  "estimatedHarvestDate": "2024-06-15",
+  "cropVariety": "พันธุ์ดี 1",
+  "plantingMethod": "ปลูกกล้า",
+  "seedSource": "ศูนย์วิจัยกระท่อม",
+  "expectedYield": 2000,
+  "notes": "ฤดูกาลปลูกหลัก"
+}
+```
+
+---
+
+### PATCH /api/v1/plots/:plotId/gap/:gapRecordId
+Partial update of GAP record.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+- `gapRecordId` (string): GAP Record ID
+
+---
+
+### DELETE /api/v1/plots/:plotId/gap/:gapRecordId
+Delete GAP record (soft delete).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+- `gapRecordId` (string): GAP Record ID
+
+---
+
+## 8. GAP Inputs Endpoints
+
+GAP Inputs track production inputs (GAP 1.2) - seeds, fertilizers, pesticides, materials.
+
+### GET /api/v1/plots/:plotId/inputs
+List all inputs for plot.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Query Parameters:**
+- `type` (enum): SEED, FERTILIZER, PESTICIDE, MATERIAL
+- `page`, `limit`: Pagination
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "input123",
+      "type": "FERTILIZER",
+      "name": "ปุ๋ยไนโตรเจน 15-15-15",
+      "source": "บริษัท เคมีภัณฑ์ จำกัด",
+      "usedDate": "2024-12-01",
+      "amount": 10.5,
+      "unit": "kg",
+      "isApproved": true,
+      "certificateNumber": "CERT-12345",
+      "images": ["/uploads/fertilizer1.jpg"]
+    }
+  ],
+  "meta": { ... }
+}
+```
+
+---
+
+### POST /api/v1/plots/:plotId/inputs
+Create new input record.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "type": "FERTILIZER",
+  "name": "ปุ๋ยไนโตรเจน 15-15-15",
+  "source": "บริษัท เคมีภัณฑ์ จำกัด",
+  "usedDate": "2024-12-01",
+  "amount": 10.5,
+  "unit": "kg",
+  "isApproved": true,
+  "certificateNumber": "CERT-12345",
+  "lotNumber": "LOT-2024-001",
+  "expiryDate": "2025-12-01",
+  "images": ["/uploads/fertilizer1.jpg"],
+  "notes": "ใช้ตามคำแนะนำ"
+}
+```
+
+---
+
+### PUT /api/v1/plots/:plotId/inputs/:id
+Update input record.
+
+**Authentication:** Required
+
+---
+
+### DELETE /api/v1/plots/:plotId/inputs/:id
+Delete input record (soft delete).
+
+**Authentication:** Required
+
+---
+
+## 9. GAP Compliance Endpoints
+
+### GET /api/v1/plots/:plotId/gap/compliance
+Get real-time GAP compliance dashboard (categories 1.1-1.7).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "plotId": "plot123",
+  "overallStatus": "YELLOW",
+  "categories": {
+    "1.1": {
+      "name": "ข้อมูลทั่วไป",
+      "status": "GREEN",
+      "completeness": 100
+    },
+    "1.2": {
+      "name": "ปัจจัยการผลิต",
+      "status": "GREEN",
+      "completeness": 95
+    },
+    "1.3": {
+      "name": "การจัดการแปลง",
+      "status": "YELLOW",
+      "completeness": 70
+    },
+    "1.4": {
+      "name": "การเก็บเกี่ยว",
+      "status": "GREEN",
+      "completeness": 100
+    },
+    "1.5": {
+      "name": "หลังการเก็บเกี่ยว",
+      "status": "YELLOW",
+      "completeness": 60
+    },
+    "1.6": {
+      "name": "การฝึกอบรม",
+      "status": "RED",
+      "completeness": 40
+    },
+    "1.7": {
+      "name": "การตรวจสอบย้อนกลับ",
+      "status": "GREEN",
+      "completeness": 100
+    }
+  }
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/gap/missing
+Get missing data analyzer (table-ready format).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+```json
+{
+  "plotId": "plot123",
+  "missingData": [
+    {
+      "category": "1.3",
+      "categoryName": "การจัดการแปลง",
+      "missingFields": [
+        "ไม่มีบันทึกการพ่นสารเคมีในเดือนที่แล้ว",
+        "ขาดข้อมูลการให้น้ำ"
+      ]
+    },
+    {
+      "category": "1.6",
+      "categoryName": "การฝึกอบรม",
+      "missingFields": [
+        "ไม่มีบันทึกการอบรมในปีนี้",
+        "ขาดข้อมูลการตรวจสุขภาพแรงงาน"
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 10. Harvests Endpoints
+
+Harvest management (GAP 1.4) tracks harvest activities with auto-generated lot numbers.
+
+### GET /api/v1/plots/:plotId/harvests
+List harvests for plot.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `startDate`, `endDate`: Date range filter
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "harvest123",
+      "lotNumber": "LOT-2024-001-001",
+      "harvestDate": "2024-06-15",
+      "quantity": 1500,
+      "unit": "kg",
+      "quality": "เกรด A",
+      "images": ["/uploads/harvest1.jpg"],
+      "notes": "ผลผลิตมีคุณภาพดี"
+    }
+  ],
+  "meta": { ... }
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/harvests/:id
+Get specific harvest details.
+
+**Authentication:** Required
+
+---
+
+### POST /api/v1/plots/:plotId/harvests
+Create new harvest record (auto-generates lot number).
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "harvestDate": "2024-06-15",
+  "quantity": 1500,
+  "unit": "kg",
+  "quality": "เกรด A",
+  "harvestMethod": "เก็บด้วยมือ",
+  "weather": "แดดจัด",
+  "laborCount": 5,
+  "images": ["/uploads/harvest1.jpg"],
+  "notes": "ผลผลิตมีคุณภาพดี"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "id": "harvest123",
+  "lotNumber": "LOT-2024-001-001",
+  "harvestDate": "2024-06-15",
+  ...
+}
+```
+
+> **Note:** Lot number is automatically generated for traceability.
+
+---
+
+### PUT /api/v1/plots/:plotId/harvests/:id
+Update harvest record.
+
+**Authentication:** Required
+
+---
+
+### DELETE /api/v1/plots/:plotId/harvests/:id
+Delete harvest (soft delete).
+
+**Authentication:** Required
+
+---
+
+## 11. Post-Harvest Endpoints
+
+Post-harvest processing (GAP 1.5) tracks activities after harvest.
+
+### GET /api/v1/harvests/:harvestId/post-harvest
+List post-harvest processes for a harvest.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `harvestId` (string): Harvest ID
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "post123",
+      "processType": "การคัดแยก",
+      "processDate": "2024-06-16",
+      "description": "คัดแยกผลผลิตตามเกรดคุณภาพ A, B, C",
+      "storageTemp": 4.5,
+      "storageLocation": "โกดังเย็น ห้อง A",
+      "humidity": 60,
+      "responsiblePerson": "นายสมชาย"
+    }
+  ],
+  "meta": { ... }
+}
+```
+
+---
+
+### GET /api/v1/harvests/:harvestId/post-harvest/:id
+Get specific post-harvest process.
+
+**Authentication:** Required
+
+---
+
+### POST /api/v1/harvests/:harvestId/post-harvest
+Create new post-harvest process.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `harvestId` (string): Harvest ID
+
+**Request Body:**
+```json
+{
+  "processType": "การคัดแยก",
+  "processDate": "2024-06-16",
+  "description": "คัดแยกผลผลิตตามเกรดคุณภาพ",
+  "storageTemp": 4.5,
+  "storageLocation": "โกดังเย็น ห้อง A",
+  "humidity": 60,
+  "responsiblePerson": "นายสมชาย",
+  "images": ["/uploads/storage1.jpg"]
+}
+```
+
+---
+
+### PUT /api/v1/harvests/:harvestId/post-harvest/:id
+Update post-harvest process.
+
+**Authentication:** Required
+
+---
+
+### DELETE /api/v1/harvests/:harvestId/post-harvest/:id
+Delete post-harvest process (soft delete).
+
+**Authentication:** Required
+
+---
+
+## 12. Worker Training Endpoints
+
+Worker training and hygiene management (GAP 1.6).
+
+### GET /api/v1/plots/:plotId/trainings
+List training records for plot.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Query Parameters:**
+- `status` (enum): PLANNED, COMPLETED, CANCELLED
+- `q` (string): Search by topic/trainer
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "training123",
+      "trainingDate": "2024-12-20",
+      "trainingTopic": "การใช้สารเคมีอย่างปลอดภัย",
+      "trainer": "เจ้าหน้าที่เกษตรอำเภอ",
+      "status": "COMPLETED",
+      "attendees": ["นาย ก", "นาง ข"],
+      "location": "ศาลาหมู่บ้าน",
+      "duration": 3,
+      "certificates": ["/uploads/cert1.pdf"]
+    }
+  ],
+  "meta": { ... }
+}
+```
+
+---
+
+### GET /api/v1/plots/:plotId/trainings/:id
+Get training details.
+
+**Authentication:** Required
+
+---
+
+### POST /api/v1/plots/:plotId/trainings
+Create training record.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "trainingDate": "2024-12-20",
+  "trainingTopic": "การใช้สารเคมีอย่างปลอดภัย",
+  "trainer": "เจ้าหน้าที่เกษตรอำเภอ",
+  "status": "PLANNED",
+  "attendees": ["นาย ก", "นาง ข", "นาย ค"],
+  "location": "ศาลาหมู่บ้าน",
+  "duration": 3,
+  "healthCheckDate": "2024-12-15",
+  "toiletFacilities": "มีห้องน้ำสะอาด 2 ห้อง",
+  "drinkingWater": "น้ำดื่มบรรจุขวด",
+  "certificates": ["/uploads/cert1.pdf"],
+  "notes": "ผู้เข้าร่วมครบทุกคน"
+}
+```
+
+---
+
+### PUT /api/v1/plots/:plotId/trainings/:id
+Update training record.
+
+**Authentication:** Required
+
+---
+
+### DELETE /api/v1/plots/:plotId/trainings/:id
+Delete training record (soft delete).
+
+**Authentication:** Required
+
+---
+
+## 13. Traceability Endpoints
+
+Traceability system (GAP 1.7) for QR code scanning and lot tracking.
+
+### GET /api/v1/traceability/:lotNumber
+Get traceability report by lot number (Public - QR Code Scan).
+
+**Authentication:** None (Public)
+
+**Path Parameters:**
+- `lotNumber` (string): Lot number from QR code
+
+**Success Response (200):**
+```json
+{
+  "lotNumber": "LOT-2024-001-001",
+  "plot": {
+    "name": "แปลงกระท่อม 1",
+    "province": "เชียงใหม่",
+    "district": "เมืองเชียงใหม่"
+  },
+  "owner": {
+    "firstName": "สมชาย",
+    "lastName": "ใจดี"
+  },
+  "harvest": {
+    "harvestDate": "2024-06-15",
+    "quantity": 1500,
+    "unit": "kg",
+    "quality": "เกรด A"
+  },
+  "gap": {
+    "plantingDate": "2024-01-15",
+    "cropVariety": "พันธุ์ดี 1",
+    "overallStatus": "GREEN"
+  },
+  "inputs": [
+    {
+      "type": "FERTILIZER",
+      "name": "ปุ๋ยอินทรีย์",
+      "usedDate": "2024-03-01",
+      "isApproved": true
+    }
+  ],
+  "postHarvest": [
+    {
+      "processType": "การคัดแยก",
+      "processDate": "2024-06-16",
+      "storageTemp": 4.5
+    }
+  ]
+}
+```
+
+**Error Responses:**
+- `404`: Lot number not found
+
+---
+
+### POST /api/v1/traceability/plots/:plotId/create-lot
+Create new traceability lot (Admin only).
+
+**Authentication:** Required (ADMIN/SUPER_ADMIN)
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Request Body:**
+```json
+{
+  "harvestId": "harvest123",
+  "destinationType": "ส่งออก",
+  "destination": "โรงงานแปรรูป ABC",
+  "quantity": 1200,
+  "unit": "kg",
+  "shippingDate": "2024-06-20"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "id": "lot123",
+  "lotNumber": "LOT-2024-001-002",
+  "qrCodeUrl": "/qr-codes/LOT-2024-001-002.png",
+  "publicUrl": "https://api.example.com/traceability/LOT-2024-001-002"
+}
+```
+
+---
+
+## 14. Reports Endpoints
+
+### GET /api/v1/reports/plots/:plotId/gap.pdf
+Export GAP report as PDF.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `plotId` (string): Plot ID
+
+**Success Response (200):**
+- Content-Type: `application/pdf`
+- Returns PDF file stream
+
+**Error Responses:**
+- `403`: Forbidden (out of scope)
+- `404`: Plot not found
+
+---
+
+## 15. Notifications Endpoints
+
+### GET /api/v1/notifications
+List notifications for current user.
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `unreadOnly` (boolean): Show only unread notifications
+
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "notif123",
+      "type": "PLOT_APPROVED",
+      "title": "แปลงของคุณได้รับการอนุมัติ",
+      "message": "แปลงกระท่อม 1 ได้รับการอนุมัติจากผู้ดูแลระบบแล้ว",
+      "isRead": false,
+      "createdAt": "2024-01-20T10:30:00.000Z"
+    }
+  ],
+  "meta": { ... }
+}
+```
+
+---
+
+### PATCH /api/v1/notifications/:id/read
+Mark notification as read.
+
+**Authentication:** Required
+
+**Path Parameters:**
+- `id` (string): Notification ID
+
+**Success Response (200):**
+```json
+{
+  "message": "Notification marked as read"
+}
+```
+
+---
+
+## 16. File Upload Endpoints
+
+### POST /api/v1/upload
+Upload image file.
+
+**Authentication:** Required
+
+**Content-Type:** `multipart/form-data`
+
+**Request Body:**
+- [file](file:///d:/Project%20%20Test/drug-plant-api-test/src/upload/upload.controller.ts#41-50) (File): Image file (JPG, JPEG, PNG, GIF)
+- Max size: 5MB
+
+**Success Response (200):**
+```json
+{
+  "url": "/uploads/abc123def456.jpg",
+  "filename": "abc123def456.jpg"
+}
+```
+
+**Error Responses:**
+- `400`: File is required / Only image files allowed
+- `413`: File size exceeds limit
+
+> **Usage:** Upload file first, then use returned URL in other API calls (e.g., plot creation, harvest records).
+
+---
+
+## Error Handling
+
+All endpoints follow consistent error response format:
+
+### Error Response Format
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "details": [
+    {
+      "field": "phone",
+      "message": "phone must be a valid phone number"
+    }
+  ]
+}
+```
+
+### Common HTTP Status Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| 200 | OK | Request successful |
+| 201 | Created | Resource created successfully |
+| 400 | Bad Request | Invalid input data |
+| 401 | Unauthorized | Missing or invalid authentication token |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource not found |
+| 409 | Conflict | Resource already exists (e.g., duplicate phone) |
+| 413 | Payload Too Large | File size exceeds limit |
+| 422 | Unprocessable Entity | Validation error |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Internal Server Error | Server error |
+
+---
+
+## Data Models
+
+### User Roles
+```typescript
+enum Role {
+  USER = "USER",
+  ADMIN = "ADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN"
+}
+```
+
+### Plot Status
+```typescript
+enum PlotStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED"
+}
+```
+
+### GAP Status
+```typescript
+enum GapStatus {
+  NONE = "NONE",
+  GREEN = "GREEN",    // Fully compliant
+  YELLOW = "YELLOW",  // Partially compliant
+  RED = "RED"         // Non-compliant
+}
+```
+
+### Activity Types (Field Management)
+```typescript
+enum ActivityType {
+  SOIL_PREPARATION = "SOIL_PREPARATION",
+  WATERING = "WATERING",
+  WEEDING = "WEEDING",
+  IPM = "IPM",              // Integrated Pest Management
+  RISK_EVENT = "RISK_EVENT"
+}
+```
+
+### Input Types (GAP Inputs)
+```typescript
+enum InputType {
+  SEED = "SEED",
+  FERTILIZER = "FERTILIZER",
+  PESTICIDE = "PESTICIDE",
+  MATERIAL = "MATERIAL"
+}
+```
+
+### Training Status
+```typescript
+enum TrainingStatus {
+  PLANNED = "PLANNED",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
+```
+
+### GeoJSON Geometry
+```typescript
+interface Geometry {
+  type: "Polygon" | "Point";
+  coordinates: number[][] | number[][][];
+}
+```
+
+---
+
+## Additional Notes for Frontend Team
+
+### 1. Authentication Implementation
+
+```javascript
+// Store tokens after login
+localStorage.setItem('accessToken', response.accessToken);
+localStorage.setItem('refreshToken', response.refreshToken);
+
+// Add to API requests
+const config = {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+  }
+};
+
+// Handle token refresh on 401
+if (error.response.status === 401) {
+  const newToken = await refreshAccessToken();
+  // Retry original request with new token
+}
+```
+
+### 2. Admin PIN Flow
+
+```javascript
+// Step 1: Signin
+const signinResponse = await api.post('/auth/signin', { phone, birthday });
+
+if (signinResponse.requiresPin) {
+  // Step 2: Show PIN input modal
+  const pin = await showPinModal();
+  
+  // Step 3: Verify PIN
+  const verifyResponse = await api.post('/auth/verify-pin', {
+    tempToken: signinResponse.tempToken,
+    pin: pin
+  });
+  
+  // Step 4: Store tokens
+  storeTokens(verifyResponse.accessToken, verifyResponse.refreshToken);
+}
+```
+
+### 3. File Upload Implementation
+
+```javascript
+// Upload file first
+const formData = new FormData();
+formData.append('file', imageFile);
+
+const uploadResponse = await api.post('/upload', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+
+// Use returned URL in other requests
+const plotData = {
+  name: "แปลง 1",
+  images: [uploadResponse.url] // Use uploaded file URL
+};
+```
+
+### 4. Pagination Handling
+
+```javascript
+const fetchPlots = async (page = 1, limit = 20) => {
+  const response = await api.get('/plots', {
+    params: { page, limit }
+  });
+  
+  return {
+    items: response.data,
+    total: response.meta.total,
+    totalPages: response.meta.totalPages
+  };
+};
+```
+
+### 5. Location Cascading Dropdowns
+
+```javascript
+// Load provinces
+const provinces = await api.get('/locations/provinces');
+
+// Load districts when province selected
+const districts = await api.get('/locations/districts', {
+  params: { provinceCode: selectedProvince.code }
+});
+
+// Load subdistricts when district selected
+const subdistricts = await api.get('/locations/subdistricts', {
+  params: { districtCode: selectedDistrict.code }
+});
+```
+
+### 6. Error Handling Best Practices
+
+```javascript
+try {
+  const response = await api.post('/plots', plotData);
+} catch (error) {
+  if (error.response) {
+    // Server responded with error
+    switch (error.response.status) {
+      case 400:
+        showValidationErrors(error.response.data.details);
+        break;
+      case 401:
+        redirectToLogin();
+        break;
+      case 403:
+        showMessage('คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้');
+        break;
+      case 404:
+        showMessage('ไม่พบข้อมูลที่ต้องการ');
+        break;
+      default:
+        showMessage('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+  } else if (error.request) {
+    // No response from server
+    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+  }
+}
+```
+
+---
+
+## Support & Contact
+
+For API questions or issues, please contact:
+- **Backend Team Lead**: [Your Name]
+- **Email**: [your.email@example.com]
+- **Swagger Documentation**: `http://localhost:3000/docs` (development only)
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** 2026-01-29  
+**Status:** ✅ Production Ready
