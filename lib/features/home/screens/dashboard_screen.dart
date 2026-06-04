@@ -10,6 +10,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/env.dart';
 import '../../map/screens/map_drawing_screen.dart';
 import '../../gap/screens/gap_main_screen.dart';
 import '../widgets/news_carousel.dart';
@@ -1560,8 +1561,8 @@ class _PlotMiniMap extends StatefulWidget {
 
 class _PlotMiniMapState extends State<_PlotMiniMap> {
   MaplibreMapController? _controller;
-  static const String _styleUrl =
-      'https://api.maptiler.com/maps/hybrid/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  static String get _styleUrl =>
+      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
 
   @override
   Widget build(BuildContext context) {

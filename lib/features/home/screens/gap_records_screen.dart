@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:math' show sin, pi;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/env.dart';
 import '../../../core/services/gap_service.dart';
 import '../../../core/services/plot_service.dart';
 import '../../../core/widgets/skeleton_loader.dart';
@@ -803,8 +804,8 @@ class _GapMiniMap extends StatefulWidget {
 class _GapMiniMapState extends State<_GapMiniMap> {
   MaplibreMapController? _controller;
   bool _isStyleLoaded = false;
-  static const String _styleUrl =
-      'https://api.maptiler.com/maps/hybrid/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  static String get _styleUrl =>
+      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
 
   @override
   Widget build(BuildContext context) {

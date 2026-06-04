@@ -5,6 +5,7 @@ import 'package:heroicons/heroicons.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/config/env.dart';
 import '../../../../core/services/plot_service.dart';
 import '../../../../data/models/plot_model.dart';
 import '../../../../core/widgets/nature_background.dart';
@@ -25,8 +26,8 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
   bool isLoading = false;
   
   // Style URL
-  final String _styleUrl =
-      'https://api.maptiler.com/maps/satellite/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  String get _styleUrl =>
+      'https://api.maptiler.com/maps/satellite/style.json?key=${Env.mapTilerApiKey}';
 
   @override
   void initState() {

@@ -37,7 +37,10 @@ class ChatService {
   // ─── API Config ──────────────────────────────────────────────────
   static String get _apiKey {
     final key = Env.geminiApiKey;
-    return key.isNotEmpty ? key : 'AIzaSyC_XW8Yk8hhIK4FKpm8V7YU6ARyws30x34';
+    if (key.isEmpty) {
+      debugPrint('GEMINI_API_KEY is not set in .env');
+    }
+    return key;
   }
 
   static const String _baseUrl =

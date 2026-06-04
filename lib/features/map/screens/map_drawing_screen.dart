@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/config/env.dart';
 import '../../../../core/services/plot_service.dart';
 import '../../../../core/utils/geo_json_utils.dart';
 import '../../../../data/models/plot_model.dart';
@@ -39,11 +40,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
   final LatLng _initialPosition = const LatLng(16.8208, 100.2659);
 
   // MapTiler Configuration
-  static const String _mapTilerKey = 'Fb4cbU6chnBsGVsZ5v96';
-  static const String _satelliteStyle =
-      'https://api.maptiler.com/maps/hybrid/style.json?key=$_mapTilerKey';
-  static const String _streetStyle =
-      'https://api.maptiler.com/maps/streets/style.json?key=$_mapTilerKey';
+  static String get _satelliteStyle =>
+      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
+  static String get _streetStyle =>
+      'https://api.maptiler.com/maps/streets/style.json?key=${Env.mapTilerApiKey}';
 
   // Map State
   bool _isSatelliteView = true;

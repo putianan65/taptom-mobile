@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:heroicons/heroicons.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/env.dart';
 import '../../../core/services/admin_service.dart';
 import '../../../core/utils/permission_utils.dart';
 import '../../../data/models/user_model.dart';
@@ -38,8 +39,8 @@ class AdminPlotsMapScreen extends StatefulWidget {
 
 class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
   MaplibreMapController? _mapController;
-  final String _styleUrl =
-      'https://api.maptiler.com/maps/satellite/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  String get _styleUrl =>
+      'https://api.maptiler.com/maps/satellite/style.json?key=${Env.mapTilerApiKey}';
 
   List<dynamic> _plots = [];
   bool _isLoading = true;

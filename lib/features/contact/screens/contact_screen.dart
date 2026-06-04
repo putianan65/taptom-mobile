@@ -4,6 +4,7 @@ import 'package:heroicons/heroicons.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/env.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -18,8 +19,8 @@ class _ContactScreenState extends State<ContactScreen> {
   // GISTNU Coordinates (Naresuan University)
   static const double _lat = 16.7427;
   static const double _lng = 100.1955;
-  static const String _styleUrl =
-      'https://api.maptiler.com/maps/streets/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  static String get _styleUrl =>
+      'https://api.maptiler.com/maps/streets/style.json?key=${Env.mapTilerApiKey}';
 
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);

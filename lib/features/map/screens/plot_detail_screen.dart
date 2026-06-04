@@ -4,6 +4,7 @@ import 'package:heroicons/heroicons.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/config/env.dart';
 import '../../../../core/services/plot_service.dart';
 import '../../../../core/services/gap_service.dart';
 import '../../../../core/services/certificate_pdf_service.dart';
@@ -30,8 +31,8 @@ class PlotDetailScreen extends StatefulWidget {
 class _PlotDetailScreenState extends State<PlotDetailScreen> {
   MaplibreMapController? _mapController;
 
-  static const String _styleUrl =
-      'https://api.maptiler.com/maps/hybrid/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  static String get _styleUrl =>
+      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
 
   // GAP Progress loaded from API (starts at all false)
   Map<String, bool> _gapProgress = {

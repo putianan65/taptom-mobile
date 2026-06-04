@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import '../utils/date_formatter.dart';
+import '../config/env.dart';
 
 // ==================== EXCEPTIONS ====================
 
@@ -24,10 +25,19 @@ class PdfConfig {
   static String get mapApiKey {
     const key = String.fromEnvironment('MAPTILER_API_KEY', defaultValue: '');
     if (key.isEmpty) {
-      // Fallback สำหรับ development (ลบออกใน production!)
-      return 'Fb4cbU6chnBsGVsZ5v96';
+      // Read from dotenv at runtime
+      return _getRuntimeMapKey();
     }
     return key;
+  }
+
+  static String _getRuntimeMapKey() {
+    try {
+      // Import handled via top-level import
+      return Env.mapTilerApiKey;
+    } catch (_) {
+      return '';
+    }
   }
   
   static const Duration networkTimeout = Duration(seconds: 15);

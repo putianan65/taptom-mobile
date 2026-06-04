@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:heroicons/heroicons.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/config/env.dart';
 import '../../../../core/services/plot_service.dart';
 import '../../../../core/utils/permission_utils.dart';
 import '../../../../data/models/plot_model.dart';
@@ -18,8 +19,8 @@ class MyPlotsMapScreen extends StatefulWidget {
 
 class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
   MaplibreMapController? _mapController;
-  final String _styleUrl =
-      'https://api.maptiler.com/maps/hybrid/style.json?key=Fb4cbU6chnBsGVsZ5v96';
+  String get _styleUrl =>
+      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
 
   List<PlotModel> _plots = [];
   bool _isLoading = true;
