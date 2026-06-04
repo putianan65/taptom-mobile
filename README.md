@@ -13,16 +13,6 @@ A centralized agricultural management mobile application built with Flutter, des
 
 ---
 
-## App Screenshots
-
-| Dashboard | Map & Plot Management | GAP Form | Traceability |
-|:---------:|:---------------------:|:--------:|:------------:|
-| ![Dashboard](screenshots/dashboard.png) | ![Map](screenshots/map.png) | ![GAP](screenshots/gap_form.png) | ![Traceability](screenshots/traceability.png) |
-
-> Place your screenshots in a `screenshots/` folder at the project root.
-
----
-
 ## About The App
 
 TAPTOM Mobile is an agricultural data management platform that connects farmers with government officials through a unified mobile experience. The app addresses real-world challenges in Thai agriculture: fragmented farm records, lack of standardized quality control, and the inability to trace produce back to its source.
