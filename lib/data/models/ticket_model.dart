@@ -30,7 +30,7 @@ class Ticket {
   final String message;
   final String status; // OPEN, IN_PROGRESS, RESOLVED, CLOSED
   final String priority; // HIGH, MEDIUM, LOW
-  final String? category; // BUG, PLOT, ACCOUNT, OTHER ...
+  final String? category; // BUG, FEATURE, QUESTION or OTHER
   final DateTime createdAt;
   final DateTime? updatedAt;
   final UserModel user;

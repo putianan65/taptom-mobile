@@ -467,6 +467,7 @@ class DemoBackend {
         );
       }),
       r('POST', '/traceability/plots/$id/create-lot', (q) {
+        if (!q.isStaff) throw DemoHttpError(403, 'Insufficient permissions. Required roles: ADMIN, SUPER_ADMIN');
         final plot = _plot(q.param(0));
         final list = harvests[plot['id']] ?? const [];
         if (list.isEmpty) throw DemoHttpError(400, 'ต้องมีบันทึกการเก็บเกี่ยวก่อนออกเลขล็อต');
@@ -755,6 +756,8 @@ class DemoBackend {
           )),
       r('POST', '/plots/$id/$name', (q) {
         final item = {...q.body, 'id': _id(name), 'plotId': q.param(0), 'createdAt': _now(), 'updatedAt': _now()};
+        // Like the API, every harvest gets its own lot number.
+        if (name == 'harvests') item['lotNumber'] = 'TPT-2568-${(_seq++ % 10000).toString().padLeft(4, '0')}';
         store().putIfAbsent(q.param(0), () => []).insert(0, item);
         return (201, item);
       }),
@@ -780,51 +783,35 @@ class DemoBackend {
         final plot = _plot(entry.key);
         final owner = _user(plot['userId'] as String);
         final plotInputs = (inputs[entry.key] ?? const <Map<String, dynamic>>[]);
+        // Same four blocks as GET /traceability/:lotNumber on the API.
+        final place = [plot['subDistrict'], plot['district'], plot['province']].join(', ');
         return {
-          'lot': {
-            'lotNumber': lotNumber,
-            'productionDate': h['harvestDate'],
-            'quantity': h['yieldAmount'],
-            'unit': h['yieldUnit'],
-            'grade': h['qualityGrade'],
-            'destination': 'ตลาดกลางสินค้าเกษตรพิษณุโลก',
-          },
-          'farmer': {
-            'firstName': owner['firstName'],
-            'lastName': owner['lastName'],
-            'district': owner['district'],
-            'province': owner['province'],
-          },
-          'plot': {
-            'id': plot['id'],
-            'name': plot['name'],
-            'areaRai': plot['areaRai'],
-            'species': plot['species'],
-            'province': plot['province'],
-            'district': plot['district'],
-            'subDistrict': plot['subDistrict'],
-          },
-          'geometry': plot['geometry'],
-          'gap': {
-            'status': plot['status'],
-            'season': gap[entry.key]?['seasonLabel'],
-            'farmingSystem': gap[entry.key]?['farmingSystem'],
-            'certifiedDate': plot['status'] == 'APPROVED' ? plot['updatedAt'] : null,
-          },
-          'chemicals': [
-            for (final i in plotInputs)
-              {'name': i['name'], 'type': i['type'], 'usageDate': i['appliedDate'], 'amount': i['amount'], 'unit': i['unit']},
-          ],
-          'harvests': [
-            {
-              'productName': 'ใบกระท่อม${h['qualityGrade'] == 'A' ? ' เกรด A' : ''}',
-              'harvestDate': h['harvestDate'],
-              'quantity': h['yieldAmount'],
-              'unit': h['yieldUnit'],
-              'lotNumber': lotNumber,
+          'lotInformation': {
+            ...h,
+            'plot': {
+              ...plot,
+              'area': (plot['areaRai'] as num) * 1600,
+              'ownerName': '${owner['firstName']} ${owner['lastName']}',
             },
-          ],
-          'postHarvests': h['postHarvests'] ?? const [],
+          },
+          'sourceOrigin': {
+            'plotName': plot['name'],
+            'address': place,
+            'farmer': '${owner['firstName']} ${owner['lastName']}',
+            'location': plot['geometry'],
+            'gapStatus': gap[entry.key]?['gapStatus'] ?? 'NONE',
+            'gapSeason': gap[entry.key]?['seasonLabel'],
+            'gapUpdatedAt': gap[entry.key]?['updatedAt'],
+          },
+          'productionHistory': {
+            'inputsUsed': [
+              for (final i in plotInputs) {...i, 'usedDate': i['appliedDate']},
+            ],
+            'harvestHistory': [
+              for (final x in entry.value) Map<String, dynamic>.from(x)..remove('postHarvests'),
+            ],
+          },
+          'certification': {'gapStatus': gap[entry.key]?['gapStatus'] ?? 'NONE'},
         };
       }
     }
@@ -905,7 +892,7 @@ class DemoBackend {
           'user': {'id': 'u-farmer-04', 'firstName': 'สุนทร', 'lastName': 'พรหมมา'},
           'subject': 'สอบถามสถานะการสมัครสมาชิก',
           'description': 'สมัครไว้สองวันแล้ว ยังไม่ได้รับการอนุมัติ',
-          'category': 'ACCOUNT',
+          'category': 'QUESTION',
           'status': 'OPEN',
           'replies': <Map<String, dynamic>>[],
           'createdAt': DemoSeed.iso(DateTime.now().subtract(const Duration(hours: 6))),

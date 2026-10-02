@@ -9,6 +9,7 @@ import '../../../core/utils/geo_json_utils.dart';
 import '../../../core/utils/map_styles.dart';
 import '../../../core/utils/thai_date.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../data/models/trace_report.dart';
 import '../../gap/gap_labels.dart';
 
 /// Public farm-to-package report for one lot, opened from the QR code on
@@ -24,7 +25,7 @@ class TraceabilityReportScreen extends StatefulWidget {
 }
 
 class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
-  Map<String, dynamic>? _report;
+  TraceReport? _report;
   String? _error;
 
   @override
@@ -37,7 +38,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
     setState(() => _error = null);
     try {
       final r = await TraceabilityService().getTraceabilityReport(widget.lotNumber);
-      if (mounted) setState(() => _report = r);
+      if (mounted) setState(() => _report = TraceReport.fromJson(r, lotNumber: widget.lotNumber));
     } on Object catch (e) {
       if (!mounted) return;
       setState(() => _error = e is ApiException && e.isNotFound
@@ -46,20 +47,11 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
     }
   }
 
-  Map<String, dynamic> _map(String key) {
-    final v = _report?[key];
-    return v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
-  }
-
-  List<Map<String, dynamic>> _list(String key) {
-    final v = _report?[key];
-    return v is List ? [for (final e in v) if (e is Map) Map<String, dynamic>.from(e)] : const [];
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    if (_report == null) {
+    final r = _report;
+    if (r == null) {
       return Scaffold(
         backgroundColor: p.background,
         appBar: AppBar(backgroundColor: p.background, surfaceTintColor: Colors.transparent),
@@ -80,22 +72,11 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
       );
     }
 
-    final lot = _map('lot');
-    final plot = _map('plot');
-    final farmer = _map('farmer');
-    final gap = _map('gap');
-    final geometry = _report?['geometry'] ?? plot['geometry'];
-    final ring = geometry is Map ? GeoJsonUtils.fromPolygon(Map<String, dynamic>.from(geometry)) : <LatLng>[];
-    final chemicals = _list('chemicals');
-    final harvests = _list('harvests');
-    final certified = '${gap['status'] ?? ''}'.toUpperCase() == 'APPROVED' || gap['certified'] == true;
-    final lotNumber = '${lot['lotNumber'] ?? widget.lotNumber}';
-    final farmerName = '${farmer['firstName'] ?? ''} ${farmer['lastName'] ?? ''}'.trim();
-    final place = [
-      if ((plot['subDistrict'] ?? '').toString().isNotEmpty) 'ต.${plot['subDistrict']}',
-      if ((plot['district'] ?? '').toString().isNotEmpty) 'อ.${plot['district']}',
-      if ((plot['province'] ?? '').toString().isNotEmpty) 'จ.${plot['province']}',
-    ].join(' ');
+    final ring = r.geometry == null ? <LatLng>[] : GeoJsonUtils.fromPolygon(r.geometry!);
+    final certified = r.certified;
+    final lotNumber = r.lotNumber;
+    final place = r.place;
+    final area = r.areaRai;
 
     return Scaffold(
       backgroundColor: p.background,
@@ -127,7 +108,12 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                     style: context.text.labelLarge?.copyWith(color: p.heroInk.withValues(alpha: 0.75)),
                   ),
                   const SizedBox(height: 2),
-                  Text(lotNumber, style: context.text.headlineMedium?.mono.copyWith(color: p.heroInk)),
+                  // API lot numbers run to 27 characters; keep them on one line.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(lotNumber, style: context.text.headlineMedium?.mono.copyWith(color: p.heroInk)),
+                  ),
                   const SizedBox(height: Space.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -138,7 +124,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(certified ? AppIcons.seal : AppIcons.pending, size: 16, color: certified ? p.hero : p.heroInk),
+                        Icon(certified ? AppIcons.gap : AppIcons.pending, size: 16, color: certified ? p.hero : p.heroInk),
                         const SizedBox(width: 6),
                         Text(
                           certified ? 'แปลงผ่านมาตรฐาน GAP' : 'แปลงอยู่ระหว่างการรับรอง',
@@ -164,27 +150,24 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                         children: [
                           Text('ผลผลิต', style: context.text.labelMedium),
                           const SizedBox(height: 4),
-                          Text(
-                            harvests.isNotEmpty ? '${harvests.first['productName'] ?? 'ใบกระท่อม'}' : 'ใบกระท่อม',
-                            style: context.text.titleLarge,
-                          ),
+                          Text('ใบกระท่อม', style: context.text.titleLarge),
                           const SizedBox(height: Space.md),
                           Row(
                             children: [
                               Expanded(
                                 child: _Fact(
                                   label: 'ปริมาณ',
-                                  value: '${lot['quantity'] ?? harvests.firstOrNull?['quantity'] ?? '-'} ${lot['unit'] ?? harvests.firstOrNull?['unit'] ?? 'กก.'}',
+                                  value: r.quantity == null ? '-' : '${r.quantity} ${GapLabels.unit(r.unit)}',
                                 ),
                               ),
                               Expanded(
                                 child: _Fact(
                                   label: 'วันเก็บเกี่ยว',
-                                  value: ThaiDate.short(DateTime.tryParse('${harvests.firstOrNull?['harvestDate'] ?? lot['productionDate'] ?? ''}')),
+                                  value: ThaiDate.short(r.harvestDate),
                                 ),
                               ),
-                              if ((lot['grade'] ?? '').toString().isNotEmpty)
-                                Expanded(child: _Fact(label: 'เกรด', value: GapLabels.value('qualityGrade', lot['grade']))),
+                              if (r.grade != null)
+                                Expanded(child: _Fact(label: 'เกรด', value: GapLabels.value('qualityGrade', r.grade))),
                             ],
                           ),
                         ],
@@ -203,12 +186,11 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                             padding: const EdgeInsets.all(Space.lg),
                             child: Column(
                               children: [
-                                KeyValueRow(label: 'แปลง', value: '${plot['name'] ?? '-'}'),
+                                KeyValueRow(label: 'แปลง', value: r.plotName ?? '-'),
                                 KeyValueRow(label: 'ที่ตั้ง', value: place.isEmpty ? '-' : place),
-                                KeyValueRow(label: 'พื้นที่', value: '${plot['areaRai'] ?? '-'} ไร่'),
-                                if ((plot['species'] ?? '').toString().isNotEmpty)
-                                  KeyValueRow(label: 'สายพันธุ์', value: '${plot['species']}'),
-                                KeyValueRow(label: 'ผู้ปลูก', value: farmerName.isEmpty ? '-' : farmerName),
+                                if (area != null) KeyValueRow(label: 'พื้นที่', value: ThaiArea.fromSqm(r.areaSqm!).toString()),
+                                if (r.species != null) KeyValueRow(label: 'สายพันธุ์', value: r.species!),
+                                KeyValueRow(label: 'ผู้ปลูก', value: r.farmerName ?? '-'),
                               ],
                             ),
                           ),
@@ -220,27 +202,25 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                     ListGroup(
                       children: [
                         KeyValueRow(label: 'สถานะ GAP', value: certified ? 'รับรองแล้ว' : 'ระหว่างตรวจ'),
-                        if (gap['certifiedDate'] != null)
-                          KeyValueRow(label: 'รับรองเมื่อ', value: ThaiDate.long(DateTime.tryParse('${gap['certifiedDate']}'))),
-                        if (gap['farmingSystem'] != null)
-                          KeyValueRow(label: 'ระบบการผลิต', value: GapLabels.value('farmingSystem', gap['farmingSystem'])),
-                        if ((gap['season'] ?? '').toString().isNotEmpty)
-                          KeyValueRow(label: 'รอบการผลิต', value: '${gap['season']}'),
+                        if (r.season != null) KeyValueRow(label: 'รอบการผลิต', value: r.season!),
+                        if (r.gapUpdatedAt != null)
+                          KeyValueRow(label: 'บันทึกล่าสุด', value: ThaiDate.long(r.gapUpdatedAt)),
                       ],
                     ).entrance(context, index: 2),
-                    if (chemicals.isNotEmpty) ...[
+                    if (r.inputs.isNotEmpty) ...[
                       const SizedBox(height: Space.xxl),
                       const SectionHeader(title: 'ปัจจัยการผลิตที่ใช้', subtitle: 'ตามที่เกษตรกรบันทึกไว้'),
                       ListGroup(
                         children: [
-                          for (final c in chemicals)
+                          for (final c in r.inputs)
                             ListRow(
                               icon: c['type'] == 'PESTICIDE' ? AppIcons.safety : AppIcons.inputs,
                               title: '${c['name'] ?? c['productName'] ?? '-'}',
                               subtitle: [
                                 GapLabels.value('type', c['type']),
-                                if (c['amount'] != null) '${c['amount']} ${c['unit'] ?? ''}',
-                                if (c['usageDate'] != null) ThaiDate.short(DateTime.tryParse('${c['usageDate']}')),
+                                if (c['amount'] != null) '${c['amount']} ${GapLabels.unit(c['unit'])}',
+                                if ((c['usedDate'] ?? c['usageDate']) != null)
+                                  ThaiDate.short(DateTime.tryParse('${c['usedDate'] ?? c['usageDate']}')),
                               ].where((s) => s.isNotEmpty && s != '-').join(' · '),
                               showChevron: false,
                               dense: true,
@@ -259,6 +239,8 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen> {
                             style: context.text.bodySmall,
                             textAlign: TextAlign.center,
                           ),
+                          const SizedBox(height: Space.xl),
+                          const DevelopedBy(),
                         ],
                       ),
                     ),

@@ -202,7 +202,7 @@ abstract final class DemoSeed {
         'district': 'วังทอง',
         'subDistrict': subDistrict,
         'cropMonth': 'มิถุนายน',
-        'cropYear': 2567,
+        'cropYear': 2024,
         'yieldEstimate': (rai * 180).roundToDouble(),
         'geometry': _polygon(lat, lng, rai, seed, sides: sides),
         'imageUrls': <String>[],

@@ -102,6 +102,17 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// The sign-in responses carry only id, name and role. Territory and
+  /// address come from /users/me, so load the full profile once signed in.
+  Future<UserModel?> _fullProfile(UserModel? partial) async {
+    try {
+      return await _authService.getCurrentUser() ?? partial;
+    } on Object catch (e) {
+      debugPrint('Profile load after sign-in failed: $e');
+      return partial;
+    }
+  }
+
   Future<void> signIn(String phone, String birthday) async {
     _setLoading(true);
     try {
@@ -110,7 +121,7 @@ class AuthProvider extends ChangeNotifier {
       _refreshToken = await _storage.getRefreshToken();
       _tempToken = null;
       _pendingRole = null;
-      _currentUser = user;
+      _currentUser = await _fullProfile(user);
       _offline = false;
     } on PinRequiredException catch (e) {
       _tempToken = e.tempToken;
@@ -142,9 +153,9 @@ class AuthProvider extends ChangeNotifier {
       _refreshToken = response['refreshToken'] as String?;
       await _saveTokens();
 
-      _currentUser = response['user'] is Map
-          ? UserModel.fromJson(Map<String, dynamic>.from(response['user']))
-          : await _authService.getCurrentUser();
+      _currentUser = await _fullProfile(
+        response['user'] is Map ? UserModel.fromJson(Map<String, dynamic>.from(response['user'])) : null,
+      );
       if (_currentUser != null) {
         await _storage.saveUserJson(jsonEncode(_currentUser!.toJson()));
       }
@@ -168,8 +179,7 @@ class AuthProvider extends ChangeNotifier {
         _refreshToken = response['refreshToken'] as String?;
         await _saveTokens();
       }
-      _currentUser =
-          response['user'] as UserModel? ?? await _authService.getCurrentUser();
+      _currentUser = await _fullProfile(response['user'] as UserModel?);
       _tempToken = null;
       _pendingRole = null;
       _pendingNeedsSetup = false;

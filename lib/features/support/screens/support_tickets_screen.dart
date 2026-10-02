@@ -162,17 +162,18 @@ class _NewTicketForm extends StatefulWidget {
 }
 
 class _NewTicketFormState extends State<_NewTicketForm> {
+  // The API's TicketCategory values.
   static const _categories = [
-    ('PLOT', 'แปลงและการตรวจ'),
-    ('ACCOUNT', 'บัญชีและการเข้าสู่ระบบ'),
+    ('QUESTION', 'สอบถามการใช้งาน'),
     ('BUG', 'แอปทำงานผิดพลาด'),
+    ('FEATURE', 'อยากให้เพิ่ม'),
     ('OTHER', 'เรื่องอื่น'),
   ];
 
   final _form = GlobalKey<FormState>();
   final _subject = TextEditingController();
   final _message = TextEditingController();
-  String _category = 'PLOT';
+  String _category = 'QUESTION';
   bool _urgent = false;
 
   @override

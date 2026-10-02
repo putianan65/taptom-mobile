@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -7,7 +8,9 @@ import '../../../../core/services/gap_service.dart';
 import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/thai_date.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../auth/auth_provider.dart';
 import '../../gap_categories.dart';
+import '../../gap_labels.dart';
 import '../../widgets/gap_form_wrapper.dart';
 
 /// 1.7 Lots and their QR codes. Buyers scan the code on the package to see
@@ -150,6 +153,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
   @override
   Widget build(BuildContext context) {
     final ro = widget.isReadOnly;
+    final staff = context.watch<AuthProvider>().user?.isStaff ?? false;
     return GapFormWrapper(
       category: GapCategory.traceability,
       hasUnsavedChanges: false,
@@ -160,18 +164,21 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!ro)
-            const FormInfoCard(
-              title: 'หนึ่งล็อตต่อการส่งขายหนึ่งครั้ง',
-              message: 'ออกเลขล็อตหลังบันทึกการเก็บเกี่ยว แล้วพิมพ์ QR ติดบรรจุภัณฑ์',
+            FormInfoCard(
+              title: 'หนึ่งล็อตต่อการเก็บเกี่ยวหนึ่งครั้ง',
+              message: staff
+                  ? 'ทุกการเก็บเกี่ยวได้เลขล็อตอัตโนมัติ ออกล็อตเพิ่มเมื่อแบ่งส่งขายหลายครั้ง'
+                  : 'ระบบออกเลขล็อตให้ทุกครั้งที่บันทึกการเก็บเกี่ยว พิมพ์ QR ติดบรรจุภัณฑ์ได้ทันที',
             ),
-          if (!ro && !_loading) ...[
+          // Issuing extra lots is an officer action on the API.
+          if (!ro && !_loading && (staff || !_hasHarvest)) ...[
             if (_hasHarvest)
               GapAddButton(label: 'ออกเลขล็อตใหม่', icon: AppIcons.qr, onPressed: _create)
             else
               const InlineBanner(
                 tone: Tone.warning,
                 title: 'ยังไม่มีบันทึกการเก็บเกี่ยว',
-                message: 'บันทึกหมวด 1.4 ก่อน จึงจะออกเลขล็อตได้',
+                message: 'บันทึกหมวด 1.4 ก่อน จึงจะมีเลขล็อต',
               ),
             const SizedBox(height: Space.lg),
           ],
@@ -191,7 +198,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                 final number = '${lot['lotNumber']}';
                 final date = DateTime.tryParse('${lot['harvestDate'] ?? lot['productionDate'] ?? lot['createdAt'] ?? ''}');
                 final qty = lot['quantity'] ?? lot['batchSize'] ?? lot['yieldAmount'];
-                final unit = lot['unit'] ?? lot['batchUnit'] ?? lot['yieldUnit'] ?? 'กก.';
+                final unit = GapLabels.unit(lot['unit'] ?? lot['batchUnit'] ?? lot['yieldUnit'] ?? 'kg');
                 return GapRecordTile(
                   icon: AppIcons.qr,
                   title: number,

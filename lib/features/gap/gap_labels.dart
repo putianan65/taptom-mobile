@@ -85,6 +85,9 @@ abstract final class GapLabels {
   static const _common = {
     'KRATOM': 'กระท่อม',
     'KG': 'กก.',
+    'G': 'กรัม',
+    'L': 'ลิตร',
+    'ML': 'มล.',
     'LITER': 'ลิตร',
     'RAI': 'ไร่',
     'BOTTLE': 'ขวด',
@@ -130,6 +133,12 @@ abstract final class GapLabels {
     }
     final upper = s.toUpperCase();
     return _values[key]?[upper] ?? _common[upper] ?? s;
+  }
+
+  /// A unit as stored by the API ("kg", "L") in Thai; empty when missing.
+  static String unit(Object? raw) {
+    final v = value('unit', raw);
+    return v == '-' ? '' : v;
   }
 
   static bool _has(String v) => v != '-' && v.isNotEmpty;

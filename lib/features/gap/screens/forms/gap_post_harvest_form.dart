@@ -9,6 +9,7 @@ import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/thai_date.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../gap_categories.dart';
+import '../../gap_labels.dart';
 import '../../widgets/gap_form_wrapper.dart';
 
 /// 1.5 What happened to one harvest after picking: sorting, drying,
@@ -194,7 +195,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
     final date = DateTime.tryParse('${h['harvestDate'] ?? ''}');
     return [
       if (date != null) ThaiDate.short(date.toLocal()),
-      '${h['yieldAmount'] ?? '-'} ${h['yieldUnit'] ?? 'กก.'}',
+      '${h['yieldAmount'] ?? '-'} ${GapLabels.unit(h['yieldUnit'] ?? 'kg')}',
       if ((h['lotNumber'] ?? '').toString().isNotEmpty) '${h['lotNumber']}',
     ].join(' · ');
   }
