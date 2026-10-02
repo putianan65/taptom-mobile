@@ -15,7 +15,7 @@ import '../../admin/screens/admin_plot_list_screen.dart';
 import '../../admin/screens/admin_plots_map_screen.dart';
 import '../../admin/screens/audit_log_screen.dart';
 import '../../admin/screens/change_pin_screen.dart';
-import '../../admin/screens/edit_profile_screen.dart';
+import '../../profile/screens/personal_info_screen.dart';
 import '../../admin/screens/user_management_screen.dart';
 import '../../auth/auth_provider.dart';
 import '../../notifications/providers/notification_provider.dart';
@@ -654,7 +654,7 @@ class AdminProfileScreen extends StatelessWidget {
                 icon: AppIcons.user,
                 title: 'แก้ไขข้อมูลส่วนตัว',
                 subtitle: 'ชื่อ เบอร์โทร และรูปโปรไฟล์',
-                onTap: () => _push(context, const EditProfileScreen()),
+                onTap: () => _push(context, const PersonalInfoScreen()),
               ),
               ListRow(
                 icon: AppIcons.lock,

@@ -16,7 +16,7 @@ import '../../auth/auth_provider.dart';
 import '../../map/widgets/map_controls.dart';
 import 'admin_gap_inspection_screen.dart';
 import 'create_plot_for_user_screen.dart';
-import 'plot_editor_screen_maplibre.dart';
+import '../../map/screens/map_drawing_screen.dart';
 
 /// Staff map of every plot in scope. Admins see their territory, super
 /// admins see the country. Plots are drawn as polygons with a status dot at
@@ -764,7 +764,7 @@ class _PlotSheetState extends State<_PlotSheet> {
       return;
     }
     final updated = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PlotEditorScreenMapLibre(plot: model)),
+      MaterialPageRoute(builder: (_) => MapDrawingScreen(plotToEdit: model, isAdmin: true)),
     );
     if (updated is PlotModel && mounted) {
       setState(() => _plot['geometry'] = updated.geometry);

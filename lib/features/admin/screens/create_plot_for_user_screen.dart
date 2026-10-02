@@ -1,193 +1,121 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/services/admin_service.dart';
-import '../../../../core/widgets/custom_popup.dart';
-import '../../../../core/widgets/nature_background.dart';
-import '../../../../data/models/user_model.dart';
-import '../../map/screens/map_drawing_screen.dart'; // Fixed: Import MapDrawingScreen
 
-// Note: This needs integration with the Map Drawing Logic used in User App.
-// For now, we stub the User Selector and then would navigate to Map.
+import '../../../core/services/admin_service.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/user_model.dart';
+import '../../map/screens/map_drawing_screen.dart';
+
+/// Step one of registering a plot on a member's behalf: pick the member,
+/// then draw the boundary on the map.
 class CreatePlotForUserScreen extends StatefulWidget {
-  final UserModel? initialUser;
-
   const CreatePlotForUserScreen({super.key, this.initialUser});
+
+  final UserModel? initialUser;
 
   @override
   State<CreatePlotForUserScreen> createState() => _CreatePlotForUserScreenState();
 }
 
 class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
-  UserModel? _selectedUser;
-  bool _isLoadingUser = false;
   List<UserModel> _users = [];
-  
+  bool _loading = true;
+  String? _error;
+  String _query = '';
+
   @override
   void initState() {
     super.initState();
-    // Note: _selectedUser is set in _loadUsers after users are loaded
-    _loadUsers();
+    _load();
   }
 
-  Future<void> _loadUsers() async {
-    setState(() => _isLoadingUser = true);
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final users = await context.read<AdminService>().getUsers(status: 'APPROVED');
+      if (!mounted) return;
       setState(() {
-        _users = users;
-        _isLoadingUser = false;
-        // Find matching user from loaded list by ID (fixes DropdownButton value mismatch)
-        if (widget.initialUser != null) {
-          _selectedUser = _users.firstWhere(
-            (u) => u.id == widget.initialUser!.id,
-            orElse: () => widget.initialUser!, // Fallback to original if not found
-          );
-          // If fallback was used but user not in list, reset to null to avoid error
-          if (!_users.any((u) => u.id == _selectedUser?.id)) {
-            _selectedUser = null;
-          }
-        }
+        _users = users.where((u) => u.role == UserRole.farmer).toList();
+        _loading = false;
       });
-    } catch (e) {
-      if(!mounted) return;
-      setState(() => _isLoadingUser = false);
-      CustomPopup.showError(context, message: 'ไม่สามารถโหลดรายชื่อสมาชิกได้');
+      final initial = widget.initialUser;
+      if (initial != null && _users.any((u) => u.id == initial.id)) _draw(initial);
+    } on Object catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
     }
+  }
+
+  Future<void> _draw(UserModel user) async {
+    final created = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MapDrawingScreen(isAdmin: true, targetUserId: user.id)),
+    );
+    if (created != null && mounted) Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return NatureBackground.header(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text('ลงทะเบียนแปลงใหม่ (ให้เกษตรกร)', style: const TextStyle()),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+    final q = _query.trim().toLowerCase();
+    final users = q.isEmpty
+        ? _users
+        : _users
+            .where((u) => '${u.fullName} ${u.phone} ${u.district ?? ''} ${u.subdistrict ?? ''}'.toLowerCase().contains(q))
+            .toList();
+
+    return PageScaffold(
+      title: 'เพิ่มแปลงให้สมาชิก',
+      subtitle: 'เลือกเจ้าของแปลง แล้ววาดขอบเขตบนแผนที่',
+      onRefresh: _load,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: Space.lg),
+            child: AppSearchField(
+              hint: 'ชื่อ เบอร์โทร หรือพื้นที่',
+              onChanged: (v) => setState(() => _query = v),
+            ),
           ),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Text(
-                      'ขั้นตอนที่ 1: ระบุเจ้าของแปลงใหม่',
-                      style: TextStyle(
-                        fontSize: 18, // Larger
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                     Text(
-                      'เลือกเกษตรกรที่ต้องการสร้างแปลงให้',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'เกษตรกร:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_isLoadingUser)
-                      const LinearProgressIndicator()
-                    else
-                      DropdownButtonFormField<UserModel>(
-                        value: _selectedUser,
-                        decoration: InputDecoration(
-                          hintText: 'ค้นหาชื่อ หรือ เบอร์โทร',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
-                        ),
-                        isExpanded: true,
-                        items: _users.map((user) {
-                          return DropdownMenuItem(
-                            value: user,
-                            child: Text(
-                              '${user.fullName} (${user.phone})',
-                              style: const TextStyle(),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _selectedUser = val),
-                      ),
-                  ],
-                ),
+        if (_loading)
+          const SliverToBoxAdapter(child: SkeletonList(count: 5))
+        else if (_error != null)
+          SliverToBoxAdapter(child: AppCard(child: ErrorState(message: _error, onRetry: _load)))
+        else if (users.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: EmptyState(
+                title: q.isEmpty ? 'ยังไม่มีสมาชิกที่อนุมัติแล้ว' : 'ไม่พบสมาชิกที่ค้นหา',
+                message: q.isEmpty ? 'อนุมัติใบสมัครก่อน จึงจะเพิ่มแปลงให้สมาชิกได้' : null,
               ),
-              const Divider(),
-              Expanded(
-                child: Center(
-                  child: _selectedUser == null
-                      ? Text(
-                          'กรุณาเลือกเกษตรกรก่อนเริ่มวาดแปลง',
-                          style: TextStyle(color: Colors.grey),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              PhosphorIconsRegular.mapTrifold,
-                              size: 64,
-                              color: AppColors.primary),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                // Navigate to Map Drawing Screen with User Context
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MapDrawingScreen(
-                                      isAdmin: true,
-                                      targetUserId: _selectedUser!.id, // Pass selected user ID
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(PhosphorIconsRegular.mapPinLine),
-                              label: Text('เริ่มวาดแปลง', style: const TextStyle()),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'กำลังดำเนินการสำหรับ: ${_selectedUser!.fullName}',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ],
+            ),
+          )
+        else
+          SliverToBoxAdapter(
+            child: ListGroup(
+              children: [
+                for (final u in users)
+                  ListRow(
+                    leading: InitialsAvatar(name: u.fullName, photoUrl: u.photoUrl, size: 40),
+                    title: u.fullName,
+                    subtitle: [
+                      u.phone,
+                      if ((u.subdistrict ?? '').isNotEmpty) 'ต.${u.subdistrict}',
+                      if ((u.district ?? '').isNotEmpty) 'อ.${u.district}',
+                    ].join(' · '),
+                    trailing: const Icon(AppIcons.pinLine, size: 20),
+                    showChevron: false,
+                    onTap: () => _draw(u),
+                  ),
+              ],
+            ).entrance(context),
           ),
-        ),
-      ),
+      ],
     );
   }
 }
