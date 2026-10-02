@@ -5,7 +5,7 @@ import '../../data/models/analytics_model.dart';
 import '../../data/models/message_model.dart';
 import '../../data/models/plot_model.dart'; // Fixed: Import PlotModel
 import '../../data/models/pdpa_log_model.dart';
-import '../../data/models/conversation_model.dart'; // ✅ Added Import // NEW
+import '../../data/models/conversation_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../../data/models/user_model.dart';
@@ -46,8 +46,9 @@ class AdminService {
       // Add optional location fields
       if (province != null && province.isNotEmpty) data['province'] = province;
       if (district != null && district.isNotEmpty) data['district'] = district;
-      if (subDistrict != null && subDistrict.isNotEmpty)
+      if (subDistrict != null && subDistrict.isNotEmpty) {
         data['subDistrict'] = subDistrict;
+      }
 
       final response = await _apiClient.post(
         ApiEndpoints.adminCreate,
@@ -253,7 +254,7 @@ class AdminService {
       );
     }
 
-    // ✅ Trigger notification → แจ้ง User เจ้าของแปลง
+    // Trigger notification → แจ้ง User เจ้าของแปลง
     if (ownerId != null) {
       await _triggerService.onPlotApproved(
         plotId: plotId,
@@ -284,7 +285,7 @@ class AdminService {
       );
     }
 
-    // ✅ Trigger notification → แจ้ง User เจ้าของแปลง (พร้อมเหตุผล)
+    // Trigger notification → แจ้ง User เจ้าของแปลง (พร้อมเหตุผล)
     if (ownerId != null) {
       await _triggerService.onPlotRejected(
         plotId: plotId,
@@ -363,7 +364,7 @@ class AdminService {
       details: 'อนุมัติสมาชิกเข้ากลุ่ม',
     );
 
-    // ✅ Trigger notification → แจ้ง User
+    // Trigger notification → แจ้ง User
     await _triggerService.onUserApproved(
       userId: userId,
       approvedBy: adminId ?? 'admin',
@@ -409,7 +410,7 @@ class AdminService {
       details: 'ปฏิเสธสมาชิก: $reason',
     );
 
-    // ✅ Trigger notification → แจ้ง User (พร้อมเหตุผล)
+    // Trigger notification → แจ้ง User (พร้อมเหตุผล)
     await _triggerService.onUserRejected(
       userId: userId,
       rejectedBy: adminId ?? 'admin',
@@ -674,7 +675,7 @@ class AdminService {
     }
   }
 
-  // ✅ NEW: Chat Features (Unread Count & Read Status)
+  // Chat Features (Unread Count & Read Status)
 
   /// Get Conversation List with Unread Counts
   Future<List<Conversation>> getConversations() async {

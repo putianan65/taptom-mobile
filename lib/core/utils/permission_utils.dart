@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,6 +7,14 @@ import '../widgets/widgets.dart';
 
 /// Centralized permission handling utilities
 class PermissionUtils {
+  /// Asks once for notification permission. Never jumps to system
+  /// settings on its own; the settings screen explains how instead.
+  static Future<bool> requestNotificationPermission() async {
+    if (kIsWeb) return false;
+    final status = await Permission.notification.request();
+    return status.isGranted;
+  }
+
   /// Request location permission (for maps)
   static Future<bool> requestLocationPermission(BuildContext context) async {
     // Check if location services are enabled

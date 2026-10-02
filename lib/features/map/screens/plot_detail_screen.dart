@@ -309,7 +309,7 @@ class _MapHeader extends StatefulWidget {
 }
 
 class _MapHeaderState extends State<_MapHeader> {
-  MaplibreMapController? _controller;
+  MapLibreMapController? _controller;
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +328,7 @@ class _MapHeaderState extends State<_MapHeader> {
         ColoredBox(color: p.hero),
         if (ring.length >= 3)
           IgnorePointer(
-            child: MaplibreMap(
+            child: MapLibreMap(
               styleString: MapStyles.satellite,
               initialCameraPosition: CameraPosition(target: center, zoom: 16),
               compassEnabled: false,

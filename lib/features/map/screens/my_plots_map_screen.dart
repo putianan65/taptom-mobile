@@ -32,7 +32,7 @@ class MyPlotsMapScreen extends StatefulWidget {
 
 class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
   final _cards = PageController(viewportFraction: 0.86);
-  MaplibreMapController? _map;
+  MapLibreMapController? _map;
   List<PlotModel> _plots = [];
   bool _loading = true;
   bool _styleReady = false;
@@ -84,7 +84,7 @@ class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
     await _drawPlots();
   }
 
-  void _onMapCreated(MaplibreMapController controller) {
+  void _onMapCreated(MapLibreMapController controller) {
     _map = controller;
     controller.onFillTapped.add(_onFillTapped);
   }
@@ -106,7 +106,7 @@ class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
     }
   }
 
-  Future<void> _paint(MaplibreMapController map) async {
+  Future<void> _paint(MapLibreMapController map) async {
     await map.clearFills();
     await map.clearLines();
     for (final plot in _plots) {
@@ -194,7 +194,7 @@ class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
       backgroundColor: p.background,
       body: Stack(
         children: [
-          MaplibreMap(
+          MapLibreMap(
             styleString: MapStyles.satellite,
             initialCameraPosition: MapStyles.thailand,
             onMapCreated: _onMapCreated,

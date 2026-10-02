@@ -1,5 +1,6 @@
 /// PDPA (Personal Data Protection Act) content for TapTom application
 /// This content is used for consent dialogs and privacy policy display
+library;
 
 class PdpaContent {
   static const String title =

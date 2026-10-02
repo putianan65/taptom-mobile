@@ -165,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SectionHeader(title: 'เกี่ยวกับ'),
                 ListGroup(
                   children: [
-                    KeyValueRow(label: 'แอป', value: 'TAPTOM'),
+                    const KeyValueRow(label: 'แอป', value: 'TAPTOM'),
                     KeyValueRow(label: 'เวอร์ชัน', value: s.version.isEmpty ? '-' : s.version, mono: true),
                     ListRow(icon: AppIcons.star, title: 'ให้คะแนนแอป', onTap: () => _rate(s.version)),
                   ],

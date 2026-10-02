@@ -6,7 +6,7 @@ import '../../../../core/services/admin_service.dart';
 import '../../../../core/services/super_admin_service.dart';
 import '../../../../data/models/message_model.dart';
 import '../../../../data/models/user_model.dart';
-import '../../../../data/models/conversation_model.dart'; // ✅ Added Import
+import '../../../../data/models/conversation_model.dart';
 import '../../auth/auth_provider.dart';
 
 class MessageProvider extends ChangeNotifier {
@@ -40,7 +40,7 @@ class MessageProvider extends ChangeNotifier {
       if (msg.sender.id == currentUserId) {
         final recipientId = msg.recipient?.id;
         if (recipientId == null) {
-          debugPrint('⚠️ Warning: Message ${msg.id} has null recipient');
+          debugPrint('Warning: Message ${msg.id} has null recipient');
           return 'unknown'; 
         }
         return recipientId;
@@ -126,7 +126,7 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ FIX: เพิ่ม error handling ที่ดีขึ้น
+  // เพิ่ม error handling ที่ดีขึ้น
   Future<void> sendMessage({
     required String recipientId,
     required String message,
@@ -196,7 +196,7 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ NEW: Conversation List Support (API Based)
+  // Conversation List Support (API Based)
   List<Conversation> _conversationList = [];
   List<Conversation> get conversationList => _conversationList;
   
@@ -233,7 +233,7 @@ class MessageProvider extends ChangeNotifier {
       _totalUnreadCount = unread;
       
     } catch (e) {
-      print('Error loading conversations: $e');
+      debugPrint('Error loading conversations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -275,7 +275,7 @@ class MessageProvider extends ChangeNotifier {
          await _adminService.markAsRead(partnerId);
        }
     } catch (e) {
-      print('Failed to mark as read: $e');
+      debugPrint('Failed to mark as read: $e');
       // Revert if needed, but for Read status usually we don't strict revert
     }
   }

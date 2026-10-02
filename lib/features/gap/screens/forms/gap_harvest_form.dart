@@ -231,7 +231,7 @@ class _GapHarvestFormState extends State<GapHarvestForm> {
                       children: [
                         const FieldLabel('หน่วย'),
                         DropdownButtonFormField<String>(
-                          value: _unit,
+                          initialValue: _unit,
                           items: [for (final u in _units) DropdownMenuItem(value: u, child: Text(u))],
                           onChanged: ro
                               ? null

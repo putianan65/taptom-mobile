@@ -97,14 +97,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _submit() async {
     if (!_consent) {
       await _askConsent();
-      if (!_consent) return;
+      if (!_consent || !mounted) return;
     }
+    final auth = context.read<AuthService>();
     setState(() {
       _submitting = true;
       _error = null;
     });
     try {
-      await context.read<AuthService>().signUp({
+      await auth.signUp({
         'firstName': _firstName.text.trim(),
         'lastName': _lastName.text.trim(),
         'phone': _phone.text.trim(),

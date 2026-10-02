@@ -14,7 +14,7 @@ class ContactScreen extends StatefulWidget {
 }
 
 class _ContactScreenState extends State<ContactScreen> {
-  MaplibreMapController? _controller;
+  MapLibreMapController? _controller;
 
   static const _office = LatLng(16.7427, 100.1955);
 
@@ -52,14 +52,14 @@ class _ContactScreenState extends State<ContactScreen> {
                           children: [
                             ColoredBox(color: p.hero),
                             IgnorePointer(
-                              child: MaplibreMap(
+                              child: MapLibreMap(
                                 styleString: MapStyles.satellite,
                                 initialCameraPosition: const CameraPosition(target: _office, zoom: 15.5),
                                 compassEnabled: false,
                                 trackCameraPosition: false,
                                 onMapCreated: (c) => _controller = c,
                                 onStyleLoadedCallback: () => _controller?.addCircle(
-                                  CircleOptions(
+                                  const CircleOptions(
                                     geometry: _office,
                                     circleRadius: 8,
                                     circleColor: MapStyles.plotFill,

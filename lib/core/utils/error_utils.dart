@@ -156,7 +156,6 @@ class ErrorUtils {
         return 'ใบรับรองความปลอดภัยไม่ถูกต้อง';
 
       case DioExceptionType.unknown:
-      default:
         return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
     }
   }

@@ -36,7 +36,7 @@ class AdminPlotsMapScreen extends StatefulWidget {
 }
 
 class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
-  MaplibreMapController? _map;
+  MapLibreMapController? _map;
   bool _styleReady = false;
   bool _locationEnabled = false;
 
@@ -108,7 +108,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
 
   // Map --------------------------------------------------------------------
 
-  void _onMapCreated(MaplibreMapController controller) {
+  void _onMapCreated(MapLibreMapController controller) {
     _map = controller;
     controller.onFillTapped.add(_onFillTapped);
     controller.onCircleTapped.add(_onCircleTapped);
@@ -252,7 +252,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
       backgroundColor: p.background,
       body: Stack(
         children: [
-          MaplibreMap(
+          MapLibreMap(
             styleString: MapStyles.satellite,
             initialCameraPosition: MapStyles.thailand,
             onMapCreated: _onMapCreated,

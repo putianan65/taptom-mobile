@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../../data/models/notification_model.dart';
@@ -28,7 +29,7 @@ class NotificationService {
 
       return (data as List).map((e) => NotificationModel.fromJson(e)).toList();
     } catch (e) {
-      print('Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
       return [];
     }
   }
@@ -68,7 +69,7 @@ class NotificationService {
     try {
       await _apiClient.patch(ApiEndpoints.notificationRead(id));
     } catch (e) {
-      print('Error marking notification as read: $e');
+      debugPrint('Error marking notification as read: $e');
     }
   }
 

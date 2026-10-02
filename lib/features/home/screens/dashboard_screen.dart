@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/routes.dart';
-import '../../../core/services/permission_service.dart';
+import '../../../core/utils/permission_utils.dart';
 import '../../../core/services/plot_service.dart';
 import '../../../core/utils/status_labels.dart';
 import '../../../core/utils/thai_date.dart';
@@ -50,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // not on first launch.
       if (context.read<SettingsProvider>().notificationsEnabled) {
         try {
-          await PermissionService.requestNotificationPermission();
+          await PermissionUtils.requestNotificationPermission();
         } catch (_) {}
       }
     });

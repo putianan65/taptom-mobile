@@ -32,8 +32,7 @@ class UserModel {
   final DateTime? pdpaConsentAt;
   final bool hasPin;
   final String? photoUrl;
-  final DateTime? deletedAt; // ✅ NEW
-
+  final DateTime? deletedAt;
   UserModel({
     required this.id,
     required this.phone,

@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../../features/auth/models/location_models.dart';
 import '../constants/thai_locations.dart';
@@ -37,7 +36,7 @@ class LocationService {
           : (response.data['data'] ?? []);
 
       final results = (data as List).map((json) {
-        // 🛠️ Patch: Fix encoding issues using local data fallback
+        // Patch: Fix encoding issues using local data fallback
         final code = json['code'].toString();
 
         if (code.isNotEmpty) {
@@ -54,13 +53,13 @@ class LocationService {
         return Province.fromJson(json);
       }).toList();
 
-      // ✅ If API returned data, use it
+      // If API returned data, use it
       if (results.isNotEmpty) return results;
     } catch (e) {
       // Fallback to local data on error
     }
 
-    // ✅ Fallback: use local data
+    // Fallback: use local data
     return _getLocalProvinces(region: region);
   }
 

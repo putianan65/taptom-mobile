@@ -7,6 +7,9 @@ class SecureStorage {
   SecureStorage._internal();
 
   final _storage = const FlutterSecureStorage(
+    // Kept until a migration moves existing sessions to the new default
+    // store; switching now would sign every Android user out.
+    // ignore: deprecated_member_use
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 

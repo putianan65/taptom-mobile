@@ -203,10 +203,10 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
   Widget build(BuildContext context) {
     final ro = widget.isReadOnly;
     if (!_loading && _harvests.isEmpty && !_editing) {
-      return GapFormWrapper(
+      return const GapFormWrapper(
         category: GapCategory.postHarvest,
         hasUnsavedChanges: false,
-        child: const AppCard(
+        child: AppCard(
           child: EmptyState(
             title: 'ต้องมีการเก็บเกี่ยวก่อน',
             message: 'บันทึกหมวด 1.4 การเก็บเกี่ยวอย่างน้อยหนึ่งครั้ง แล้วจึงบันทึกการจัดการหลังเก็บเกี่ยว',
@@ -260,7 +260,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       DropdownButtonFormField<String>(
-                        value: _harvests.any((h) => '${h['id']}' == _harvestId) ? _harvestId : null,
+                        initialValue: _harvests.any((h) => '${h['id']}' == _harvestId) ? _harvestId : null,
                         isExpanded: true,
                         hint: const Text('เลือกรอบที่เก็บ'),
                         items: [

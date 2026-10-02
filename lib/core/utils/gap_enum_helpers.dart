@@ -1,7 +1,7 @@
 enum RiskLevel {
-  LOW('ต่ำ (Low)', 'LOW'),
-  MEDIUM('กลาง (Medium)', 'MEDIUM'),
-  HIGH('สูง (High)', 'HIGH');
+  low('ต่ำ (Low)', 'LOW'),
+  medium('กลาง (Medium)', 'MEDIUM'),
+  high('สูง (High)', 'HIGH');
 
   final String displayText;
   final String apiValue;

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 
@@ -56,10 +55,12 @@ class VoiceService {
           onListeningStopped?.call();
         }
       },
-      localeId: 'th_TH', // Thai language
-      listenMode: ListenMode.confirmation,
-      cancelOnError: true,
-      partialResults: false,
+      localeId: 'th_TH',
+      listenOptions: SpeechListenOptions(
+        listenMode: ListenMode.confirmation,
+        cancelOnError: true,
+        partialResults: false,
+      ),
     );
   }
 

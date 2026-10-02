@@ -718,7 +718,7 @@ class AdminProfileScreen extends StatelessWidget {
                 title: 'นโยบายความเป็นส่วนตัว (PDPA)',
                 onTap: () => _push(
                   context,
-                  ContentDisplayScreen(
+                  const ContentDisplayScreen(
                     title: PdpaContent.title,
                     content: '${PdpaContent.fullContent}\n\n${PdpaContent.references}',
                   ),

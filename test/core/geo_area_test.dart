@@ -6,11 +6,11 @@ void main() {
   // A square roughly 40 m on each side near Phitsanulok (1,600 sq m = 1 rai).
   const lat = 16.84;
   const dLat = 40 / 111195.0;
-  final dLng = 40 / (111195.0 * 0.95711); // cos(16.84 deg)
+  const dLng = 40 / (111195.0 * 0.95711); // cos(16.84 deg)
   final square = [
     const LatLng(lat, 100.43),
-    LatLng(lat, 100.43 + dLng),
-    LatLng(lat + dLat, 100.43 + dLng),
+    const LatLng(lat, 100.43 + dLng),
+    const LatLng(lat + dLat, 100.43 + dLng),
     const LatLng(lat + dLat, 100.43),
   ];
 

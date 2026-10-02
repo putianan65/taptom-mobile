@@ -302,7 +302,7 @@ class _OriginMap extends StatefulWidget {
 }
 
 class _OriginMapState extends State<_OriginMap> {
-  MaplibreMapController? _c;
+  MapLibreMapController? _c;
 
   Future<void> _draw() async {
     final c = _c;
@@ -339,7 +339,7 @@ class _OriginMapState extends State<_OriginMap> {
       children: [
         ColoredBox(color: context.palette.hero),
         IgnorePointer(
-          child: MaplibreMap(
+          child: MapLibreMap(
             styleString: MapStyles.satellite,
             initialCameraPosition: CameraPosition(target: widget.ring.first, zoom: 15),
             compassEnabled: false,

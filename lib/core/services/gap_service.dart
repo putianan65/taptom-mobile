@@ -448,7 +448,7 @@ class GapService {
     required String plotId,
     required String formType,
     required String recordId,
-    List<String>? adminIds, // ✅ เพิ่ม parameter นี้ (optional with default null)
+    List<String>? adminIds, // เพิ่ม parameter นี้ (optional with default null)
   }) async {
     try {
       final triggerService = locator<NotificationTriggerService>();
@@ -456,7 +456,7 @@ class GapService {
         plotId: plotId,
         formType: formType,
         recordId: recordId,
-        adminIds: adminIds ?? [], // ✅ ส่ง empty list ถ้าไม่มีค่า
+        adminIds: adminIds ?? [], // ส่ง empty list ถ้าไม่มีค่า
       );
     } catch (e) {
       // Silently fail - notification is not critical

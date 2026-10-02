@@ -243,7 +243,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
       children: [
         FieldLabel(widget.label),
         DropdownButtonFormField<String>(
-          value: selected,
+          initialValue: selected,
           isExpanded: true,
           hint: Text(widget.hint, overflow: TextOverflow.ellipsis),
           decoration: InputDecoration(

@@ -299,7 +299,7 @@ class _AssignPickerState extends State<_AssignPicker> {
                 onChanged: (v) => setState(() => v == true ? _selected.add(id) : _selected.remove(id)),
                 activeColor: p.brand,
                 controlAffinity: ListTileControlAffinity.trailing,
-                shape: RoundedRectangleBorder(borderRadius: Radii.control),
+                shape: const RoundedRectangleBorder(borderRadius: Radii.control),
                 secondary: InitialsAvatar(name: name.isEmpty ? '?' : name, size: 36),
                 title: Text(name.isEmpty ? 'ไม่ระบุชื่อ' : name, style: context.text.titleSmall),
                 subtitle: Text(

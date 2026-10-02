@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 import '../network/api_client.dart';
@@ -41,7 +42,7 @@ class PlotService {
       );
       final newPlot = PlotModel.fromJson(response.data);
       
-      // ✅ Trigger notification for Admin
+      // Trigger notification for Admin
       try {
         final triggerService = locator<NotificationTriggerService>();
         final user = await locator<AuthService>().getCurrentUser();
@@ -53,7 +54,7 @@ class PlotService {
         );
       } catch (e) {
         // Silent error
-        print('Trigger notification failed: $e');
+        debugPrint('Trigger notification failed: $e');
       }
 
       return newPlot;

@@ -50,10 +50,10 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
 
   Future<void> _loadRecipients() async {
     final superAdmin = _superAdmin;
+    final sa = context.read<SuperAdminService>();
+    final admin = context.read<AdminService>();
     try {
-      final raw = superAdmin
-          ? await context.read<SuperAdminService>().getAdminList()
-          : await context.read<AdminService>().getSuperAdmins();
+      final raw = superAdmin ? await sa.getAdminList() : await admin.getSuperAdmins();
       final list = [for (final r in raw) if (r is Map) Map<String, dynamic>.from(r)];
       if (!mounted) return;
       setState(() {
@@ -84,17 +84,18 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
     if (subject.isEmpty || body.isEmpty) return AppToast.error(context, 'กรอกหัวข้อและข้อความให้ครบ');
 
     setState(() => _sending = true);
+    final sa = context.read<SuperAdminService>();
+    final admin = context.read<AdminService>();
+    final messages = context.read<MessageProvider>();
+    final superAdmin = _superAdmin;
     try {
       var text = body;
       if (_image != null) {
         final file = File(_image!.path);
-        final url = _superAdmin
-            ? await context.read<SuperAdminService>().uploadFile(file)
-            : await context.read<AdminService>().uploadFile(file);
+        final url = superAdmin ? await sa.uploadFile(file) : await admin.uploadFile(file);
         text += '\n\n![รูปภาพ]($url)';
       }
-      if (!mounted) return;
-      await context.read<MessageProvider>().sendMessage(recipientId: _recipientId!, subject: subject, message: text);
+      await messages.sendMessage(recipientId: _recipientId!, subject: subject, message: text);
       if (!mounted) return;
       AppToast.success(context, 'ส่งข้อความแล้ว');
       Navigator.of(context).pop(true);
@@ -138,7 +139,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                   const InlineBanner(tone: Tone.warning, title: 'ไม่พบผู้รับ', message: 'ยังไม่มีบัญชีที่ส่งข้อความถึงได้')
                 else
                   DropdownButtonFormField<String>(
-                    value: _recipientId,
+                    initialValue: _recipientId,
                     isExpanded: true,
                     hint: const Text('เลือกผู้รับ'),
                     items: [

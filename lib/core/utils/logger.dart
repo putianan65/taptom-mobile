@@ -9,7 +9,7 @@ class AppLogger {
       lineLength: 120,
       colors: true,
       printEmojis: false,
-      printTime: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
     filter: ProductionFilter(), // Custom filter to control logs in production
   );

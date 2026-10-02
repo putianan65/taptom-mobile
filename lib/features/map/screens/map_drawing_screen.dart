@@ -42,7 +42,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
   static const _vertexColor = '#FFFFFF';
   static const _edgeColor = '#F5DE9E';
 
-  MaplibreMapController? _map;
+  MapLibreMapController? _map;
   bool _styleReady = false;
   bool _locationEnabled = false;
   bool _saving = false;
@@ -70,7 +70,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
   // Map ----------------------------------------------------------------------
 
-  void _onMapCreated(MaplibreMapController controller) {
+  void _onMapCreated(MapLibreMapController controller) {
     _map = controller;
     controller.onFeatureDrag.add(_onDrag);
   }
@@ -298,7 +298,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
       child: Scaffold(
         body: Stack(
           children: [
-            MaplibreMap(
+            MapLibreMap(
               styleString: MapStyles.satellite,
               initialCameraPosition: _points.isNotEmpty
                   ? CameraPosition(target: _points.first, zoom: 16)

@@ -33,7 +33,7 @@ class NotificationTriggerService {
       );
     } catch (e) {
       // Notification ไม่ควร block flow หลัก → silently log
-      debugPrint('⚠️ Failed to create notification ($type): $e');
+      debugPrint('Failed to create notification ($type): $e');
     }
   }
 

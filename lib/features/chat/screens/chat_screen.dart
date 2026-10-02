@@ -164,7 +164,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final mobile = !kIsWeb;
+    const mobile = !kIsWeb;
 
     return Scaffold(
       backgroundColor: p.background,

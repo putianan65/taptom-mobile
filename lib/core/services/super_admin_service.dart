@@ -5,7 +5,7 @@ import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../../data/models/pdpa_log_model.dart';
 import '../../data/models/message_model.dart';
-import '../../data/models/conversation_model.dart'; // ✅ Added Import
+import '../../data/models/conversation_model.dart';
 
 class SuperAdminService {
   final ApiClient _apiClient = ApiClient();
@@ -74,8 +74,9 @@ class SuperAdminService {
 
       if (province != null && province.isNotEmpty) data['province'] = province;
       if (district != null && district.isNotEmpty) data['district'] = district;
-      if (subDistrict != null && subDistrict.isNotEmpty)
+      if (subDistrict != null && subDistrict.isNotEmpty) {
         data['subDistrict'] = subDistrict;
+      }
 
       final response = await _apiClient.post(
         ApiEndpoints.adminCreate,
@@ -365,7 +366,7 @@ class SuperAdminService {
     }
   }
 
-  // ✅ NEW: Reply to Message
+  // Reply to Message
   /// Reply to an existing message in a conversation thread
   Future<void> replyMessage({
     required String messageId,
@@ -388,7 +389,7 @@ class SuperAdminService {
     }
   }
 
-  // ✅ NEW: Chat Features (Unread Count & Read Status)
+  // Chat Features (Unread Count & Read Status)
 
   /// Get Conversation List with Unread Counts
   Future<List<Conversation>> getConversations() async {

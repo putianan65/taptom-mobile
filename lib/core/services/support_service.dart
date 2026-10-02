@@ -8,7 +8,7 @@ class SupportService {
   /// Get Tickets
   Future<List<Ticket>> getTickets({
     String status = 'ALL',
-    String? userId, // ✅ Re-enabled per Backend Update
+    String? userId, // Re-enabled per Backend Update
   }) async {
     try {
       final queryParams = <String, dynamic>{'status': status};
