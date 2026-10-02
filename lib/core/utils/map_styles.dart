@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -8,18 +9,23 @@ import '../config/env.dart';
 /// Map styles used across the app.
 ///
 /// With a MapTiler key the app uses MapTiler's hybrid style (imagery with
-/// labels). Without one it falls back to an inline raster style over Esri
-/// World Imagery, so maps never render blank in development or demos.
+/// labels). Without one it falls back to a raster style over Esri World
+/// Imagery, so maps never render blank in development or demos.
 abstract final class MapStyles {
   static String get satellite {
     final key = Env.mapTilerApiKey;
     if (key.isNotEmpty) {
       return 'https://api.maptiler.com/maps/hybrid/style.json?key=$key';
     }
-    return _imageryFallback;
+    // On the web the plugin turns an inline style into a prototype-less JS
+    // object that MapLibre cannot pass to its worker, so the same style is
+    // served as a file instead (web/map-styles/imagery.json).
+    if (kIsWeb) return Uri.base.resolve('map-styles/imagery.json').toString();
+    return jsonEncode(imagery);
   }
 
-  static final String _imageryFallback = jsonEncode({
+  /// Keyless imagery style. Mirrored in web/map-styles/imagery.json.
+  static const Map<String, dynamic> imagery = {
     'version': 8,
     // Required by the plugin's symbol annotation layer, even when no labels
     // are drawn.
@@ -44,7 +50,7 @@ abstract final class MapStyles {
       },
       {'id': 'imagery', 'type': 'raster', 'source': 'imagery'},
     ],
-  });
+  };
 
   /// Default camera over central Thailand.
   static const thailand = CameraPosition(

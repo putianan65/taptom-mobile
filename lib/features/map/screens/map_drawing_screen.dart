@@ -124,7 +124,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
       if (_points.length >= 3) {
         _fill = await map.addFill(
-          FillOptions(geometry: [[..._points, _points.first]], fillColor: MapStyles.plotFill, fillOpacity: 0.4),
+          FillOptions(geometry: [[..._points, _points.first]], fillColor: MapStyles.plotFill, fillOutlineColor: MapStyles.plotFill, fillOpacity: 0.4),
         );
       }
       if (_points.length >= 2) {

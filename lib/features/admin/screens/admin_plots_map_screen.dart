@@ -132,7 +132,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
         final color = MapStyles.fillFor(plot['status'] as String?);
         final data = {'plotId': plot['id']};
         await map.addFill(
-          FillOptions(geometry: [ring], fillColor: color, fillOpacity: 0.38),
+          FillOptions(geometry: [ring], fillColor: color, fillOutlineColor: color, fillOpacity: 0.38),
           data,
         );
         await map.addLine(

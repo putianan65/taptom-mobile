@@ -309,7 +309,7 @@ class _OriginMapState extends State<_OriginMap> {
     final ring = widget.ring;
     if (c == null) return;
     try {
-      await c.addFill(FillOptions(geometry: [[...ring, ring.first]], fillColor: MapStyles.plotFill, fillOpacity: 0.4));
+      await c.addFill(FillOptions(geometry: [[...ring, ring.first]], fillColor: MapStyles.plotFill, fillOutlineColor: MapStyles.plotFill, fillOpacity: 0.4));
       await c.addLine(LineOptions(geometry: [...ring, ring.first], lineColor: '#FFFFFF', lineWidth: 2));
       var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
       for (final p in ring) {

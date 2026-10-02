@@ -113,8 +113,9 @@ class _MyPlotsMapScreenState extends State<MyPlotsMapScreen> {
       final color = MapStyles.fillFor(plot.status);
       await map.addFill(
         FillOptions(
-          geometry: [plot.boundary],
+          geometry: [[...plot.boundary, plot.boundary.first]],
           fillColor: color,
+          fillOutlineColor: color,
           fillOpacity: 0.42,
         ),
         {'plotId': plot.id},

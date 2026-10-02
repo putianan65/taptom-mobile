@@ -225,12 +225,12 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                       const SizedBox(height: Space.xl),
                       Row(
                         children: [
-                          Expanded(child: StatTile(value: area, label: 'พื้นที่ (ไร่)', icon: AppIcons.area, dense: true)),
+                          Expanded(child: StatTile(value: area, decimals: area % 1 == 0 ? 0 : 1, label: 'พื้นที่ (ไร่)', icon: AppIcons.area, dense: true)),
                           const SizedBox(width: Space.sm),
                           Expanded(
                             child: StatTile(
                               value: _plot.ageInDays,
-                              label: 'วันที่บันทึก',
+                              label: 'ลงทะเบียนมา (วัน)',
                               icon: AppIcons.calendar,
                               dense: true,
                             ),
@@ -360,7 +360,7 @@ class _MapHeaderState extends State<_MapHeader> {
     final c = _controller;
     if (c == null) return;
     try {
-      await c.addFill(FillOptions(geometry: [[...ring, ring.first]], fillColor: MapStyles.plotFill, fillOpacity: 0.35));
+      await c.addFill(FillOptions(geometry: [[...ring, ring.first]], fillColor: MapStyles.plotFill, fillOutlineColor: MapStyles.plotFill, fillOpacity: 0.35));
       await c.addLine(LineOptions(geometry: [...ring, ring.first], lineColor: '#FFFFFF', lineWidth: 2.5));
       var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
       for (final p in ring) {
@@ -499,7 +499,7 @@ class _CertificateCard extends StatelessWidget {
                     color: p.heroInk.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(AppIcons.seal, color: p.heroInk, size: 28),
+                  child: Icon(AppIcons.certificate, color: p.heroInk, size: 28),
                 ),
                 const SizedBox(width: Space.lg),
                 Expanded(
@@ -526,7 +526,7 @@ class _CertificateCard extends StatelessWidget {
                 ),
                 const SizedBox(width: Space.sm),
                 Expanded(
-                  child: AppButton.secondary(label: 'QR ล็อตผลผลิต', icon: AppIcons.qr, onPressed: onLots),
+                  child: AppButton.secondary(label: 'QR ล็อต', icon: AppIcons.qr, onPressed: onLots),
                 ),
               ],
             ),

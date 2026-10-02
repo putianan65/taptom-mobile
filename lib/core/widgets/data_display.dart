@@ -54,6 +54,7 @@ class StatTile extends StatelessWidget {
     this.onTap,
     this.selected = false,
     this.suffix = '',
+    this.decimals = 0,
     this.dense = false,
   });
 
@@ -64,6 +65,7 @@ class StatTile extends StatelessWidget {
   final VoidCallback? onTap;
   final bool selected;
   final String suffix;
+  final int decimals;
   final bool dense;
 
   @override
@@ -119,7 +121,7 @@ class StatTile extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Space.sm),
-        CountUpText(value: value, suffix: suffix, style: _valueStyle(context, accent)),
+        CountUpText(value: value, decimals: decimals, suffix: suffix, style: _valueStyle(context, accent)),
       ],
     );
   }
@@ -135,7 +137,7 @@ class StatTile extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: CountUpText(value: value, suffix: suffix, style: _valueStyle(context, accent)),
+              child: CountUpText(value: value, decimals: decimals, suffix: suffix, style: _valueStyle(context, accent)),
             ),
             if (icon != null)
               Icon(icon, size: 18, color: tone == Tone.neutral ? p.inkSubtle : accent),
