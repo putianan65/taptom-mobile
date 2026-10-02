@@ -73,11 +73,10 @@ class ChatService {
 - ห้ามให้ how-to การปลูกพืชเสพติด
 - ห้ามให้สูตรการผลิตที่ผิดกฎหมาย
 
-รูปแบบการตอบ (สำคัญ - เพื่อการอ่านง่ายบนมือถือ):
-- ❌ ห้ามใช้เครื่องหมาย ** (ดอกจันคู่) หรือตัวหนา (Bold) พร่ำเพรื่อ
-- ✅ ให้ใช้ Emoji (เช่น 🌿, 💡, ⚠️) นำหน้าหัวข้อแทนการใช้ตัวหนา
-- ✅ เน้นการเว้นบรรทัดให้มีช่องว่าง สบายตา
-- สรุปเนื้อหาให้กระชับ เข้าใจง่าย ไม่ยืดเยื้อ
+รูปแบบการตอบ (สำคัญ เพื่ออ่านง่ายบนมือถือ):
+- ตอบเป็นข้อความธรรมดา ห้ามใช้อีโมจิ ห้ามใช้ Markdown ตัวหนาหรือหัวข้อ
+- แบ่งเป็นย่อหน้าสั้น ๆ และใช้รายการแบบขีด (-) เมื่อมีหลายข้อ
+- ตอบให้กระชับ ตรงประเด็น ไม่เกิน 8 บรรทัดถ้าไม่จำเป็น
 - ใช้ภาษาไทยที่สุภาพและเป็นมิตร
 ''';
 
@@ -93,9 +92,9 @@ class ChatService {
     // Check daily limit
     final usageCheck = await _checkDailyLimit();
     if (!usageCheck.allowed) {
-      return '⚠️ คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
+      return 'คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
           'ระบบจะรีเซ็ตจำนวนการใช้งานในวันถัดไป\n'
-          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ 🙏';
+          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ ';
     }
 
     try {
@@ -126,19 +125,19 @@ class ChatService {
       return aiText;
     } on SocketException {
       _removeLastUserMessage();
-      return '📡 ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
+      return 'ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
     } on TimeoutException {
       _removeLastUserMessage();
-      return '⏱️ การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
+      return 'การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
     } on ChatRateLimitException {
       _removeLastUserMessage();
-      return '⏳ ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
+      return 'ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
           'ระบบลองส่งซ้ำแล้ว แต่ยังไม่สำเร็จ\n'
           'กรุณารอ 1-2 นาทีแล้วลองใหม่ครับ';
     } catch (e) {
       _removeLastUserMessage();
-      debugPrint('❌ ChatService error: $e');
-      return '❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+      debugPrint('ChatService error: $e');
+      return 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
     }
   }
 
@@ -147,9 +146,9 @@ class ChatService {
     // Check daily limit
     final usageCheck = await _checkDailyLimit();
     if (!usageCheck.allowed) {
-      return '⚠️ คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
+      return 'คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
           'ระบบจะรีเซ็ตจำนวนการใช้งานในวันถัดไป\n'
-          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ 🙏';
+          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ ';
     }
 
     try {
@@ -180,7 +179,7 @@ class ChatService {
 
       final aiText = await _callGeminiApi(body);
 
-      // ✅ Clean up: strip base64 image from the history entry we just added
+      // Clean up: strip base64 image from the history entry we just added
       // to save massive tokens on subsequent requests
       _stripImagesFromHistory();
 
@@ -197,19 +196,19 @@ class ChatService {
       return aiText;
     } on SocketException {
       _removeLastUserMessage();
-      return '📡 ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
+      return 'ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
     } on TimeoutException {
       _removeLastUserMessage();
-      return '⏱️ การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
+      return 'การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
     } on ChatRateLimitException {
       _removeLastUserMessage();
-      return '⏳ ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
+      return 'ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
           'ระบบลองส่งซ้ำแล้ว แต่ยังไม่สำเร็จ\n'
           'กรุณารอ 1-2 นาทีแล้วลองใหม่ครับ';
     } catch (e) {
       _removeLastUserMessage();
-      debugPrint('❌ ChatService error: $e');
-      return '❌ เกิดข้อผิดพลาดในการวิเคราะห์ภาพ\nกรุณาลองใหม่อีกครั้ง';
+      debugPrint('ChatService error: $e');
+      return 'เกิดข้อผิดพลาดในการวิเคราะห์ภาพ\nกรุณาลองใหม่อีกครั้ง';
     }
   }
 
@@ -332,7 +331,49 @@ class ChatService {
   /// Execute a single API call to Gemini (no retry).
   // ── Retry logic disabled due to free tier rate limit issues ──
   // Future<String> _executeWithRetry(body) → see git history
+  /// True when answers come from the built-in samples instead of Gemini:
+  /// in demo builds, or when no API key is configured.
+  static bool get offline => Env.demoMode || Env.geminiApiKey.isEmpty;
+
+  /// Canned answers for demos, matched on keywords in the last question.
+  Future<String> _sampleAnswer(Map<String, dynamic> body) async {
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    final contents = body['contents'] as List? ?? const [];
+    final last = contents.isEmpty ? '' : '${(contents.last as Map)['parts']}';
+    if (last.contains('inline_data') || last.contains('inlineData')) {
+      return 'จากภาพ ใบมีจุดสีน้ำตาลขอบเหลืองกระจายตามแผ่นใบ ลักษณะคล้ายโรคใบจุดจากเชื้อรา\n\n'
+          '- ตัดใบที่เป็นโรคออกแล้วนำไปทำลายนอกแปลง\n'
+          '- ลดความชื้นใต้ทรงพุ่มด้วยการตัดแต่งกิ่งให้โปร่ง\n'
+          '- ฉีดพ่นเชื้อราไตรโคเดอร์มาทุก 7 ถึง 10 วัน\n\n'
+          'บันทึกการจัดการนี้ในหมวด 1.3 เพื่อใช้ประกอบการตรวจ GAP';
+    }
+    if (last.contains('GAP') || last.contains('ขั้นตอน')) {
+      return 'การขอรับรอง GAP ในแอปมี 4 ขั้นตอน\n\n'
+          '- วาดขอบเขตแปลงบนแผนที่\n'
+          '- บันทึกข้อมูลให้ครบ 7 หมวด ตั้งแต่ข้อมูลทั่วไปจนถึงการตรวจสอบย้อนกลับ\n'
+          '- เจ้าหน้าที่ในพื้นที่ตรวจข้อมูลและอาจนัดตรวจแปลง\n'
+          '- เมื่ออนุมัติ ดาวน์โหลดใบรับรองได้ที่หน้าแปลง';
+    }
+    if (last.contains('ปุ๋ย')) {
+      return 'กระท่อมชอบดินร่วนที่มีอินทรียวัตถุสูง\n\n'
+          '- ใส่ปุ๋ยคอกหรือปุ๋ยหมักต้นละ 2 ถึง 3 กก. ช่วงต้นฤดูฝน\n'
+          '- เสริมปุ๋ยสูตรเสมอ 15-15-15 ปีละ 2 ครั้ง ครั้งละ 100 ถึง 200 กรัมต่อต้น\n'
+          '- เว้นการใส่ปุ๋ยเคมีอย่างน้อย 15 วันก่อนเก็บใบ\n\n'
+          'อย่าลืมบันทึกการใช้ปุ๋ยทุกครั้งในหมวด 1.2';
+    }
+    if (last.contains('กี่ต้น') || last.contains('กฎหมาย')) {
+      return 'ตั้งแต่ปี 2565 พืชกระท่อมไม่เป็นยาเสพติดตามกฎหมายแล้ว ปลูกได้โดยไม่จำกัดจำนวนต้น\n\n'
+          'ข้อควรระวัง\n'
+          '- ห้ามขายให้ผู้ที่อายุต่ำกว่า 18 ปี สตรีมีครรภ์ และสตรีให้นมบุตร\n'
+          '- การนำเข้าหรือส่งออกต้องขออนุญาตตามพระราชบัญญัติพืชกระท่อม\n\n'
+          'ข้อมูลนี้เป็นความรู้ทั่วไป ควรตรวจสอบประกาศล่าสุดกับสำนักงานเกษตรอำเภอ';
+    }
+    return 'ลุงต้อมยังตอบเรื่องนี้ได้ไม่ละเอียดนัก ลองถามเรื่องการปลูก การดูแล การเก็บเกี่ยว หรือมาตรฐาน GAP ดูนะ\n\n'
+        'ถ้าเป็นเรื่องเฉพาะแปลงของคุณ ปรึกษาเจ้าหน้าที่ในพื้นที่ได้จากเมนูติดต่อเจ้าหน้าที่';
+  }
+
   Future<String> _callGeminiApi(Map<String, dynamic> body) async {
+    if (offline) return _sampleAnswer(body);
     final url = Uri.parse('$_baseUrl?key=$_apiKey');
 
     final response = await http
@@ -358,24 +399,24 @@ class ChatService {
       // Handle blocked or empty responses
       final finishReason = data['candidates']?[0]?['finishReason'];
       if (finishReason == 'SAFETY') {
-        return '⚠️ ขออภัย ระบบไม่สามารถตอบคำถามนี้ได้\n'
+        return 'ขออภัย ระบบไม่สามารถตอบคำถามนี้ได้\n'
             'เนื่องจากเนื้อหาอาจไม่เหมาะสมตามนโยบายความปลอดภัย';
       }
 
-      return '⚠️ ระบบ AI ไม่สามารถสร้างคำตอบได้ กรุณาลองถามใหม่';
+      return 'ระบบ AI ไม่สามารถสร้างคำตอบได้ กรุณาลองถามใหม่';
     } else if (response.statusCode == 429) {
       throw ChatRateLimitException('Rate limited by Gemini API');
     } else if (response.statusCode == 400) {
       final errorBody = jsonDecode(response.body);
       final errorMsg = (errorBody['error']?['message'] ?? '').toString().toLowerCase();
 
-      debugPrint('❌ Gemini 400 error: $errorMsg');
+      debugPrint('Gemini 400 error: $errorMsg');
 
       if (errorMsg.contains('api key') ||
           errorMsg.contains('api_key') ||
           errorMsg.contains('expired') ||
           errorMsg.contains('invalid')) {
-        return '🔑 API Key ไม่ถูกต้องหรือหมดอายุ\n\n'
+        return 'API Key ไม่ถูกต้องหรือหมดอายุ\n\n'
             'กรุณาแจ้งผู้ดูแลระบบเพื่ออัปเดต API Key ครับ';
       }
 
@@ -383,13 +424,13 @@ class ChatService {
           errorMsg.contains('limit') ||
           errorMsg.contains('too long') ||
           errorMsg.contains('context')) {
-        return '⚠️ ข้อความยาวเกินไป กรุณาเริ่มบทสนทนาใหม่ หรือส่งข้อความที่สั้นลง';
+        return 'ข้อความยาวเกินไป กรุณาเริ่มบทสนทนาใหม่ หรือส่งข้อความที่สั้นลง';
       }
 
-      return '❌ เกิดข้อผิดพลาดจากระบบ AI\n$errorMsg';
+      return 'เกิดข้อผิดพลาดจากระบบ AI\n$errorMsg';
     } else {
-      debugPrint('❌ Gemini error ${response.statusCode}: ${response.body}');
-      return '❌ เกิดข้อผิดพลาดจากระบบ AI (${response.statusCode})\n'
+      debugPrint('Gemini error ${response.statusCode}: ${response.body}');
+      return 'เกิดข้อผิดพลาดจากระบบ AI (${response.statusCode})\n'
           'กรุณาลองใหม่อีกครั้ง';
     }
   }

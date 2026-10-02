@@ -428,6 +428,8 @@ class _FarmerHomeTabState extends State<FarmerHomeTab> {
             ),
           ],
         ).entrance(context, index: 1),
+        const SizedBox(height: Space.md),
+        _AskLungTom(onTap: () => context.push(Routes.chat)).entrance(context, index: 2),
         if (rejected.isNotEmpty) ...[
           const SizedBox(height: Space.xl),
           InlineBanner(
@@ -641,6 +643,12 @@ class FarmerAccountTab extends StatelessWidget {
             header: 'ความช่วยเหลือ',
             children: [
               ListRow(
+                icon: AppIcons.chat,
+                title: 'ถามลุงต้อม',
+                subtitle: 'ผู้ช่วยเรื่องการปลูกและ GAP',
+                onTap: () => context.push(Routes.chat),
+              ),
+              ListRow(
                 icon: AppIcons.building,
                 title: 'ติดต่อเจ้าหน้าที่',
                 onTap: () => _push(context, const ContactScreen()),
@@ -695,6 +703,43 @@ class FarmerAccountTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Entry to the assistant: Lung Tom leaning in from the left.
+class _AskLungTom extends StatelessWidget {
+  const _AskLungTom({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(Space.sm, Space.sm, Space.lg, Space.sm),
+      color: p.brandSoft,
+      borderColor: Colors.transparent,
+      child: Row(
+        children: [
+          const FarmerMascot(size: 64, mood: MascotMood.think, animated: false),
+          const SizedBox(width: Space.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ถามลุงต้อม', style: context.text.titleSmall?.copyWith(color: p.brandStrong)),
+                Text(
+                  'สงสัยเรื่องปุ๋ย โรคพืช หรือขั้นตอน GAP ถามได้ทุกเมื่อ',
+                  style: context.text.bodySmall?.copyWith(color: p.ink),
+                ),
+              ],
+            ),
+          ),
+          Icon(AppIcons.chevronRight, color: p.brandStrong, size: 20),
+        ],
+      ),
     );
   }
 }
