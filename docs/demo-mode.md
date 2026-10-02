@@ -42,6 +42,18 @@ The login screen in demo builds shows one-tap buttons for each account.
 
 ## Screenshots
 
+On your own computer, one command rebuilds the demo app and refreshes
+`docs/screenshots` with real satellite imagery (Flutter and Node 18 or newer;
+Playwright's Chromium is installed on the first run):
+
+```bash
+node tool/screenshots/run-local.js                # every scene
+node tool/screenshots/run-local.js farmer,trace   # only the map scenes
+```
+
+This uses demo mode, so the images show the demo data rather than a backend.
+
+
 The images in `docs/screenshots` come from a release web build in demo mode,
 driven by Playwright at a 390 x 844 phone viewport (2x) and a 1280 x 800
 desktop viewport. The script taps through the app using Flutter's semantics
