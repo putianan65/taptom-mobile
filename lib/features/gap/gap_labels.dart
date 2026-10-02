@@ -34,6 +34,10 @@ abstract final class GapLabels {
       'PRUNING': 'ตัดแต่งกิ่ง',
       'HARVEST': 'เก็บเกี่ยว',
       'POST_HARVEST': 'จัดการหลังเก็บเกี่ยว',
+      'WATER_QUALITY': 'ตรวจคุณภาพน้ำ',
+      'WEED_CONTROL': 'กำจัดวัชพืช',
+      'IPM_PEST_CONTROL': 'จัดการศัตรูพืช',
+      'RISK_EVENT': 'เหตุการณ์เสี่ยง',
     },
     'landOwnership': {
       'OWNED': 'เป็นเจ้าของ',
@@ -59,6 +63,13 @@ abstract final class GapLabels {
       'DRIP': 'น้ำหยด',
       'FLOOD': 'ปล่อยท่วม',
       'MANUAL': 'รดด้วยมือ',
+    },
+    'qualityGrade': {'MIXED': 'รวม', 'INDUSTRIAL': 'โรงงาน'},
+    'hygiene': {
+      'FIRST_AID': 'ชุดปฐมพยาบาล',
+      'PROTECTIVE_GEAR': 'อุปกรณ์ป้องกัน',
+      'TOILET': 'ห้องน้ำ',
+      'WASHING_STATION': 'จุดล้างมือ',
     },
     'type': {
       'SEED': 'เมล็ดหรือกิ่งพันธุ์',
@@ -156,19 +167,19 @@ abstract final class GapLabels {
 
     switch (c) {
       case GapCategory.inputs:
-        final qty = v('quantity');
+        final qty = v('amount', item['amount'] ?? item['quantity']);
         final type = v('type');
         return GapEntry(
           title: v('name', item['name'] ?? item['inputName']).ifDash('ปัจจัยการผลิต'),
           subtitle: _has(qty) && qty != '0' ? '$qty ${v('unit')} · $type' : type,
           fields: rows([
             ('ประเภท', type),
-            ('แหล่งที่ซื้อ', v('source')),
-            ('วันที่ซื้อ', v('purchaseDate')),
+            ('แหล่งที่มา', v('source', item['source'] ?? item['brand'])),
+            ('วันที่ใช้', v('date', item['usedDate'] ?? item['appliedDate'] ?? item['purchaseDate'])),
+            ('สารออกฤทธิ์', v('activeIngredient')),
             ('เลขทะเบียน', v('registrationNo')),
             ('วิธีใช้', v('usageMethod')),
-            ('อัตราการใช้', v('usageRate')),
-            ('ผู้บันทึก', v('recorder')),
+            ('งดใช้ก่อนเก็บเกี่ยว', item['phiDays'] == null ? '-' : '${item['phiDays']} วัน'),
           ]),
         );
       case GapCategory.management:
@@ -226,7 +237,7 @@ abstract final class GapLabels {
             ('สถานที่', v('location')),
             ('ระยะเวลา', item['durationHours'] == null ? '-' : '${item['durationHours']} ชั่วโมง'),
             ('ผู้เข้าร่วม', item['attendees'] == null ? '-' : '${item['attendees']} คน'),
-            ('สุขลักษณะ', v('hygiene', item['hygieneNotes'] ?? item['hygieneFlags'])),
+            ('สุขลักษณะ', v('hygiene', item['hygieneFlags'] ?? item['hygieneNotes'])),
             ('ผลการประเมิน', v('result')),
           ]),
         );

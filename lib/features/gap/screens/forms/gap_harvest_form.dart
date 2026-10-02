@@ -1,655 +1,298 @@
-// ============================================
-// GAP HARVEST FORM (แก้ไขแล้ว)
-// ============================================
-
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../../../core/constants/app_colors.dart';
+import 'package:flutter/services.dart';
+
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
-import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/error_utils.dart';
+import '../../../../core/widgets/widgets.dart';
+import '../../gap_categories.dart';
 import '../../widgets/gap_form_wrapper.dart';
 
+/// 1.4 One harvest: when, by whom, how much and of what grade. Lot numbers
+/// are issued later in 1.7 so a lot can bundle several harvests.
 class GapHarvestForm extends StatefulWidget {
-  final String plotId;
-  final String? existingId;
-  final Map<String, dynamic>? existingData;
-
   const GapHarvestForm({
     super.key,
     required this.plotId,
     this.existingId,
     this.existingData,
+    this.isReadOnly = false,
   });
+
+  final String plotId;
+  final String? existingId;
+  final Map<String, dynamic>? existingData;
+  final bool isReadOnly;
 
   @override
   State<GapHarvestForm> createState() => _GapHarvestFormState();
 }
 
 class _GapHarvestFormState extends State<GapHarvestForm> {
-  final _gapService = GapService();
-  bool _isLoading = true;
-  bool _isSaving = false;
-  bool get _isEditMode => widget.existingId != null;
-
-  // GAP-FIX-002: Track unsaved changes and original data
-  bool _hasUnsavedChanges = false;
-  String _originalDataHash = '';
-
-  DateTime? _harvestDate;
-
-  final _harvestedByController = TextEditingController();
-  final _yieldAmountController = TextEditingController();
-  final _yieldUnitController = TextEditingController();
-  final _equipmentUsedController = TextEditingController();
-  final _qualityGradeController = TextEditingController();
-  final _notesController = TextEditingController();
-  final _lotNumberController = TextEditingController();
-
-  final List<String> _equipmentOptions = [
-    'กรรไกรตัดกิ่ง',
-    'มีด',
-    'เก็บด้วยมือ',
-    'ตะกร้าเก็บใบ',
-    'เครื่องตัด',
+  static const _equipment = ['กรรไกรตัดกิ่ง', 'มีด', 'เด็ดด้วยมือ', 'ตะกร้าเก็บใบ', 'เครื่องตัด'];
+  static const _grades = [
+    ('A', 'เกรด A', 'ใบสมบูรณ์ ไม่มีตำหนิ'),
+    ('B', 'เกรด B', 'มีตำหนิเล็กน้อย'),
+    ('MIXED', 'เกรดรวม', 'คละขนาด'),
+    ('INDUSTRIAL', 'เกรดโรงงาน', 'สำหรับสกัด'),
   ];
-  final List<String> _gradeOptions = [
-    'เกรด A (สมบูรณ์ 100%)',
-    'เกรด B (มีตำหนิเล็กน้อย)',
-    'เกรดรวม (คละไซส์)',
-    'เกรดโรงงาน (สำหรับสกัด)',
-  ];
-  final List<String> _unitOptions = ['กิโลกรัม', 'ตัน', 'ขีด'];
+  static const _units = ['กก.', 'ตัน', 'ขีด'];
+
+  final _gap = GapService();
+  final _form = GlobalKey<FormState>();
+  final _by = TextEditingController();
+  final _amount = TextEditingController();
+  final _notes = TextEditingController();
+  String _unit = 'กก.';
+  String _equipmentUsed = '';
+  String? _grade;
+  DateTime? _date;
+
+  bool _saving = false;
+  bool _dirty = false;
+
+  bool get _editing => widget.existingId != null;
+  String get _draftKey => 'harvest_${widget.plotId}';
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    if (_lotNumberController.text.isEmpty) {
-      _generateLotNumber();
+    for (final c in [_by, _amount, _notes]) {
+      c.addListener(_touch);
     }
-
-    // GAP-FIX-002: Add listeners to track changes
-    _harvestedByController.addListener(_onFieldChanged);
-    _yieldAmountController.addListener(_onFieldChanged);
-    _yieldUnitController.addListener(_onFieldChanged);
-    _equipmentUsedController.addListener(_onFieldChanged);
-    _qualityGradeController.addListener(_onFieldChanged);
-    _notesController.addListener(_onFieldChanged);
-    _lotNumberController.addListener(_onFieldChanged);
-  }
-
-  // GAP-FIX-002: Track when fields change
-  void _onFieldChanged() {
-    if (!_hasUnsavedChanges) {
-      setState(() => _hasUnsavedChanges = true);
-    }
-  }
-
-  // GAP-FIX-002: Mark as saved (no unsaved changes)
-  void _markAsSaved() {
-    setState(() => _hasUnsavedChanges = false);
-  }
-
-  // GAP-FIX-002: Check if data has actually changed from original
-  String _computeDataHash() {
-    final data = _buildFormData();
-    return '${data['harvestedBy']}|${data['yieldAmount']}|${data['yieldUnit']}|${data['equipmentUsed']}|${data['qualityGrade']}|${data['notes']}|${_harvestDate?.toIso8601String()}';
-  }
-
-  void _generateLotNumber() {
-    final date = DateTime.now();
-    final dateStr =
-        '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-    final random = date.microsecond.toString().padLeft(4, '0').substring(0, 4);
-    _lotNumberController.text = 'L$dateStr-$random';
+    _load();
   }
 
   @override
   void dispose() {
-    _harvestedByController.removeListener(_onFieldChanged);
-    _yieldAmountController.removeListener(_onFieldChanged);
-    _yieldUnitController.removeListener(_onFieldChanged);
-    _equipmentUsedController.removeListener(_onFieldChanged);
-    _qualityGradeController.removeListener(_onFieldChanged);
-    _notesController.removeListener(_onFieldChanged);
-    _lotNumberController.removeListener(_onFieldChanged);
-
-    _harvestedByController.dispose();
-    _yieldAmountController.dispose();
-    _yieldUnitController.dispose();
-    _equipmentUsedController.dispose();
-    _qualityGradeController.dispose();
-    _notesController.dispose();
-    _lotNumberController.dispose();
+    for (final c in [_by, _amount, _notes]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-
-    try {
-      if (widget.existingData != null) {
-        final data = widget.existingData!;
-        if (mounted) {
-          setState(() {
-            _harvestedByController.text = data['harvestedBy']?.toString() ?? '';
-            _yieldAmountController.text = data['yieldAmount']?.toString() ?? '';
-            _yieldUnitController.text =
-                data['yieldUnit']?.toString() ?? 'กิโลกรัม';
-            _equipmentUsedController.text =
-                data['equipmentUsed']?.toString() ?? '';
-            _qualityGradeController.text =
-                data['qualityGrade']?.toString() ?? '';
-            _notesController.text = data['notes']?.toString() ?? '';
-            _lotNumberController.text = data['lotNumber']?.toString() ?? '';
-            if (data['harvestDate'] != null) {
-              _harvestDate = DateTime.tryParse(data['harvestDate'].toString());
-            }
-
-            // GAP-FIX: Map short grade to full dropdown option
-            final shortGrade = data['qualityGrade']?.toString();
-            if (shortGrade != null) {
-              final fullGrade = _gradeOptions.firstWhere(
-                (option) => option.startsWith('เกรด $shortGrade'),
-                orElse: () => shortGrade,
-              );
-              _qualityGradeController.text = fullGrade;
-            } else {
-               _qualityGradeController.text = '';
-            }
-          });
-          // GAP-FIX-002: Store original data hash after loading
-          _originalDataHash = _computeDataHash();
-          _hasUnsavedChanges = false;
-        }
-      } else {
-        final draft = await DatabaseHelper.instance.getDraft(
-          'harvest_${widget.plotId}',
-        );
-        if (mounted && draft != null) {
-          final data = jsonDecode(draft.jsonData);
-          setState(() {
-            _harvestedByController.text = data['harvestedBy']?.toString() ?? '';
-            _equipmentUsedController.text =
-                data['equipmentUsed']?.toString() ?? '';
-            if (data['harvestDate'] != null) {
-              _harvestDate = DateTime.tryParse(data['harvestDate'].toString());
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // Silent failure - will use defaults
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+  void _touch() {
+    if (!_dirty) setState(() => _dirty = true);
   }
 
-  Map<String, dynamic> _buildFormData() {
-    final data = <String, dynamic>{
-      'harvestDate':
-          _harvestDate?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      'harvestedBy': _harvestedByController.text.trim().isNotEmpty
-          ? _harvestedByController.text.trim()
-          : 'ไม่ระบุ',
-      'yieldAmount': double.tryParse(_yieldAmountController.text) ?? 0.0,
-      'yieldUnit': _yieldUnitController.text.trim().isNotEmpty
-          ? _yieldUnitController.text.trim()
-          : 'กก.',
-    };
-
-    if (_equipmentUsedController.text.trim().isNotEmpty) {
-      data['equipmentUsed'] = _equipmentUsedController.text.trim();
+  Future<void> _load() async {
+    var data = widget.existingData;
+    if (data == null && !widget.isReadOnly) {
+      try {
+        final draft = await DatabaseHelper.instance.getDraft(_draftKey);
+        if (draft != null) data = Map<String, dynamic>.from(jsonDecode(draft.jsonData) as Map);
+      } on Object catch (_) {}
     }
-    if (_qualityGradeController.text.trim().isNotEmpty) {
-      final gradeText = _qualityGradeController.text.trim();
-      // GAP-FIX: Extract grade letter only (A, B, etc.) for API consistency
-      final gradeMatch = RegExp(r'เกรด\s([A-Z])').firstMatch(gradeText);
-      data['qualityGrade'] = gradeMatch != null ? gradeMatch.group(1) : gradeText;
-    }
-    if (_notesController.text.trim().isNotEmpty) {
-      data['notes'] = _notesController.text.trim();
-    }
-
-    return data;
+    if (data == null || !mounted) return;
+    final d = data;
+    setState(() {
+      _by.text = '${d['harvestedBy'] ?? ''}' == 'ไม่ระบุ' ? '' : '${d['harvestedBy'] ?? ''}';
+      _amount.text = d['yieldAmount'] == null ? '' : '${d['yieldAmount']}';
+      _notes.text = '${d['notes'] ?? ''}';
+      final unit = '${d['yieldUnit'] ?? ''}';
+      _unit = _units.contains(unit) ? unit : (unit == 'กิโลกรัม' || unit.toUpperCase() == 'KG' ? 'กก.' : _unit);
+      _equipmentUsed = '${d['equipmentUsed'] ?? ''}';
+      final g = '${d['qualityGrade'] ?? ''}';
+      _grade = g.isEmpty ? null : g;
+      _date = DateTime.tryParse('${d['harvestDate'] ?? ''}')?.toLocal();
+      _dirty = false;
+    });
   }
+
+  Map<String, dynamic> _data() => {
+        'harvestDate': (_date ?? DateTime.now()).toIso8601String(),
+        'harvestedBy': _by.text.trim().isEmpty ? 'ไม่ระบุ' : _by.text.trim(),
+        'yieldAmount': double.tryParse(_amount.text.trim()) ?? 0.0,
+        'yieldUnit': _unit,
+        if (_equipmentUsed.trim().isNotEmpty) 'equipmentUsed': _equipmentUsed.trim(),
+        if (_grade != null) 'qualityGrade': _grade,
+        if (_notes.text.trim().isNotEmpty) 'notes': _notes.text.trim(),
+      };
 
   Future<void> _saveDraft() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final json = jsonEncode(_buildFormData());
-    await DatabaseHelper.instance.saveDraft('harvest_${widget.plotId}', json);
-    
+    await DatabaseHelper.instance.saveDraft(_draftKey, jsonEncode(_data()));
     if (!mounted) return;
-    
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    setState(() => _dirty = false);
+    AppToast.info(context, 'บันทึกร่างไว้ในเครื่องแล้ว');
   }
 
-  List<String> _getIncompleteFields() {
-    final incomplete = <String>[];
-    if (_harvestedByController.text.trim().isEmpty)
-      incomplete.add('ผู้เก็บเกี่ยว');
-    if (_equipmentUsedController.text.trim().isEmpty)
-      incomplete.add('อุปกรณ์ที่ใช้');
-    if (_qualityGradeController.text.trim().isEmpty)
-      incomplete.add('เกรดคุณภาพ');
-    if (_notesController.text.trim().isEmpty) incomplete.add('หมายเหตุ');
-    return incomplete;
-  }
-
-  Future<void> _saveToApi() async {
-    if (_isSaving) return;
-
+  Future<void> _save() async {
+    if (!_form.currentState!.validate()) return;
+    if (_date == null) {
+      AppToast.error(context, 'เลือกวันที่เก็บเกี่ยว');
+      return;
+    }
+    final missing = [
+      if (_by.text.trim().isEmpty) 'ผู้เก็บเกี่ยว',
+      if (_equipmentUsed.isEmpty) 'อุปกรณ์',
+      if (_grade == null) 'เกรด',
+    ];
+    if (missing.isNotEmpty &&
+        !await showIncompleteFieldsDialog(context, formTitle: 'การเก็บเกี่ยว', incompleteFields: missing)) {
+      return;
+    }
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
 
-    if (_harvestDate == null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'กรุณาเลือกวันที่เก็บเกี่ยว',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (_harvestDate!.isAfter(DateTime.now())) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'วันที่เก็บเกี่ยวไม่สามารถเป็นวันในอนาคต',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (_yieldAmountController.text.trim().isEmpty) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('กรุณาระบุปริมาณผลผลิต', style: const TextStyle()),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final yieldAmount = double.tryParse(_yieldAmountController.text);
-    if (yieldAmount == null || yieldAmount <= 0) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'ปริมาณผลผลิตต้องเป็นจำนวนบวก',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final incompleteFields = _getIncompleteFields();
-    if (incompleteFields.isNotEmpty) {
-      if (!mounted) return;
-      
-      final shouldProceed = await showIncompleteFieldsDialog(
-        context,
-        formTitle: 'การเก็บเกี่ยว',
-        incompleteFields: incompleteFields,
-      );
-      if (!shouldProceed) return;
-    }
-
-    if (!mounted) return;
-    setState(() => _isSaving = true);
-
-    // GAP-FIX: Store navigator before async operations to avoid
-    // using context after widget is disposed (_dependents.isEmpty assertion)
+    setState(() => _saving = true);
     final navigator = Navigator.of(context);
-
     try {
-      if (_isEditMode) {
-        await _gapService.updateHarvest(
-          widget.plotId,
-          widget.existingId!,
-          _buildFormData(),
-        );
-        await _gapService.notifyAdminOnEdit(
-          plotId: widget.plotId,
-          formType: 'การเก็บเกี่ยว',
-          recordId: widget.existingId!,
-        );
+      if (_editing) {
+        await _gap.updateHarvest(widget.plotId, widget.existingId!, _data());
+        await _gap.notifyAdminOnEdit(plotId: widget.plotId, formType: 'การเก็บเกี่ยว', recordId: widget.existingId!);
       } else {
-        await _gapService.addHarvest(widget.plotId, _buildFormData());
+        await _gap.addHarvest(widget.plotId, _data());
       }
-      await DatabaseHelper.instance.deleteDraft('harvest_${widget.plotId}');
-
-      // GAP-FIX-002: Mark as saved after successful save
-      _markAsSaved();
-      _originalDataHash = _computeDataHash();
-
+      GapService.invalidate(widget.plotId);
+      await DatabaseHelper.instance.deleteDraft(_draftKey);
       if (!mounted) return;
-
-      // Reset saving state BEFORE showing dialog/popping
-      setState(() => _isSaving = false);
-
+      setState(() => _dirty = false);
       await showGapSuccessDialog(
         context,
-        formTitle: 'การเก็บเกี่ยว',
-        formSubtitle: _isEditMode ? 'แก้ไขสำเร็จ' : 'บันทึกสำเร็จ',
+        formTitle: _editing ? 'แก้ไขการเก็บเกี่ยวแล้ว' : 'บันทึกการเก็บเกี่ยวแล้ว',
+        formSubtitle: 'ออกเลขล็อตและ QR ได้ที่หมวด 1.7',
       );
-
-      // Use stored navigator to avoid context usage after dispose
       navigator.pop(true);
-      return; // Exit immediately — widget will be disposed after pop
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              ErrorUtils.getReadableError(e),
-              style: const TextStyle(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, ErrorUtils.getReadableError(e));
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _harvestDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      locale: const Locale('th', 'TH'),
-    );
-    if (picked != null) {
-      if (!mounted) return;
-      
-      setState(() {
-        _harvestDate = picked;
-        _hasUnsavedChanges = true;
-      });
-    }
-  }
-
-  String _formatDate(DateTime? date) => DateFormatter.formatThaiDate(date);
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      );
-    }
-
+    final ro = widget.isReadOnly;
     return GapFormWrapper(
-      title: '4. การเก็บเกี่ยว',
-      subtitle: 'บันทึกผลผลิตและการจัดการ',
-      headerIcon: PhosphorIconsRegular.archive,
-      headerColor: Colors.orange,
-      onSave: _saveToApi,
-      onSaveDraft: _saveDraft,
-      isSaving: _isSaving,
-      hasUnsavedChanges: _hasUnsavedChanges, // GAP-FIX-002: Pass unsaved changes state
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+      category: GapCategory.harvest,
+      subtitle: _editing ? 'แก้ไขรายการเก็บเกี่ยว' : null,
+      onSave: _save,
+      onSaveDraft: _editing ? null : _saveDraft,
+      isSaving: _saving,
+      hasUnsavedChanges: _dirty,
+      readOnly: ro,
+      child: Form(
+        key: _form,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const FormInfoCard(
-              message:
-                  'บันทึกข้อมูลการเก็บเกี่ยวใบกระท่อม เพื่อการตรวจสอบย้อนกลับ (Traceability)',
-              icon: PhosphorIconsRegular.lightbulb,
-              color: Colors.orange,
-            ),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
+            FormSectionCard(
+              title: 'วันที่และผู้เก็บ',
+              icon: AppIcons.harvest,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(PhosphorIconsRegular.tag, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Lot Number: ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
+                  DatePickerField(
+                    label: 'วันที่เก็บเกี่ยว',
+                    value: _date,
+                    enabled: !ro,
+                    onChanged: (d) => setState(() {
+                      _date = d;
+                      _dirty = true;
+                    }),
                   ),
-                  Expanded(
-                    child: Text(
-                      _lotNumberController.text,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  const SizedBox(height: Space.lg),
+                  AppTextField(
+                    label: 'ผู้เก็บเกี่ยว',
+                    controller: _by,
+                    hint: 'เช่น นายแดง หรือ คนงานชุดที่ 1',
+                    enabled: !ro,
                   ),
                 ],
               ),
             ),
-
             FormSectionCard(
-              title: 'วันที่เก็บเกี่ยว *',
-              example: 'ตัวอย่าง: 15 มกราคม 2569',
-              icon: PhosphorIconsRegular.calendarDots,
-              iconColor: Colors.purple,
-              child: GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        PhosphorIconsRegular.calendarDots,
-                        color: Colors.grey,
-                        size: 20),
-                      const SizedBox(width: 10),
-                      Text(
-                        _formatDate(_harvestDate),
-                        style: TextStyle(
-                          color: _harvestDate != null
-                              ? Colors.black
-                              : Colors.grey,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(
-                        PhosphorIconsRegular.caretRight,
-                        color: Colors.grey,
-                        size: 16),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            FormSectionCard(
-              title: 'ผู้เก็บเกี่ยว *',
-              example: 'ตัวอย่าง: คนงานชุดที่ 1, นายแดง',
-              icon: PhosphorIconsRegular.users,
-              iconColor: Colors.blue,
-              child: TextField(
-                controller: _harvestedByController,
-                maxLength: 100,
-                decoration: InputDecoration(
-                  hintText: 'ระบุชื่อผู้เก็บเกี่ยว หรือกลุ่มคนงาน',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  counterText: '',
-                ),
-                style: const TextStyle(),
-              ),
-            ),
-
-            FormSectionCard(
-              title: 'ปริมาณผลผลิต *',
-              example: 'ระบุจำนวนที่ได้',
-              icon: PhosphorIconsRegular.scales,
-              iconColor: Colors.green,
+              title: 'ปริมาณผลผลิต',
+              icon: AppIcons.weight,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    flex: 3,
+                    child: AppTextField(
+                      label: 'ปริมาณ',
+                      controller: _amount,
+                      hint: '0',
+                      enabled: !ro,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      validator: (v) {
+                        final n = double.tryParse((v ?? '').trim());
+                        return n == null || n <= 0 ? 'ใส่จำนวนมากกว่า 0' : null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: Space.md),
                   Expanded(
                     flex: 2,
-                    child: TextField(
-                      controller: _yieldAmountController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 10,
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const FieldLabel('หน่วย'),
+                        DropdownButtonFormField<String>(
+                          value: _unit,
+                          items: [for (final u in _units) DropdownMenuItem(value: u, child: Text(u))],
+                          onChanged: ro
+                              ? null
+                              : (v) => setState(() {
+                                    _unit = v ?? _unit;
+                                    _dirty = true;
+                                  }),
                         ),
-                        counterText: '',
-                      ),
-                      style: const TextStyle(),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
-                    child: FormDropdownWithOther(
-                      label: 'หน่วย',
-                      hint: 'หน่วย',
-                      options: _unitOptions,
-                      value: _yieldUnitController.text,
-                      onChanged: (val) {
-                        if (mounted) {
-                          setState(() {
-                            _yieldUnitController.text = val;
-                            _hasUnsavedChanges = true;
-                          });
-                        }
-                      },
-                      icon: PhosphorIconsRegular.cube,
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-
             FormSectionCard(
-              title: 'อุปกรณ์เก็บเกี่ยว',
-              example: 'เลือกอุปกรณ์ที่ใช้',
-              icon: PhosphorIconsRegular.wrench,
-              iconColor: Colors.grey,
-              child: FormDropdownWithOther(
-                label: 'อุปกรณ์',
-                hint: 'เลือกอุปกรณ์เก็บเกี่ยว',
-                options: _equipmentOptions,
-                value: _equipmentUsedController.text,
-                onChanged: (val) {
-                  if (mounted) {
-                    setState(() {
-                      _equipmentUsedController.text = val;
-                      _hasUnsavedChanges = true;
-                    });
-                  }
-                },
-                icon: PhosphorIconsRegular.scissors,
+              title: 'คุณภาพผลผลิต',
+              icon: AppIcons.star,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final (code, title, sub) in _grades) ...[
+                    ChoiceTile(
+                      title: title,
+                      subtitle: sub,
+                      selected: _grade == code,
+                      onTap: ro
+                          ? null
+                          : () => setState(() {
+                                _grade = code;
+                                _dirty = true;
+                              }),
+                    ),
+                    const SizedBox(height: Space.sm),
+                  ],
+                  const SizedBox(height: Space.sm),
+                  FormDropdownWithOther(
+                    label: 'อุปกรณ์ที่ใช้',
+                    hint: 'เลือกอุปกรณ์',
+                    options: _equipment,
+                    value: _equipmentUsed,
+                    enabled: !ro,
+                    onChanged: (v) => setState(() {
+                      _equipmentUsed = v;
+                      _dirty = true;
+                    }),
+                  ),
+                ],
               ),
             ),
-
-            FormSectionCard(
-              title: 'คุณภาพ/เกรด',
-              example: 'ระบุเกรดของใบกระท่อม',
-              icon: PhosphorIconsRegular.star,
-              iconColor: Colors.amber,
-              child: FormDropdownWithOther(
-                label: 'เกรด',
-                hint: 'เลือกเกรดผลผลิต',
-                options: _gradeOptions,
-                value: _qualityGradeController.text,
-                onChanged: (val) {
-                  if (mounted) {
-                    setState(() {
-                      _qualityGradeController.text = val;
-                      _hasUnsavedChanges = true;
-                    });
-                  }
-                },
-                icon: PhosphorIconsRegular.tag,
-              ),
-            ),
-
             FormSectionCard(
               title: 'หมายเหตุ',
-              example: 'ตัวอย่าง: ใบใหญ่หนา สีเขียวเข้ม',
-              icon: PhosphorIconsRegular.chatText,
-              iconColor: Colors.grey,
-              child: TextField(
-                controller: _notesController,
-                maxLines: 2,
-                maxLength: 500,
-                decoration: InputDecoration(
-                  hintText: 'บันทึกเพิ่มเติม (ถ้ามี)',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  counterText: '',
-                ),
-                style: const TextStyle(),
+              icon: AppIcons.note,
+              child: AppTextField(
+                controller: _notes,
+                hint: 'เช่น ใบใหญ่ หนา สีเขียวเข้ม เก็บช่วงเช้า',
+                maxLines: 3,
+                minLines: 2,
+                maxLength: 300,
+                enabled: !ro,
               ),
             ),
-
-            const SizedBox(height: 100),
           ],
         ),
       ),

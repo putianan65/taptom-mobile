@@ -356,6 +356,14 @@ class GapService {
     }
   }
 
+  /// Issues a new lot number for the plot's latest harvest.
+  Future<Map<String, dynamic>> createLot(String plotId, Map<String, dynamic> data) async {
+    final response = await _apiClient.post(ApiEndpoints.createLot(plotId), data: data);
+    invalidate(plotId);
+    final body = response.data;
+    return body is Map ? Map<String, dynamic>.from(body) : <String, dynamic>{};
+  }
+
   // ============ UPDATE METHODS (PUT) ============
 
   /// Update existing harvest record

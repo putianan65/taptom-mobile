@@ -1,884 +1,324 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../../../core/constants/app_colors.dart';
+
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
-import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/gap_enum_helpers.dart';
+import '../../../../core/widgets/widgets.dart';
+import '../../gap_categories.dart';
 import '../../widgets/gap_form_wrapper.dart';
 
-/// หมวด 3: การจัดการแปลง - ตรงกับ Backend FieldManagement model
+/// 1.3 One field activity, matching the backend FieldManagement model.
+/// Fields shown depend on the activity type.
 class GapManagementForm extends StatefulWidget {
-  final String plotId;
-  final String? existingId;
-  final Map<String, dynamic>? existingData;
-
   const GapManagementForm({
     super.key,
     required this.plotId,
     this.existingId,
     this.existingData,
+    this.isReadOnly = false,
   });
+
+  final String plotId;
+  final String? existingId;
+  final Map<String, dynamic>? existingData;
+  final bool isReadOnly;
 
   @override
   State<GapManagementForm> createState() => _GapManagementFormState();
 }
 
 class _GapManagementFormState extends State<GapManagementForm> {
-  final _gapService = GapService();
-  bool _isLoading = true;
-  bool _isSaving = false;
-  bool _hasUnsavedChanges = false;
-  bool get _isEditMode => widget.existingId != null;
+  static const _types = [
+    ('SOIL_PREP', 'เตรียมดิน', 'ไถพรวน ปรับหน้าดิน ใส่ปุ๋ยรองพื้น', AppIcons.plant),
+    ('WATER_QUALITY', 'ตรวจคุณภาพน้ำ', 'ค่า pH ความใส กลิ่น', AppIcons.water),
+    ('WEED_CONTROL', 'กำจัดวัชพืช', 'ถอนหรือตัดหญ้ารอบต้น', AppIcons.leaf),
+    ('IPM_PEST_CONTROL', 'จัดการศัตรูพืช', 'สำรวจโรคและแมลง ป้องกันแบบผสมผสาน', AppIcons.safety),
+    ('RISK_EVENT', 'เหตุการณ์เสี่ยง', 'น้ำท่วม ภัยแล้ง โรคระบาด', AppIcons.warning),
+  ];
+  static const _machines = ['รถไถเดินตาม', 'เครื่องตัดหญ้า', 'จอบ เสียม', 'กรรไกรตัดกิ่ง', 'ระบบน้ำหยด', 'เครื่องพ่นหมอก'];
+  static const _materials = ['น้ำหมักชีวภาพ', 'เชื้อราไตรโคเดอร์มา', 'เชื้อบิวเวอเรีย', 'สารสะเดา', 'ปุ๋ยคอก', 'ปุ๋ยหมัก'];
+  static const _water = ['ใส ไม่มีกลิ่น', 'ขุ่นเล็กน้อย', 'มีตะกอน', 'pH 5.5 ถึง 6.5', 'pH ต่ำกว่า 5'];
+  static const _risks = ['น้ำท่วมขัง', 'ฝนทิ้งช่วง', 'โรคใบจุด', 'หนอนกินใบ', 'เพลี้ยไฟ ไรแดง', 'พายุลมแรง'];
+  static const _impacts = ['ใบเหลืองร่วง', 'ต้นแคระแกร็น', 'รากเน่า', 'ผลผลิตลดลง', 'กิ่งหัก'];
+  static const _mitigations = ['ขุดร่องระบายน้ำ', 'ให้น้ำสม่ำเสมอ', 'ตัดแต่งกิ่งที่เป็นโรค', 'พ่นเชื้อราไตรโคเดอร์มา', 'ทำไม้ค้ำยัน'];
 
-  // Backend FieldManagement fields
-  String _activityType =
-      'SOIL_PREP'; // Enum: SOIL_PREP, WATER_QUALITY, WEED_CONTROL, IPM_PEST_CONTROL, RISK_EVENT
-  DateTime? _activityDate;
+  final _gap = GapService();
+  final _description = TextEditingController();
+  final _worker = TextEditingController();
+  String _type = 'SOIL_PREP';
+  DateTime? _date;
+  String _machine = '';
+  String _material = '';
+  String _waterQuality = '';
+  String _riskType = '';
+  RiskLevel? _riskLevel;
+  String _impact = '';
+  String _mitigation = '';
 
-  final _descriptionController = TextEditingController();
-  final _waterQualityController = TextEditingController();
-  final _riskTypeController = TextEditingController();
-  final _riskLevelController = TextEditingController();
-  final _riskImpactController = TextEditingController();
-  final _mitigationController = TextEditingController();
-  final _chemicalUsedController = TextEditingController();
-  final _machineUsedController = TextEditingController();
-  final _workerNameController = TextEditingController();
+  bool _saving = false;
+  bool _dirty = false;
 
-  // Dropdown Options
-  final List<String> _machineOptions = [
-    'รถไถเดินตาม',
-    'เครื่องตัดหญ้า',
-    'จอบ/เสียม',
-    'กรรไกรตัดกิ่ง',
-    'ระบบน้ำหยด',
-    'เครื่องพ่นหมอก',
-  ];
-  final List<String> _chemicalOptions = [
-    'น้ำหมักชีวภาพ',
-    'เชื้อราไตรโคเดอร์มา',
-    'เชื้อบิวเวอเรีย',
-    'สารสะเดา',
-    'ปุ๋ยคอก',
-    'ปุ๋ยหมัก',
-  ];
-  final List<String> _waterQualityOptions = [
-    'ใส ไม่มีกลิ่น',
-    'ขุ่นเล็กน้อย',
-    'มีตะกอน',
-    'ค่า pH 5.5-6.5 (เหมาะสม)',
-    'ค่า pH < 5 (เป็นกรด)',
-  ];
-  final List<String> _riskTypeOptions = [
-    'น้ำท่วมขัง',
-    'ฝนทิ้งช่วง/ภัยแล้ง',
-    'โรคใบจุด',
-    'หนอนกินใบ',
-    'เพลี้ยไฟ/ไรแดง',
-    'พายุลมแรง',
-  ];
-  final List<String> _riskImpactOptions = [
-    'ใบเหลืองร่วง',
-    'ต้นแคระแกร็น',
-    'รากเน่า',
-    'ผลผลิตลดลง',
-    'กิ่งหักเสียหาย',
-  ];
-  final List<String> _mitigationOptions = [
-    'ขุดร่องระบายน้ำ',
-    'ให้น้ำสม่ำเสมอ',
-    'ตัดแต่งกิ่งที่เป็นโรค',
-    'ฉีดพ่นเชื้อราไตรโคเดอร์มา',
-    'ทำไม้ค้ำยัน',
-  ];
+  bool get _editing => widget.existingId != null;
+  String get _draftKey => 'management_${widget.plotId}';
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    
-    // Listen for changes
-    _descriptionController.addListener(_onFieldChanged);
-    _waterQualityController.addListener(_onFieldChanged);
-    _riskTypeController.addListener(_onFieldChanged);
-    _riskLevelController.addListener(_onFieldChanged);
-    _riskImpactController.addListener(_onFieldChanged);
-    _mitigationController.addListener(_onFieldChanged);
-    _chemicalUsedController.addListener(_onFieldChanged);
-    _machineUsedController.addListener(_onFieldChanged);
-    _workerNameController.addListener(_onFieldChanged);
-  }
-
-  void _onFieldChanged() {
-    if (!_hasUnsavedChanges) {
-      setState(() => _hasUnsavedChanges = true);
-    }
+    _description.addListener(_touch);
+    _worker.addListener(_touch);
+    _load();
   }
 
   @override
   void dispose() {
-    _descriptionController.dispose();
-    _waterQualityController.dispose();
-    _riskTypeController.dispose();
-    _riskLevelController.dispose();
-    _riskImpactController.dispose();
-    _mitigationController.dispose();
-    _chemicalUsedController.dispose();
-    _machineUsedController.dispose();
-    _workerNameController.dispose();
+    _description.dispose();
+    _worker.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    try {
-      // If we have existing data (edit mode), use it
-      if (widget.existingData != null) {
-        final data = widget.existingData!;
-        setState(() {
-          _activityType = data['activityType']?.toString() ?? 'SOIL_PREP';
-          _descriptionController.text = data['description']?.toString() ?? '';
-          _waterQualityController.text = data['waterQuality']?.toString() ?? '';
-          _riskTypeController.text = data['riskType']?.toString() ?? '';
-          _riskTypeController.text = data['riskType']?.toString() ?? '';
-          
-          // GAP-FIX: Map API value to Display Text
-          final riskApi = data['riskLevel']?.toString();
-          _riskLevelController.text = RiskLevel.fromApi(riskApi) ?? riskApi ?? '';
-
-          _riskImpactController.text = data['riskImpact']?.toString() ?? '';
-          _riskImpactController.text = data['riskImpact']?.toString() ?? '';
-          _mitigationController.text = data['mitigation']?.toString() ?? '';
-          _chemicalUsedController.text = data['chemicalUsed']?.toString() ?? '';
-          _machineUsedController.text = data['machineUsed']?.toString() ?? '';
-          _workerNameController.text = data['workerName']?.toString() ?? '';
-          if (data['activityDate'] != null) {
-            _activityDate = DateTime.tryParse(data['activityDate'].toString());
-          }
-          _hasUnsavedChanges = false; // Reset after load
-        });
-      } else {
-        // New form - try to load draft
-        final draft = await DatabaseHelper.instance.getDraft(
-          'management_${widget.plotId}',
-        );
-        if (draft != null) {
-          final data = jsonDecode(draft.jsonData);
-          setState(() {
-            _activityType = data['activityType']?.toString() ?? 'SOIL_PREP';
-            _descriptionController.text = data['description']?.toString() ?? '';
-            _waterQualityController.text =
-                data['waterQuality']?.toString() ?? '';
-            _riskTypeController.text = data['riskType']?.toString() ?? '';
-            _riskLevelController.text = data['riskLevel']?.toString() ?? '';
-            _riskImpactController.text = data['riskImpact']?.toString() ?? '';
-            _mitigationController.text = data['mitigation']?.toString() ?? '';
-            _chemicalUsedController.text =
-                data['chemicalUsed']?.toString() ?? '';
-            _machineUsedController.text = data['machineUsed']?.toString() ?? '';
-            _workerNameController.text = data['workerName']?.toString() ?? '';
-            if (data['activityDate'] != null) {
-              _activityDate = DateTime.tryParse(
-                data['activityDate'].toString(),
-              );
-            }
-            _hasUnsavedChanges = false; // Reset after load
-          });
-        }
-      }
-    } catch (e) {
-      // Silent failure - draft loading is not critical
-    }
-
-    setState(() => _isLoading = false);
+  void _touch() {
+    if (!_dirty) setState(() => _dirty = true);
   }
 
-  /// Build data matching Backend FieldManagement schema
-  Map<String, dynamic> _buildFormData() {
-    // GAP-FIX: Use Enum Helper
-    final mappedRiskLevel = RiskLevel.toApi(_riskLevelController.text.trim());
+  void _set(VoidCallback fn) => setState(() {
+        fn();
+        _dirty = true;
+      });
 
-    final data = <String, dynamic>{
-      'activityType': _activityType, // Required Enum
-      'activityDate':
-          _activityDate?.toIso8601String() ??
-          DateTime.now().toIso8601String(), // Required
-    };
+  static String _strip(String text) =>
+      text.replaceAll(RegExp(r'\n?\[(คุณภาพน้ำ|ประเภทความเสี่ยง): [^\]]*\]'), '').trim();
 
-    // Trim all text inputs
-    final description = _descriptionController.text.trim();
-    final waterQuality = _waterQualityController.text.trim();
-    final riskType = _riskTypeController.text.trim();
-    final riskImpact = _riskImpactController.text.trim();
-    final mitigation = _mitigationController.text.trim();
-    final chemicalUsed = _chemicalUsedController.text.trim();
-    final machineUsed = _machineUsedController.text.trim();
-    final workerName = _workerNameController.text.trim();
+  static String? _tag(String text, String label) =>
+      RegExp('\\[$label: ([^\\]]*)\\]').firstMatch(text)?.group(1);
 
-    // Only add optional fields if they have values
-    if (description.isNotEmpty) {
-      // Combine description with water quality and risk type info since those fields aren't allowed
-      String fullDescription = description;
-      if (waterQuality.isNotEmpty) {
-        fullDescription += '\n[คุณภาพน้ำ: $waterQuality]';
-      }
-      if (riskType.isNotEmpty) {
-        fullDescription += '\n[ประเภทความเสี่ยง: $riskType]';
-      }
-      data['description'] = fullDescription;
+  Future<void> _load() async {
+    var data = widget.existingData;
+    if (data == null && !widget.isReadOnly) {
+      try {
+        final draft = await DatabaseHelper.instance.getDraft(_draftKey);
+        if (draft != null) data = Map<String, dynamic>.from(jsonDecode(draft.jsonData) as Map);
+      } on Object catch (_) {}
     }
+    if (data == null || !mounted) return;
+    final d = data;
+    final description = '${d['description'] ?? ''}';
+    setState(() {
+      _type = '${d['activityType'] ?? 'SOIL_PREP'}';
+      _date = DateTime.tryParse('${d['activityDate'] ?? ''}')?.toLocal();
+      _description.text = _strip(description);
+      _worker.text = '${d['workerName'] ?? ''}';
+      _machine = '${d['machineUsed'] ?? ''}';
+      _material = '${d['chemicalUsed'] ?? ''}';
+      _waterQuality = '${d['waterQuality'] ?? _tag(description, 'คุณภาพน้ำ') ?? ''}';
+      _riskType = '${d['riskType'] ?? _tag(description, 'ประเภทความเสี่ยง') ?? ''}';
+      _riskLevel = RiskLevel.values.where((r) => r.apiValue == d['riskLevel']).firstOrNull;
+      _impact = '${d['riskImpact'] ?? ''}';
+      _mitigation = '${d['mitigation'] ?? ''}';
+      _dirty = false;
+    });
+  }
 
-    if (mappedRiskLevel != null) data['riskLevel'] = mappedRiskLevel;
-    if (riskImpact.isNotEmpty) data['riskImpact'] = riskImpact;
-    if (mitigation.isNotEmpty) data['mitigation'] = mitigation;
-    if (chemicalUsed.isNotEmpty) data['chemicalUsed'] = chemicalUsed;
-    if (machineUsed.isNotEmpty) data['machineUsed'] = machineUsed;
-    if (workerName.isNotEmpty) data['workerName'] = workerName;
-
-    return data;
+  /// Water quality and risk type have no columns of their own on the
+  /// backend, so they travel as tagged lines inside the description.
+  Map<String, dynamic> _data() {
+    final description = [
+      if (_description.text.trim().isNotEmpty) _description.text.trim(),
+      if (_type == 'WATER_QUALITY' && _waterQuality.isNotEmpty) '[คุณภาพน้ำ: $_waterQuality]',
+      if (_type == 'RISK_EVENT' && _riskType.isNotEmpty) '[ประเภทความเสี่ยง: $_riskType]',
+    ].join('\n');
+    final risk = _type == 'RISK_EVENT';
+    final chemical = _type == 'IPM_PEST_CONTROL' || _type == 'WEED_CONTROL';
+    return {
+      'activityType': _type,
+      'activityDate': (_date ?? DateTime.now()).toIso8601String(),
+      if (description.isNotEmpty) 'description': description,
+      if (_worker.text.trim().isNotEmpty) 'workerName': _worker.text.trim(),
+      if (_machine.isNotEmpty) 'machineUsed': _machine,
+      if (chemical && _material.isNotEmpty) 'chemicalUsed': _material,
+      if (risk && _riskLevel != null) 'riskLevel': _riskLevel!.apiValue,
+      if (risk && _impact.isNotEmpty) 'riskImpact': _impact,
+      if (risk && _mitigation.isNotEmpty) 'mitigation': _mitigation,
+    };
   }
 
   Future<void> _saveDraft() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final json = jsonEncode(_buildFormData());
-    await DatabaseHelper.instance.saveDraft(
-      'management_${widget.plotId}',
-      json,
-    );
-    
+    await DatabaseHelper.instance.saveDraft(_draftKey, jsonEncode(_data()));
     if (!mounted) return;
-    
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    setState(() => _dirty = false);
+    AppToast.info(context, 'บันทึกร่างไว้ในเครื่องแล้ว');
   }
 
-  /// Get list of incomplete (empty) optional fields for soft warning
-  List<String> _getIncompleteFields() {
-    final incomplete = <String>[];
-
-    // Always shown fields
-    if (_descriptionController.text.trim().isEmpty)
-      incomplete.add('รายละเอียดกิจกรรม');
-    if (_workerNameController.text.trim().isEmpty)
-      incomplete.add('ผู้ปฏิบัติงาน');
-    if (_machineUsedController.text.trim().isEmpty)
-      incomplete.add('เครื่องจักร/อุปกรณ์');
-
-    // Conditional fields - only check if they are shown in UI
-    if (_activityType == 'WATER_QUALITY' &&
-        _waterQualityController.text.trim().isEmpty) {
-      incomplete.add('คุณภาพน้ำ');
-    }
-    if ((_activityType == 'IPM_PEST_CONTROL' ||
-            _activityType == 'WEED_CONTROL') &&
-        _chemicalUsedController.text.trim().isEmpty) {
-      incomplete.add('สารเคมี/ชีวภัณฑ์');
-    }
-    if (_activityType == 'RISK_EVENT') {
-      if (_riskTypeController.text.trim().isEmpty)
-        incomplete.add('ประเภทความเสี่ยง');
-      if (_riskLevelController.text.trim().isEmpty)
-        incomplete.add('ระดับความเสี่ยง');
-      if (_riskImpactController.text.trim().isEmpty) incomplete.add('ผลกระทบ');
-      if (_mitigationController.text.trim().isEmpty)
-        incomplete.add('การแก้ไข/บรรเทา');
-    }
-
-    return incomplete;
-  }
-
-  Future<void> _saveToApi() async {
-    // GAP-BUG-001: Prevent double submission
-    if (_isSaving) return;
-
-    // GAP-BUG-003: Store messenger reference before async operations
-    final messenger = ScaffoldMessenger.of(context);
-
-    // Validate activity date
-    if (_activityDate == null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'กรุณาเลือกวันที่ทำกิจกรรม',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+  Future<void> _save() async {
+    if (_date == null) {
+      AppToast.error(context, 'เลือกวันที่ทำกิจกรรม');
       return;
     }
-
-    // Validate activity date is not in the future
-    if (_activityDate!.isAfter(DateTime.now())) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'วันที่ทำกิจกรรมไม่สามารถเป็นวันในอนาคต',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    final missing = [
+      if (_description.text.trim().isEmpty) 'รายละเอียด',
+      if (_worker.text.trim().isEmpty) 'ผู้ปฏิบัติงาน',
+      if (_type == 'WATER_QUALITY' && _waterQuality.isEmpty) 'คุณภาพน้ำ',
+      if ((_type == 'IPM_PEST_CONTROL' || _type == 'WEED_CONTROL') && _material.isEmpty) 'สารหรือชีวภัณฑ์',
+      if (_type == 'RISK_EVENT' && _riskLevel == null) 'ระดับความเสี่ยง',
+    ];
+    if (missing.isNotEmpty &&
+        !await showIncompleteFieldsDialog(context, formTitle: 'การจัดการแปลง', incompleteFields: missing)) {
       return;
     }
+    if (!mounted) return;
 
-    // Validate minimum text length for description (at least 5 characters)
-    if (_descriptionController.text.trim().isEmpty ||
-        _descriptionController.text.trim().length < 5) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'รายละเอียดกิจกรรมต้องมีอย่างน้อย 5 ตัวอักษร',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // Validate conditional required fields based on activity type
-    if (_activityType == 'WATER_QUALITY' &&
-        _waterQualityController.text.trim().isEmpty) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'กรุณาระบุผลตรวจคุณภาพน้ำ',
-            style: const TextStyle(),
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (_activityType == 'RISK_EVENT') {
-      if (_riskTypeController.text.trim().isEmpty) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'กรุณาระบุประเภทความเสี่ยง',
-              style: const TextStyle(),
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (_riskLevelController.text.trim().isEmpty) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'กรุณาระบุระดับความเสี่ยง',
-              style: const TextStyle(),
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (_riskImpactController.text.trim().isEmpty) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('กรุณาระบุผลกระทบ', style: const TextStyle()),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (_mitigationController.text.trim().isEmpty) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'กรุณาระบุวิธีการแก้ไข/บรรเทา',
-              style: const TextStyle(),
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-    }
-
-    // GAP-BUG-004: Show incomplete fields warning BEFORE saving
-    final incompleteFields = _getIncompleteFields();
-    if (incompleteFields.isNotEmpty) {
-      final shouldProceed = await showIncompleteFieldsDialog(
-        context,
-        formTitle: 'การจัดการแปลง',
-        incompleteFields: incompleteFields,
-      );
-      if (!shouldProceed) return;
-    }
-
-    setState(() => _isSaving = true);
-
-    // GAP-FIX: Store navigator before async operations to avoid
-    // using context after widget is disposed (_dependents.isEmpty assertion)
+    setState(() => _saving = true);
     final navigator = Navigator.of(context);
-
     try {
-      // Use PUT for edit, POST for new
-      if (_isEditMode) {
-        await _gapService.updateActivity(
-          widget.plotId,
-          widget.existingId!,
-          _buildFormData(),
-        );
-        await _gapService.notifyAdminOnEdit(
-          plotId: widget.plotId,
-          formType: 'การจัดการแปลง',
-          recordId: widget.existingId!,
-        );
+      if (_editing) {
+        await _gap.updateActivity(widget.plotId, widget.existingId!, _data());
+        await _gap.notifyAdminOnEdit(plotId: widget.plotId, formType: 'การจัดการแปลง', recordId: widget.existingId!);
       } else {
-        await _gapService.addActivity(widget.plotId, _buildFormData());
+        await _gap.addActivity(widget.plotId, _data());
       }
-      await DatabaseHelper.instance.deleteDraft('management_${widget.plotId}');
-
+      GapService.invalidate(widget.plotId);
+      await DatabaseHelper.instance.deleteDraft(_draftKey);
       if (!mounted) return;
-
-      // Reset saving state BEFORE showing dialog/popping
-      setState(() {
-        _isSaving = false;
-        _hasUnsavedChanges = false;
-      });
-
+      setState(() => _dirty = false);
       await showGapSuccessDialog(
         context,
-        formTitle: 'การจัดการแปลง',
-        formSubtitle: _isEditMode ? 'แก้ไขสำเร็จ' : 'หมวด 3 บันทึกสำเร็จ',
+        formTitle: _editing ? 'แก้ไขกิจกรรมแล้ว' : 'บันทึกกิจกรรมแล้ว',
+        formSubtitle: 'บันทึกทุกครั้งที่ทำงานในแปลง เพื่อให้ประวัติครบถ้วน',
       );
-
-      // Use stored navigator to avoid context usage after dispose
       navigator.pop(true);
-      return; // Exit immediately — widget will be disposed after pop
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              ErrorUtils.getReadableError(e),
-              style: const TextStyle(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, ErrorUtils.getReadableError(e));
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) setState(() => _saving = false);
     }
   }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _activityDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(), // Prevent future date selection
-      locale: const Locale('th', 'TH'),
-    );
-    if (picked != null) {
-      setState(() {
-        _activityDate = picked;
-        _hasUnsavedChanges = true;
-      });
-    }
-  }
-
-  String _formatDate(DateTime? date) => DateFormatter.formatThaiDate(date);
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final ro = widget.isReadOnly;
+    final p = context.palette;
+    Widget pick(String label, String hint, List<String> options, String value, ValueChanged<String> set) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: Space.lg),
+          child: FormDropdownWithOther(
+            label: label,
+            hint: hint,
+            options: options,
+            value: value,
+            enabled: !ro,
+            onChanged: (v) => _set(() => set(v)),
+          ),
+        );
 
     return GapFormWrapper(
-      title: '3. การจัดการแปลง',
-      subtitle: 'กิจกรรมดูแลแปลงกระท่อม',
-      headerIcon: PhosphorIconsRegular.wrench,
-      headerColor: Colors.teal,
-      onSave: _saveToApi,
-      onSaveDraft: _saveDraft,
-      isSaving: _isSaving,
-      hasUnsavedChanges: _hasUnsavedChanges,
+      category: GapCategory.management,
+      subtitle: _editing ? 'แก้ไขกิจกรรม' : null,
+      onSave: _save,
+      onSaveDraft: _editing ? null : _saveDraft,
+      isSaving: _saving,
+      hasUnsavedChanges: _dirty,
+      readOnly: ro,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const FormInfoCard(
-            message:
-                'บันทึกกิจกรรมการดูแลแปลงกระท่อม เช่น เตรียมดิน กำจัดวัชพืช ตรวจคุณภาพน้ำ',
-            icon: PhosphorIconsRegular.lightbulb,
-            color: Colors.teal,
-          ),
-
-          // ประเภทกิจกรรม (Required Enum)
           FormSectionCard(
-            title: 'ประเภทกิจกรรม *',
-            example: 'เลือกประเภทกิจกรรมที่ทำ',
-            icon: PhosphorIconsRegular.clipboardText,
-            iconColor: Colors.indigo,
+            title: 'ทำอะไรในแปลง',
+            icon: AppIcons.fieldWork,
             child: Column(
               children: [
-                _buildActivityOption(
-                  'SOIL_PREP',
-                  'เตรียมดิน',
-                  'ไถพรวน ปรับหน้าดิน ใส่ปุ๋ยรองพื้น',
-                  PhosphorIconsRegular.building,
-                  Colors.brown,
-                ),
-                const SizedBox(height: 8),
-                _buildActivityOption(
-                  'WATER_QUALITY',
-                  'ตรวจคุณภาพน้ำ',
-                  'วัดค่า pH, EC, ความสะอาด',
-                  PhosphorIconsRegular.flask,
-                  Colors.cyan,
-                ),
-                const SizedBox(height: 8),
-                _buildActivityOption(
-                  'WEED_CONTROL',
-                  'กำจัดวัชพืช',
-                  'ถอน/ตัดหญ้ารอบต้นกระท่อม',
-                  PhosphorIconsRegular.sparkle,
-                  Colors.green,
-                ),
-                const SizedBox(height: 8),
-                _buildActivityOption(
-                  'IPM_PEST_CONTROL',
-                  'จัดการศัตรูพืช IPM',
-                  'ตรวจโรค แมลง การป้องกัน',
-                  PhosphorIconsRegular.shieldCheck,
-                  Colors.orange,
-                ),
-                const SizedBox(height: 8),
-                _buildActivityOption(
-                  'RISK_EVENT',
-                  'เหตุการณ์ความเสี่ยง',
-                  'น้ำท่วม, ภัยแล้ง, โรคระบาด',
-                  PhosphorIconsRegular.warning,
-                  Colors.red,
-                ),
+                for (final (value, title, sub, icon) in _types) ...[
+                  ChoiceTile(
+                    title: title,
+                    subtitle: sub,
+                    icon: icon,
+                    selected: _type == value,
+                    onTap: ro ? null : () => _set(() => _type = value),
+                  ),
+                  const SizedBox(height: Space.sm),
+                ],
               ],
             ),
           ),
-
-          // วันที่ทำกิจกรรม (Required)
           FormSectionCard(
-            title: 'วันที่ทำกิจกรรม *',
-            example: 'ตัวอย่าง: 10 มกราคม 2569',
-            icon: PhosphorIconsRegular.calendarDots,
-            iconColor: Colors.purple,
-            child: GestureDetector(
-              onTap: _pickDate,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
+            title: 'รายละเอียด',
+            icon: AppIcons.note,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DatePickerField(
+                  label: 'วันที่ทำ',
+                  value: _date,
+                  enabled: !ro,
+                  onChanged: (d) => _set(() => _date = d),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      PhosphorIconsRegular.calendarDots,
-                      color: Colors.grey,
-                      size: 20),
-                    const SizedBox(width: 10),
-                    Text(
-                      _formatDate(_activityDate),
-                      style: TextStyle(
-                        color: _activityDate != null
-                            ? Colors.black
-                            : Colors.grey,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      PhosphorIconsRegular.caretRight,
-                      color: Colors.grey,
-                      size: 16),
-                  ],
+                const SizedBox(height: Space.lg),
+                AppTextField(
+                  label: 'สิ่งที่ทำ',
+                  controller: _description,
+                  hint: 'เช่น ตัดหญ้ารอบโคนต้นทั้งแปลง',
+                  maxLines: 3,
+                  minLines: 2,
+                  maxLength: 300,
+                  enabled: !ro,
                 ),
-              ),
+                const SizedBox(height: Space.lg),
+                AppTextField(label: 'ผู้ปฏิบัติงาน', controller: _worker, hint: 'เช่น นายสมชาย', enabled: !ro),
+                const SizedBox(height: Space.lg),
+                pick('เครื่องมือหรืออุปกรณ์', 'เลือกอุปกรณ์', _machines, _machine, (v) => _machine = v),
+                if (_type == 'IPM_PEST_CONTROL' || _type == 'WEED_CONTROL')
+                  pick('สารหรือชีวภัณฑ์ที่ใช้', 'เลือกสาร', _materials, _material, (v) => _material = v),
+                if (_type == 'WATER_QUALITY')
+                  pick('ผลตรวจน้ำ', 'เลือกผลตรวจ', _water, _waterQuality, (v) => _waterQuality = v),
+              ],
             ),
           ),
-
-          // รายละเอียดกิจกรรม
-          FormSectionCard(
-            title: 'รายละเอียดกิจกรรม *',
-            example:
-                'ตัวอย่าง: ไถพรวนดินด้วยรถไถเดินตาม ใส่ปุ๋ยหมักจากใบกระท่อมเก่า',
-            icon: PhosphorIconsRegular.fileText,
-            iconColor: Colors.blue,
-            child: TextField(
-              controller: _descriptionController,
-              maxLines: 3,
-              maxLength: 500,
-              decoration: InputDecoration(
-                hintText: 'อธิบายรายละเอียดกิจกรรมที่ทำ (อย่างน้อย 5 ตัวอักษร)',
-                hintStyle: TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: const TextStyle(),
-            ),
-          ),
-
-          // ผู้ปฏิบัติงาน
-          FormSectionCard(
-            title: 'ผู้ปฏิบัติงาน',
-            example: 'ตัวอย่าง: นายแดง อุดมทรัพย์',
-            icon: PhosphorIconsRegular.user,
-            iconColor: Colors.grey,
-            child: TextField(
-              controller: _workerNameController,
-              maxLength: 100,
-              decoration: InputDecoration(
-                hintText: 'กรอกชื่อผู้ปฏิบัติงาน',
-                hintStyle: TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: const TextStyle(),
-            ),
-          ),
-
-          // เครื่องจักร/อุปกรณ์
-          FormSectionCard(
-            title: 'เครื่องจักร/อุปกรณ์ที่ใช้',
-            example: 'เลือกหรือระบุเครื่องจักรที่ใช้',
-            icon: PhosphorIconsRegular.gear,
-            iconColor: Colors.orange,
-            child: FormDropdownWithOther(
-              label: 'เครื่องจักร/อุปกรณ์',
-              hint: 'เลือกเครื่องจักร/อุปกรณ์',
-              options: _machineOptions,
-              value: _machineUsedController.text,
-              onChanged: (val) =>
-                  setState(() => _machineUsedController.text = val),
-              icon: PhosphorIconsRegular.truck,
-            ),
-          ),
-
-          // สารเคมี (ถ้ามี)
-          if (_activityType == 'IPM_PEST_CONTROL' ||
-              _activityType == 'WEED_CONTROL')
+          if (_type == 'RISK_EVENT')
             FormSectionCard(
-              title: 'สารเคมี/ชีวภัณฑ์ที่ใช้ (ถ้ามี)',
-              example: 'เลือกหรือระบุสารที่ใช้',
-              icon: PhosphorIconsRegular.flask,
-              iconColor: Colors.red,
+              title: 'ประเมินความเสี่ยง',
+              icon: AppIcons.warning,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          PhosphorIconsRegular.warning,
-                          color: Colors.orange,
-                          size: 16),
-                        const SizedBox(width: 8),
+                  pick('เหตุการณ์', 'เลือกเหตุการณ์', _risks, _riskType, (v) => _riskType = v),
+                  const FieldLabel('ระดับความรุนแรง'),
+                  Row(
+                    children: [
+                      for (final (i, level) in RiskLevel.values.indexed) ...[
+                        if (i > 0) const SizedBox(width: Space.sm),
                         Expanded(
-                          child: Text(
-                            'สำหรับกระท่อม ควรใช้ชีวภัณฑ์/สมุนไพรแทนสารเคมี',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.orange.shade700,
+                          child: ChoiceChip(
+                            label: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                switch (level) {
+                                  RiskLevel.LOW => 'ต่ำ',
+                                  RiskLevel.MEDIUM => 'กลาง',
+                                  RiskLevel.HIGH => 'สูง',
+                                },
+                                textAlign: TextAlign.center,
+                              ),
                             ),
+                            selected: _riskLevel == level,
+                            selectedColor: switch (level) {
+                              RiskLevel.LOW => p.successSoft,
+                              RiskLevel.MEDIUM => p.warningSoft,
+                              RiskLevel.HIGH => p.dangerSoft,
+                            },
+                            onSelected: ro ? null : (_) => _set(() => _riskLevel = level),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  FormDropdownWithOther(
-                    label: 'สารเคมี/ชีวภัณฑ์',
-                    hint: 'เลือกสารที่ใช้',
-                    options: _chemicalOptions,
-                    value: _chemicalUsedController.text,
-                    onChanged: (val) =>
-                        setState(() => _chemicalUsedController.text = val),
-                    icon: PhosphorIconsRegular.flask,
-                  ),
+                  const SizedBox(height: Space.lg),
+                  pick('ผลกระทบ', 'เลือกผลกระทบ', _impacts, _impact, (v) => _impact = v),
+                  pick('การแก้ไข', 'เลือกวิธีแก้ไข', _mitigations, _mitigation, (v) => _mitigation = v),
                 ],
               ),
             ),
-
-          // คุณภาพน้ำ (ถ้าเลือก WATER_QUALITY)
-          if (_activityType == 'WATER_QUALITY')
-            FormSectionCard(
-              title: 'ผลตรวจคุณภาพน้ำ *',
-              example: 'เลือกผลการตรวจ',
-              icon: PhosphorIconsRegular.flask,
-              iconColor: Colors.cyan,
-              child: FormDropdownWithOther(
-                label: 'คุณภาพน้ำ',
-                hint: 'เลือกผลตรวจคุณภาพน้ำ',
-                options: _waterQualityOptions,
-                value: _waterQualityController.text,
-                onChanged: (val) =>
-                    setState(() => _waterQualityController.text = val),
-                icon: PhosphorIconsRegular.eyedropper,
-              ),
-            ),
-
-          // ความเสี่ยง (ถ้าเลือก RISK_EVENT)
-          if (_activityType == 'RISK_EVENT') ...[
-            FormSectionCard(
-              title: 'ประเภทความเสี่ยง *',
-              example: 'เลือกเหตุการณ์ความเสี่ยง',
-              icon: PhosphorIconsRegular.warning,
-              iconColor: Colors.red,
-              child: FormDropdownWithOther(
-                label: 'ความเสี่ยง',
-                hint: 'เลือกประเภทความเสี่ยง',
-                options: _riskTypeOptions,
-                value: _riskTypeController.text,
-                onChanged: (val) =>
-                    setState(() => _riskTypeController.text = val),
-                icon: PhosphorIconsRegular.bug,
-              ),
-            ),
-            FormSectionCard(
-              title: 'ระดับความเสี่ยง *',
-              example: 'เลือกระดับความรุนแรง',
-              icon: PhosphorIconsRegular.wifiSlash,
-              iconColor: Colors.amber,
-              child: FormDropdownWithOther(
-                label: 'ระดับความเสี่ยง',
-                hint: 'เลือกระดับความเสี่ยง',
-                options: const ['ต่ำ (Low)', 'กลาง (Medium)', 'สูง (High)'],
-                value: _riskLevelController.text,
-                onChanged: (val) =>
-                    setState(() => _riskLevelController.text = val),
-                icon: PhosphorIconsRegular.chartBar,
-              ),
-            ),
-            FormSectionCard(
-              title: 'ผลกระทบ *',
-              example: 'ระบุผลกระทบที่เกิดขึ้น',
-              icon: PhosphorIconsRegular.fire,
-              iconColor: Colors.orange,
-              child: FormDropdownWithOther(
-                label: 'ผลกระทบ',
-                hint: 'เลือกผลกระทบ',
-                options: _riskImpactOptions,
-                value: _riskImpactController.text,
-                onChanged: (val) =>
-                    setState(() => _riskImpactController.text = val),
-                icon: PhosphorIconsRegular.chartBar,
-              ),
-            ),
-            FormSectionCard(
-              title: 'การแก้ไข/บรรเทา *',
-              example: 'ระบุวิธีแก้ไข',
-              icon: PhosphorIconsRegular.wrench,
-              iconColor: Colors.green,
-              child: FormDropdownWithOther(
-                label: 'การแก้ไข',
-                hint: 'เลือกวิธีการแก้ไข',
-                options: _mitigationOptions,
-                value: _mitigationController.text,
-                onChanged: (val) =>
-                    setState(() => _mitigationController.text = val),
-                icon: PhosphorIconsRegular.lifebuoy,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 20),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActivityOption(
-    String value,
-    String title,
-    String subtitle,
-    IconData icon,
-    Color color,
-  ) {
-    final isSelected = _activityType == value;
-    return GestureDetector(
-      onTap: () => setState(() => _activityType = value),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade200,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              isSelected ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
-              color: isSelected ? color : Colors.grey,
-              size: 20,
-            ),
-          ],
-        ),
       ),
     );
   }

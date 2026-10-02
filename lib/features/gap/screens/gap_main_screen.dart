@@ -7,6 +7,8 @@ import '../../../core/utils/thai_date.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../data/models/gap_draft_model.dart';
 import '../gap_categories.dart';
+import '../gap_labels.dart';
+import '../widgets/gap_form_wrapper.dart';
 import 'forms/gap_general_form.dart';
 import 'forms/gap_harvest_form.dart';
 import 'forms/gap_inputs_form.dart';
@@ -65,58 +67,56 @@ class _GapMainScreenState extends State<GapMainScreen> {
     }
   }
 
-  Widget _formFor(GapCategory category) {
-    final progress = _progress ?? GapProgress.empty;
-    Map<String, dynamic>? first(List<dynamic> list) =>
-        list.isNotEmpty && list.first is Map
-            ? Map<String, dynamic>.from(list.first as Map)
-            : null;
+  /// The form for [category]. List categories take the record to edit,
+  /// or none to add a new one.
+  Widget _formFor(GapCategory category, {Map<String, dynamic>? record}) {
     final id = widget.plotId;
+    final ro = widget.isReadOnly;
+    final recordId = record?['id']?.toString();
     return switch (category) {
-      GapCategory.general => GapGeneralForm(plotId: id),
-      GapCategory.inputs => GapInputsForm(
-          plotId: id,
-          existingId: first(progress.inputs)?['id']?.toString(),
-          existingData: first(progress.inputs),
-        ),
-      GapCategory.management => GapManagementForm(
-          plotId: id,
-          existingId: first(progress.activities)?['id']?.toString(),
-          existingData: first(progress.activities),
-        ),
-      GapCategory.harvest => GapHarvestForm(
-          plotId: id,
-          existingId: first(progress.harvests)?['id']?.toString(),
-          existingData: first(progress.harvests),
-        ),
+      GapCategory.general => GapGeneralForm(plotId: id, isReadOnly: ro),
+      GapCategory.inputs => GapInputsForm(plotId: id, isReadOnly: ro),
+      GapCategory.management =>
+        GapManagementForm(plotId: id, existingId: recordId, existingData: record, isReadOnly: ro),
+      GapCategory.harvest => GapHarvestForm(plotId: id, existingId: recordId, existingData: record, isReadOnly: ro),
       GapCategory.postHarvest => GapPostHarvestForm(
           plotId: id,
-          existingId: first(progress.postHarvests)?['id']?.toString(),
-          existingData: first(progress.postHarvests),
+          harvestId: record?['harvestId']?.toString(),
+          existingId: recordId,
+          existingData: record,
+          isReadOnly: ro,
         ),
-      GapCategory.safety => GapSafetyForm(
-          plotId: id,
-          existingId: first(progress.trainings)?['id']?.toString(),
-          existingData: first(progress.trainings),
-        ),
-      GapCategory.traceability => GapTraceabilityForm(
-          plotId: id,
-          isReadOnly: widget.isReadOnly,
-        ),
+      GapCategory.safety => GapSafetyForm(plotId: id, existingId: recordId, existingData: record, isReadOnly: ro),
+      GapCategory.traceability => GapTraceabilityForm(plotId: id, isReadOnly: ro),
     };
   }
 
+  static const _listCategories = {
+    GapCategory.management,
+    GapCategory.harvest,
+    GapCategory.postHarvest,
+    GapCategory.safety,
+  };
+
   Future<void> _open(GapCategory category) async {
-    if (widget.isReadOnly && category != GapCategory.traceability) {
-      AppToast.show(
+    Map<String, dynamic>? record;
+    final items = (_progress ?? GapProgress.empty).items(category);
+    if (_listCategories.contains(category) && items.isNotEmpty) {
+      final picked = await showAppSheet<Object>(
         context,
-        'แปลงที่รับรองแล้วเปิดดูได้อย่างเดียว ดูรายละเอียดได้ที่สรุปข้อมูล',
-        tone: Tone.warning,
+        title: '${category.code} ${category.title}',
+        subtitle: '${items.length} รายการ',
+        expand: true,
+        child: _RecordPicker(category: category, items: items, readOnly: widget.isReadOnly),
       );
+      if (picked == null || !mounted) return;
+      if (picked is Map) record = Map<String, dynamic>.from(picked);
+    } else if (widget.isReadOnly && _listCategories.contains(category)) {
+      AppToast.info(context, 'ยังไม่มีบันทึกในหมวดนี้');
       return;
     }
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => _formFor(category)),
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => _formFor(category, record: record)),
     );
     GapService.invalidate(widget.plotId);
     if (mounted) _load(force: true);
@@ -406,6 +406,58 @@ class _CategoryRow extends StatelessWidget {
             const StatusBadge(label: 'ยังไม่บันทึก', dot: false),
         ],
       ),
+    );
+  }
+}
+
+/// Lists a category's saved records. Pops with the record to edit, or the
+/// string 'new' to add one.
+class _RecordPicker extends StatelessWidget {
+  const _RecordPicker({required this.category, required this.items, required this.readOnly});
+
+  final GapCategory category;
+  final List<dynamic> items;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!readOnly)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.md),
+            child: GapAddButton(
+              label: 'เพิ่มรายการใหม่',
+              onPressed: () => Navigator.of(context).pop('new'),
+            ),
+          ),
+        Flexible(
+          child: ListView(
+            shrinkWrap: true,
+            padding: EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.xl + MediaQuery.paddingOf(context).bottom),
+            children: [
+              for (final (i, item) in items.indexed)
+                if (item is Map)
+                  Builder(builder: (context) {
+                    final e = GapLabels.entry(category, item, i);
+                    return GapRecordTile(
+                      icon: category.icon,
+                      title: e.title,
+                      subtitle: e.subtitle,
+                      onTap: () => Navigator.of(context).pop(item),
+                      trailing: Icon(
+                        readOnly ? AppIcons.eye : AppIcons.edit,
+                        size: 18,
+                        color: context.palette.inkSubtle,
+                      ),
+                    );
+                  }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
