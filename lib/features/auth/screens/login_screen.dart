@@ -255,9 +255,18 @@ class _DemoAccounts extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'โหมดสาธิต: เลือกบัญชีตัวอย่าง  PIN เจ้าหน้าที่ ${DemoAccounts.pin}  ผู้ดูแลระบบ ${DemoAccounts.superPin}',
-            style: context.text.labelMedium?.copyWith(color: p.ink),
+          Text('โหมดสาธิต เลือกบัญชีตัวอย่าง', style: context.text.labelLarge?.copyWith(color: p.ink)),
+          const SizedBox(height: 2),
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(text: 'PIN เจ้าหน้าที่ '),
+                TextSpan(text: DemoAccounts.pin, style: context.text.labelMedium?.mono),
+                const TextSpan(text: '   ผู้ดูแลระบบ '),
+                TextSpan(text: DemoAccounts.superPin, style: context.text.labelMedium?.mono),
+              ],
+            ),
+            style: context.text.labelMedium?.copyWith(color: p.inkMuted),
           ),
           const SizedBox(height: Space.sm),
           Wrap(

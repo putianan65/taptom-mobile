@@ -19,12 +19,7 @@ extension DesignContext on BuildContext {
   bool get isCompact => windowSize == WindowSize.compact;
 
   /// Horizontal padding that grows with the window so content stays centred
-  /// and readable on tablets and the web.
-  double get pageGutter {
-    final width = MediaQuery.sizeOf(this).width;
-    if (width <= Breakpoints.maxContent + Space.gutter * 2) {
-      return Space.gutter;
-    }
-    return (width - Breakpoints.maxContent) / 2;
-  }
+  /// and readable on tablets and the web. Inside a page beside a navigation
+  /// rail, prefer [Breakpoints.gutterFor] on the layout width.
+  double get pageGutter => Breakpoints.gutterFor(MediaQuery.sizeOf(this).width);
 }

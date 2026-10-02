@@ -198,8 +198,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
-  void _push(Widget page) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  void _push(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +218,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: HeroHeader(
+                maxWidth: 960,
                 minHeight: 188,
                 child: StaffGreeting(user: user, roleLabel: 'เจ้าหน้าที่', roleIcon: AppIcons.officer),
               ),
@@ -261,9 +261,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             icon: AppIcons.plot,
                             tone: Tone.warning,
                             dense: true,
-                            onTap: () => _push(
-                              const AdminPlotListScreen(initialStatusFilter: 'PENDING'),
-                            ),
+                            onTap: () => _push(const AdminPlotListScreen(initialStatusFilter: 'PENDING')),
                           ),
                           StatTile(
                             value: admin.gapAnalytics?.plotsWithGap ?? 0,
@@ -326,9 +324,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             icon: AppIcons.gap,
                             title: 'แปลงที่อนุมัติ',
                             caption: 'รายการและพิกัด',
-                            onTap: () => _push(
-                              const AdminPlotListScreen(initialStatusFilter: 'APPROVED'),
-                            ),
+                            onTap: () => _push(const AdminPlotListScreen(initialStatusFilter: 'APPROVED')),
                           ),
                           ShortcutCard(
                             icon: AppIcons.plot,
@@ -352,9 +348,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             title: 'สมาชิกใหม่',
                             subtitle: '7 วันล่าสุด',
                             unit: ' คน',
-                            points: [
-                              for (final t in admin.userTrends) TrendPoint(t.date, t.count),
-                            ],
+                            points: [for (final t in admin.userTrends) TrendPoint(t.date, t.count)],
                           );
                           final gap = admin.gapAnalytics;
                           final total = gap?.totalPlots ?? 0;
@@ -373,7 +367,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           );
                           if (c.maxWidth < 720) {
                             return Column(
-                              children: [trend, const SizedBox(height: Space.md), breakdown],
+                              children: [
+                                trend,
+                                const SizedBox(height: Space.md),
+                                breakdown,
+                              ],
                             );
                           }
                           return Row(
@@ -400,12 +398,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
 /// Greeting block on staff hero headers.
 class StaffGreeting extends StatelessWidget {
-  const StaffGreeting({
-    super.key,
-    required this.user,
-    required this.roleLabel,
-    required this.roleIcon,
-  });
+  const StaffGreeting({super.key, required this.user, required this.roleLabel, required this.roleIcon});
 
   final UserModel? user;
   final String roleLabel;
@@ -423,10 +416,7 @@ class StaffGreeting extends StatelessWidget {
             const SizedBox(width: Space.md),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.14),
-                borderRadius: Radii.chip,
-              ),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: Radii.chip),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -475,12 +465,7 @@ class StaffGreeting extends StatelessWidget {
 }
 
 class _RequestCard extends StatelessWidget {
-  const _RequestCard({
-    required this.user,
-    required this.busy,
-    required this.onApprove,
-    required this.onReject,
-  });
+  const _RequestCard({required this.user, required this.busy, required this.onApprove, required this.onReject});
 
   final UserModel user;
   final bool busy;
@@ -543,13 +528,7 @@ class _RequestCard extends StatelessWidget {
 
 /// Tile for a staff task shortcut.
 class ShortcutCard extends StatelessWidget {
-  const ShortcutCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.caption,
-    required this.onTap,
-  });
+  const ShortcutCard({super.key, required this.icon, required this.title, required this.caption, required this.onTap});
 
   final IconData icon;
   final String title;
@@ -594,8 +573,7 @@ class AdminProfileScreen extends StatelessWidget {
     if (ok && context.mounted) await context.read<AuthProvider>().signOut();
   }
 
-  void _push(BuildContext context, Widget page) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  void _push(BuildContext context, Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   @override
   Widget build(BuildContext context) {
@@ -621,10 +599,7 @@ class AdminProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(user?.fullName ?? '-', style: context.text.headlineSmall),
-                      Text(
-                        user?.phone ?? '',
-                        style: context.text.bodyMedium?.copyWith(color: p.inkMuted).mono,
-                      ),
+                      Text(user?.phone ?? '', style: context.text.bodyMedium?.copyWith(color: p.inkMuted).mono),
                       const SizedBox(height: Space.sm),
                       Wrap(
                         spacing: Space.sm,
@@ -674,15 +649,9 @@ class AdminProfileScreen extends StatelessWidget {
                 icon: AppIcons.audit,
                 title: 'ประวัติการทำรายการ',
                 subtitle: 'การอนุมัติและแก้ไขข้อมูลที่ผ่านมา',
-                onTap: () => isSuper
-                    ? context.push(Routes.superLogs)
-                    : _push(context, const AuditLogScreen()),
+                onTap: () => isSuper ? context.push(Routes.superLogs) : _push(context, const AuditLogScreen()),
               ),
-              ListRow(
-                icon: AppIcons.chats,
-                title: 'ข้อความ',
-                onTap: () => context.push(Routes.adminMessages),
-              ),
+              ListRow(icon: AppIcons.chats, title: 'ข้อความ', onTap: () => context.push(Routes.adminMessages)),
               ListRow(
                 icon: AppIcons.support,
                 title: 'คำร้องขอความช่วยเหลือ',
@@ -707,10 +676,8 @@ class AdminProfileScreen extends StatelessWidget {
                 icon: AppIcons.terms,
                 tone: Tone.neutral,
                 title: TermsContent.title,
-                onTap: () => _push(
-                  context,
-                  const ContentDisplayScreen(title: TermsContent.title, content: TermsContent.body),
-                ),
+                onTap: () =>
+                    _push(context, const ContentDisplayScreen(title: TermsContent.title, content: TermsContent.body)),
               ),
               ListRow(
                 icon: AppIcons.privacy,

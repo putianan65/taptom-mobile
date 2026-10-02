@@ -38,11 +38,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     return AppShell(
       key: _shell,
       overlay: const StaffNotificationBanner(),
-      railFooter: const StatusBadge(
-        label: 'ผู้ดูแลระบบ',
-        tone: Tone.brand,
-        icon: AppIcons.superAdmin,
-      ),
+      railFooter: const StatusBadge(label: 'ผู้ดูแลระบบ', tone: Tone.brand, icon: AppIcons.superAdmin),
       destinations: [
         ShellDestination(
           label: 'ภาพรวม',
@@ -102,10 +98,7 @@ class _SuperAdminHomeScreenState extends State<SuperAdminHomeScreen> {
 
   Future<void> _load() async {
     final service = context.read<SuperAdminService>();
-    final results = await Future.wait([
-      service.getSystemStats(),
-      service.getRegistrationTrends(period: _period),
-    ]);
+    final results = await Future.wait([service.getSystemStats(), service.getRegistrationTrends(period: _period)]);
     if (!mounted) return;
     setState(() {
       _stats = results[0] as Map<String, dynamic>;
@@ -153,12 +146,9 @@ class _SuperAdminHomeScreenState extends State<SuperAdminHomeScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: HeroHeader(
+                maxWidth: 1040,
                 minHeight: 188,
-                child: StaffGreeting(
-                  user: user,
-                  roleLabel: 'ผู้ดูแลระบบ',
-                  roleIcon: AppIcons.superAdmin,
-                ),
+                child: StaffGreeting(user: user, roleLabel: 'ผู้ดูแลระบบ', roleIcon: AppIcons.superAdmin),
               ),
             ),
             SliverToBoxAdapter(
@@ -179,6 +169,7 @@ class _SuperAdminHomeScreenState extends State<SuperAdminHomeScreen> {
                       else
                         AdaptiveGrid(
                           minTileWidth: 150,
+                          maxColumns: 3,
                           spacing: Space.sm,
                           children: [
                             StatTile(
@@ -276,7 +267,11 @@ class _SuperAdminHomeScreenState extends State<SuperAdminHomeScreen> {
                           );
                           if (c.maxWidth < 760) {
                             return Column(
-                              children: [trend, const SizedBox(height: Space.md), breakdown],
+                              children: [
+                                trend,
+                                const SizedBox(height: Space.md),
+                                breakdown,
+                              ],
                             );
                           }
                           return Row(
@@ -351,9 +346,7 @@ class SkeletonDashboardGrid extends StatelessWidget {
       child: AdaptiveGrid(
         minTileWidth: 150,
         spacing: Space.sm,
-        children: [
-          for (var i = 0; i < 6; i++) const SkeletonBox(height: 82, radius: Radii.lg),
-        ],
+        children: [for (var i = 0; i < 6; i++) const SkeletonBox(height: 82, radius: Radii.lg)],
       ),
     );
   }

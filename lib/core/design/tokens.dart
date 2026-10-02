@@ -60,6 +60,13 @@ abstract final class Breakpoints {
   static const double maxContent = 760;
   static const double maxForm = 520;
 
+  /// Side padding that centres [maxWidth] of content in [width], never less
+  /// than the phone gutter. Matches the left edge of ContentWidth.
+  static double gutterFor(double width, {double maxWidth = maxContent}) {
+    if (width <= maxWidth) return Space.gutter;
+    return Space.gutter + (width - maxWidth) / 2;
+  }
+
   static WindowSize of(double width) {
     if (width >= expanded) return WindowSize.expanded;
     if (width >= medium) return WindowSize.medium;

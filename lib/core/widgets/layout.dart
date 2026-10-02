@@ -68,15 +68,16 @@ class PageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) => _build(context, Breakpoints.gutterFor(c.maxWidth)));
+  }
+
+  Widget _build(BuildContext context, double gutter) {
     final p = context.palette;
-    final gutter = context.pageGutter;
     final canPop = showBack ?? Navigator.of(context).canPop();
     final expanded = subtitle == null ? 112.0 : 136.0;
 
     Widget scroll = CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(
-        parent: BouncingScrollPhysics(),
-      ),
+      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
       slivers: [
         SliverAppBar(
           pinned: true,
@@ -85,7 +86,8 @@ class PageScaffold extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
           leadingWidth: canPop || leading != null ? 64 : 0,
-          leading: leading ??
+          leading:
+              leading ??
               (canPop
                   ? Padding(
                       padding: const EdgeInsets.only(left: 12),
@@ -114,11 +116,7 @@ class PageScaffold extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: gutter),
             sliver: sliver,
           ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: bottomPadding + MediaQuery.paddingOf(context).bottom,
-          ),
-        ),
+        SliverToBoxAdapter(child: SizedBox(height: bottomPadding + MediaQuery.paddingOf(context).bottom)),
       ],
     );
 
@@ -142,12 +140,7 @@ class PageScaffold extends StatelessWidget {
 }
 
 class _CollapsingTitle extends StatelessWidget {
-  const _CollapsingTitle({
-    required this.title,
-    required this.subtitle,
-    required this.gutter,
-    required this.hasLeading,
-  });
+  const _CollapsingTitle({required this.title, required this.subtitle, required this.gutter, required this.hasLeading});
 
   final String title;
   final String? subtitle;
@@ -157,15 +150,13 @@ class _CollapsingTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final settings =
-        context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    final settings = context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
     final top = MediaQuery.paddingOf(context).top;
     return LayoutBuilder(
       builder: (context, constraints) {
         final min = settings?.minExtent ?? kToolbarHeight + top;
         final max = settings?.maxExtent ?? constraints.maxHeight;
-        final t = ((constraints.maxHeight - min) / math.max(1, max - min))
-            .clamp(0.0, 1.0);
+        final t = ((constraints.maxHeight - min) / math.max(1, max - min)).clamp(0.0, 1.0);
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -189,12 +180,7 @@ class _CollapsingTitle extends StatelessWidget {
                 opacity: (1 - t * 2.5).clamp(0.0, 1.0),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.titleMedium,
-                  ),
+                  child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
                 ),
               ),
             ),
@@ -225,9 +211,7 @@ class _CollapsingTitle extends StatelessWidget {
                           subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: context.text.bodyMedium?.copyWith(
-                            color: p.inkMuted,
-                          ),
+                          style: context.text.bodyMedium?.copyWith(color: p.inkMuted),
                         ),
                     ],
                   ),
@@ -312,27 +296,38 @@ class HeroHeader extends StatelessWidget {
     required this.child,
     this.trailing,
     this.minHeight = 200,
+    this.maxWidth = Breakpoints.maxContent,
   });
 
   final Widget child;
   final Widget? trailing;
   final double minHeight;
 
+  /// Width of the [ContentWidth] below, so the greeting lines up with the
+  /// body on wide screens.
+  final double maxWidth;
+
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    final gutter = context.pageGutter;
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Same left edge as ContentWidth: centred box plus its inner gutter,
+        // measured on the space the page actually has (beside a rail).
+        final gutter = Breakpoints.gutterFor(c.maxWidth, maxWidth: maxWidth);
+        return _build(context, top, gutter);
+      },
+    );
+  }
+
+  Widget _build(BuildContext context, double top, double gutter) {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight + top),
       child: Stack(
         children: [
           const Positioned.fill(child: ContourBackdrop()),
-          if (trailing != null)
-            Positioned(right: math.max(8, gutter - 12), bottom: 0, child: trailing!),
-          Padding(
-            padding: EdgeInsets.fromLTRB(gutter, top + Space.lg, gutter, Space.x4 + Radii.xl),
-            child: child,
-          ),
+          if (trailing != null) Positioned(right: math.max(8, gutter - 12), bottom: 0, child: trailing!),
+          Padding(padding: EdgeInsets.fromLTRB(gutter, top + Space.lg, gutter, Space.x4 + Radii.xl), child: child),
           // The top of the sheet that follows. Painted here rather than by
           // overlapping slivers, because a viewport paints earlier slivers on
           // top of later ones.
@@ -387,18 +382,13 @@ class AdaptiveGrid extends StatelessWidget {
       builder: (context, constraints) {
         final cols = math.max(
           1,
-          math.min(
-            maxColumns,
-            ((constraints.maxWidth + spacing) / (minTileWidth + spacing)).floor(),
-          ),
+          math.min(maxColumns, ((constraints.maxWidth + spacing) / (minTileWidth + spacing)).floor()),
         );
         final w = (constraints.maxWidth - spacing * (cols - 1)) / cols;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: [
-            for (final c in children) SizedBox(width: w, child: c),
-          ],
+          children: [for (final c in children) SizedBox(width: w, child: c)],
         );
       },
     );
