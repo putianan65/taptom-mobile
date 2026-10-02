@@ -1,98 +1,48 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:provider/provider.dart';
 
-/// หน้าจอสำหรับแสดง PDF ใบรับรอง
-class CertificateViewerScreen extends StatefulWidget {
-  final String pdfPath;
-  
-  const CertificateViewerScreen({super.key, required this.pdfPath});
+import '../../../core/services/certificate_pdf_service.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/plot_model.dart';
 
-  @override
-  State<CertificateViewerScreen> createState() => _CertificateViewerScreenState();
-}
+/// Previews a plot's GAP certificate with print and share built in.
+class CertificateViewerScreen extends StatelessWidget {
+  const CertificateViewerScreen({super.key, required this.plot, required this.ownerName});
 
-class _CertificateViewerScreenState extends State<CertificateViewerScreen> {
-  
+  final PlotModel plot;
+  final String ownerName;
+
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final service = context.read<CertificatePdfService>();
+    final fileName = 'GAP-${plot.name.replaceAll(' ', '_')}.pdf';
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: p.surfaceSunken,
       appBar: AppBar(
-        title: Text(
-          'ใบรับรอง GAP',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.success,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(PhosphorIconsRegular.shareNetwork, color: Colors.white),
-            onPressed: _sharePdf,
-            tooltip: 'แชร์',
-          ),
-          IconButton(
-            icon: const Icon(PhosphorIconsRegular.printer, color: Colors.white),
-            onPressed: _printPdf,
-            tooltip: 'พิมพ์',
-          ),
-        ],
+        title: Text('ใบรับรอง GAP', style: context.text.titleMedium),
+        backgroundColor: p.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(bottom: BorderSide(color: p.line)),
       ),
       body: PdfPreview(
-        build: (format) async {
-          final file = File(widget.pdfPath);
-          return await file.readAsBytes();
-        },
+        build: (_) => service.buildCertificate(plot, ownerName: ownerName),
+        pdfFileName: fileName,
         canChangeOrientation: false,
         canChangePageFormat: false,
         canDebug: false,
-        allowPrinting: true,
-        allowSharing: true,
-        pdfFileName: widget.pdfPath.split('/').last,
+        loadingWidget: const CircularProgressIndicator(),
+        onError: (context, error) => const ErrorState(
+          title: 'สร้างใบรับรองไม่สำเร็จ',
+          message: 'ลองใหม่อีกครั้ง หากยังไม่ได้ ติดต่อเจ้าหน้าที่',
+        ),
+        pdfPreviewPageDecoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: p.shadow, blurRadius: 16, offset: const Offset(0, 6))],
+        ),
+        scrollViewDecoration: BoxDecoration(color: p.surfaceSunken),
       ),
     );
-  }
-  
-  Future<void> _sharePdf() async {
-    try {
-      await Share.shareXFiles(
-        [XFile(widget.pdfPath)],
-        text: 'ใบรับรองมาตรฐาน GAP',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: const TextStyle()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-  
-  Future<void> _printPdf() async {
-    try {
-      final file = File(widget.pdfPath);
-      final bytes = await file.readAsBytes();
-      await Printing.layoutPdf(onLayout: (_) async => bytes);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: const TextStyle()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }

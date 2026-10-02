@@ -84,6 +84,10 @@ flutter:
   assets:
     - assets/images/partners/
     - assets/images/news/
+    # Sarabun is embedded in generated PDFs only, so it is an asset
+    # rather than an app font.
+    - assets/fonts/Sarabun-Regular.ttf
+    - assets/fonts/Sarabun-Bold.ttf
     - .env
 
   shaders:

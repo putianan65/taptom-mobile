@@ -5,6 +5,7 @@ import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import '../utils/date_formatter.dart';
 import '../config/env.dart';
+import 'pdf_assets.dart';
 
 // ==================== EXCEPTIONS ====================
 
@@ -167,8 +168,7 @@ class PdfGeneratorService {
   Future<pw.Font> _loadFont() async {
     if (_fontCache != null) return _fontCache!;
     try {
-      _fontCache = await PdfGoogleFonts.sarabunRegular()
-          .timeout(const Duration(seconds: 5));
+      _fontCache = await PdfAssets.regular();
       return _fontCache!;
     } catch (e) {
       throw PdfGenerationException('ไม่สามารถโหลดฟอนต์ได้', e);
@@ -178,8 +178,7 @@ class PdfGeneratorService {
   Future<pw.Font> _loadFontBold() async {
     if (_fontBoldCache != null) return _fontBoldCache!;
     try {
-      _fontBoldCache = await PdfGoogleFonts.sarabunBold()
-          .timeout(const Duration(seconds: 5));
+      _fontBoldCache = await PdfAssets.bold();
       return _fontBoldCache!;
     } catch (e) {
       throw PdfGenerationException('ไม่สามารถโหลดฟอนต์ตัวหนาได้', e);
