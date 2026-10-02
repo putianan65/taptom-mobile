@@ -25,7 +25,7 @@ import '../features/super_admin/screens/admin_detail_screen.dart';
 import '../features/super_admin/screens/admin_management_screen.dart';
 import '../features/super_admin/screens/create_admin_screen.dart';
 import '../features/super_admin/screens/super_admin_dashboard_screen.dart';
-import '../features/super_admin/screens/system_logs_screen.dart';
+import '../features/admin/screens/audit_log_screen.dart';
 import '../features/traceability/screens/qr_scanner_screen.dart';
 import '../features/traceability/screens/traceability_report_screen.dart';
 import 'routes.dart';
@@ -161,7 +161,7 @@ GoRouter buildRouter(AuthProvider auth) {
       ),
       GoRoute(
         path: Routes.superLogs,
-        builder: (_, __) => const SystemLogsScreen(),
+        builder: (_, __) => const AuditLogScreen(),
       ),
       GoRoute(
         path: Routes.superUsers,

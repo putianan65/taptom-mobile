@@ -356,7 +356,7 @@ class AdminService {
     }
 
     // Log Audit
-    await _auditService.logAction(
+    _auditService.logAction(
       action: 'APPROVE_USER',
       resourceType: 'USER',
       resourceId: userId,
@@ -402,7 +402,7 @@ class AdminService {
     }
 
     // Log Audit
-    await _auditService.logAction(
+    _auditService.logAction(
       action: 'REJECT_USER',
       resourceType: 'USER',
       resourceId: userId,
@@ -445,7 +445,7 @@ class AdminService {
       );
 
       // Log Audit on Success
-      await _auditService.logAction(
+      _auditService.logAction(
         action: 'GAP_FEEDBACK',
         resourceType: 'GAP',
         resourceId: plotId,
@@ -486,7 +486,7 @@ class AdminService {
       );
 
       // Log Audit on Success
-      await _auditService.logAction(
+      _auditService.logAction(
         action: 'UPDATE_PLOT',
         resourceType: 'PLOT',
         resourceId: plotId,
@@ -509,7 +509,7 @@ class AdminService {
       await _apiClient.patch(ApiEndpoints.traceability(id), data: data);
       
       // Log Audit
-      await _auditService.logAction(
+      _auditService.logAction(
         action: 'UPDATE_TRACEABILITY',
         resourceType: 'TRACEABILITY',
         resourceId: id,
@@ -528,7 +528,7 @@ class AdminService {
       await _apiClient.delete(ApiEndpoints.traceability(id));
       
       // Log Audit
-      await _auditService.logAction(
+      _auditService.logAction(
         action: 'DELETE_TRACEABILITY',
         resourceType: 'TRACEABILITY',
         resourceId: id,

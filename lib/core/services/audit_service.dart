@@ -1,84 +1,48 @@
-import 'package:dio/dio.dart';
-import '../network/api_client.dart';
-import '../network/api_endpoints.dart';
-import '../../data/models/audit_log_model.dart';
 import 'package:flutter/foundation.dart';
 
-/// Audit service for logging admin actions
+import '../../data/models/audit_log_model.dart';
+import '../network/api_client.dart';
+import '../network/api_endpoints.dart';
+
+/// Reads and writes the staff audit trail.
 class AuditService {
   final ApiClient _apiClient = ApiClient();
 
-  /// Log an admin action
-  Future<void> logAction({
+  /// Records a staff action. Fire and forget: a failed write must never
+  /// block the action it describes.
+  void logAction({
     required String action,
     String? resourceType,
     String? resourceId,
     String? details,
-  }) async {
-    try {
-      // Don't await this to keep UI responsive
-      // But in production, we might want to ensure it's sent
-      _apiClient.post(
-        ApiEndpoints.adminAuditLogs,
-        data: {
-          'action': action,
-          'resourceType': resourceType,
-          'resourceId': resourceId,
-          'details': details,
-        }
-      ).catchError((e) {
-        debugPrint('Failed to log audit action: $e');
-      });
-    } catch (e) {
-      debugPrint('Failed to initiate audit log: $e');
-    }
+  }) {
+    _apiClient.post(
+      ApiEndpoints.adminAuditLogs,
+      data: {
+        'action': action,
+        'resourceType': resourceType,
+        'resourceId': resourceId,
+        'details': details,
+      },
+    ).then<void>((_) {}, onError: (Object e) => debugPrint('Audit write failed: $e'));
   }
 
-  /// Fetch audit logs
-  Future<List<AuditLog>> getAuditLogs({
-    int limit = 50,
-    int offset = 0,
-    String? adminId,
-    String? action,
-  }) async {
-    try {
-      final queryParams = <String, dynamic>{
+  /// One page of the trail, newest first.
+  Future<List<AuditLog>> getAuditLogs({int page = 1, int limit = 20, String? action}) async {
+    final response = await _apiClient.get(
+      ApiEndpoints.adminAuditLogs,
+      queryParameters: {
+        'page': page,
         'limit': limit,
-        'offset': offset,
-      };
-      
-      if (adminId != null) queryParams['adminId'] = adminId;
-      if (action != null) queryParams['action'] = action;
-
-      final response = await _apiClient.get(
-        ApiEndpoints.adminAuditLogs,
-        queryParameters: queryParams,
-      );
-
-      final data = response.data is List
-          ? response.data
-          : (response.data['data'] ?? []);
-
-      return (data as List).map((json) => AuditLog.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error fetching audit logs: $e');
-      throw Exception('ไม่สามารถดึงข้อมูล Audit Logs ได้');
-    }
-  }
-
-  /// Get audit log by ID
-  Future<AuditLog?> getAuditLog(String id) async {
-    // TODO: Implement fetching from backend if needed
-    return null;
-  }
-
-  /// Delete audit log
-  Future<void> deleteAuditLog(String id) async {
-    // TODO: Implement deletion on backend
-  }
-
-  /// Clear audit logs (admin only)
-  Future<void> clearAuditLogs() async {
-    // TODO: Implement clearing on backend
+        if (action != null) 'action': action,
+      },
+    );
+    final body = response.data;
+    final list = body is List ? body : (body is Map ? body['data'] : null);
+    if (list is! List) return const [];
+    return [
+      for (final e in list)
+        if (e is Map) AuditLog.fromJson(Map<String, dynamic>.from(e)),
+    ];
   }
 }

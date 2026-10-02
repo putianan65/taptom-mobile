@@ -177,22 +177,6 @@ class SuperAdminService {
 
   // ==================== System Logs ====================
 
-  /// Get Audit Logs
-  Future<List<dynamic>> getAuditLogs({int page = 1, int limit = 20}) async {
-    try {
-      final response = await _apiClient.get(
-        '/admin/audit-logs',
-        queryParameters: {'page': page, 'limit': limit},
-      );
-      if (response.data is Map && response.data.containsKey('data')) {
-        return response.data['data'] as List<dynamic>;
-      }
-      return [];
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// Get PDPA Logs
   Future<List<PdpaLog>> getPdpaLogs() async {
     try {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/painting.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../config/env.dart';
@@ -62,4 +63,8 @@ abstract final class MapStyles {
         'REJECTED' => rejectedFill,
         _ => plotFill,
       };
+
+  /// [fillFor] as a Flutter colour, for legends and chips.
+  static Color colorFor(String? status) =>
+      Color(int.parse('FF${fillFor(status).substring(1)}', radix: 16));
 }
