@@ -23,12 +23,7 @@ import '../widgets/map_controls.dart';
 /// territory ([isAdmin] with [plotToEdit]). Pops with the saved [PlotModel]
 /// (or `true` when the API returns no body).
 class MapDrawingScreen extends StatefulWidget {
-  const MapDrawingScreen({
-    super.key,
-    this.plotToEdit,
-    this.isAdmin = false,
-    this.targetUserId,
-  });
+  const MapDrawingScreen({super.key, this.plotToEdit, this.isAdmin = false, this.targetUserId});
 
   final PlotModel? plotToEdit;
   final bool isAdmin;
@@ -124,7 +119,14 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
       if (_points.length >= 3) {
         _fill = await map.addFill(
-          FillOptions(geometry: [[..._points, _points.first]], fillColor: MapStyles.plotFill, fillOutlineColor: MapStyles.plotFill, fillOpacity: 0.4),
+          FillOptions(
+            geometry: [
+              [..._points, _points.first],
+            ],
+            fillColor: MapStyles.plotFill,
+            fillOutlineColor: MapStyles.plotFill,
+            fillOpacity: 0.4,
+          ),
         );
       }
       if (_points.length >= 2) {
@@ -217,6 +219,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
   Future<void> _save() async {
     if (_points.length < 3) return;
+    if (GeoJsonUtils.selfIntersects(_points)) {
+      AppToast.error(context, 'เส้นขอบแปลงตัดกัน ลากจุดหรือย้อนจุดล่าสุดให้เส้นไม่ไขว้กัน');
+      return;
+    }
     String? name = widget.plotToEdit?.name;
     if (!_editing) {
       name = await showAppSheet<String>(
@@ -283,11 +289,13 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
     };
     final hint = _points.isEmpty
         ? 'แตะที่มุมแปลงทีละจุดบนภาพถ่ายดาวเทียม'
+        : GeoJsonUtils.selfIntersects(_points)
+        ? 'เส้นขอบตัดกัน ปรับจุดให้เส้นไม่ไขว้กัน'
         : _points.length < 3
-            ? 'แตะเพิ่มอีก ${3 - _points.length} จุดเพื่อปิดรูปแปลง'
-            : kIsWeb
-                ? 'แตะเพิ่มจุดได้อีก หรือบันทึกเมื่อครบทุกมุม'
-                : 'ลากจุดเพื่อปรับตำแหน่ง หรือบันทึกเมื่อครบทุกมุม';
+        ? 'แตะเพิ่มอีก ${3 - _points.length} จุดเพื่อปิดรูปแปลง'
+        : kIsWeb
+        ? 'แตะเพิ่มจุดได้อีก หรือบันทึกเมื่อครบทุกมุม'
+        : 'ลากจุดเพื่อปรับตำแหน่ง หรือบันทึกเมื่อครบทุกมุม';
 
     return PopScope(
       canPop: false,
@@ -337,11 +345,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     MapFab(icon: AppIcons.locate, tooltip: 'ตำแหน่งของฉัน', onPressed: _locate),
                     const SizedBox(height: Space.sm),
                   ],
-                  MapFab(
-                    icon: AppIcons.gridFour,
-                    tooltip: 'ดูทั้งแปลง',
-                    onPressed: _points.length >= 2 ? _fit : null,
-                  ),
+                  MapFab(icon: AppIcons.gridFour, tooltip: 'ดูทั้งแปลง', onPressed: _points.length >= 2 ? _fit : null),
                 ],
               ),
             ),
@@ -394,23 +398,23 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     Widget unit(int value, String label) => Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            AnimatedSwitcher(
-              duration: Motion.quick,
-              transitionBuilder: (child, a) => FadeTransition(opacity: a, child: child),
-              child: Text(
-                '$value',
-                key: ValueKey(value),
-                style: context.text.headlineMedium?.tabular.copyWith(color: p.ink),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(label, style: context.text.labelMedium),
-          ],
-        );
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        AnimatedSwitcher(
+          duration: Motion.quick,
+          transitionBuilder: (child, a) => FadeTransition(opacity: a, child: child),
+          child: Text(
+            '$value',
+            key: ValueKey(value),
+            style: context.text.headlineMedium?.tabular.copyWith(color: p.ink),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: context.text.labelMedium),
+      ],
+    );
 
     return Container(
       padding: const EdgeInsets.all(Space.lg),
@@ -443,12 +447,7 @@ class _Panel extends StatelessWidget {
               AppIconButton(icon: AppIcons.delete, tooltip: 'ล้างทั้งหมด', onPressed: saving ? null : onClear),
               const SizedBox(width: Space.md),
               Expanded(
-                child: AppButton(
-                  label: saveLabel,
-                  icon: AppIcons.check,
-                  loading: saving,
-                  onPressed: onSave,
-                ),
+                child: AppButton(label: saveLabel, icon: AppIcons.check, loading: saving, onPressed: onSave),
               ),
             ],
           ),
@@ -503,11 +502,7 @@ class _NameFormState extends State<_NameForm> {
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: Space.lg),
-          AppButton(
-            label: 'บันทึกแปลง',
-            expand: true,
-            onPressed: _name.text.trim().isEmpty ? null : _submit,
-          ),
+          AppButton(label: 'บันทึกแปลง', expand: true, onPressed: _name.text.trim().isEmpty ? null : _submit),
         ],
       ),
     );

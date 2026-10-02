@@ -38,4 +38,14 @@ void main() {
     expect((geo['coordinates'] as List).first, hasLength(5));
     expect(GeoJsonUtils.fromPolygon(geo), hasLength(4));
   });
+
+  test('selfIntersects finds a bow tie but accepts simple shapes', () {
+    const a = LatLng(16.80, 100.40), b = LatLng(16.80, 100.41);
+    const c = LatLng(16.81, 100.41), d = LatLng(16.81, 100.40);
+    expect(GeoJsonUtils.selfIntersects([a, b, c, d]), isFalse);
+    expect(GeoJsonUtils.selfIntersects([a, c, b, d]), isTrue);
+    expect(GeoJsonUtils.selfIntersects([a, b, c]), isFalse);
+    // Concave but simple.
+    expect(GeoJsonUtils.selfIntersects([a, b, const LatLng(16.805, 100.405), c, d]), isFalse);
+  });
 }

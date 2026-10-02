@@ -7,7 +7,9 @@ class GeoJsonUtils {
   /// Closed GeoJSON Polygon from an open ring of points.
   static Map<String, dynamic> toPolygon(List<LatLng> points) {
     if (points.isEmpty) return {};
-    final coordinates = [for (final p in points) [p.longitude, p.latitude]];
+    final coordinates = [
+      for (final p in points) [p.longitude, p.latitude],
+    ];
     if (points.first != points.last) {
       coordinates.add([points.first.longitude, points.first.latitude]);
     }
@@ -21,9 +23,7 @@ class GeoJsonUtils {
   static List<LatLng> fromPolygon(Map<String, dynamic> geoJson) {
     try {
       final ring = (geoJson['coordinates'] as List)[0] as List;
-      final points = [
-        for (final c in ring) LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()),
-      ];
+      final points = [for (final c in ring) LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble())];
       if (points.length > 1 && points.first == points.last) points.removeLast();
       return points;
     } on Object catch (_) {
@@ -48,6 +48,31 @@ class GeoJsonUtils {
       sum += x(a) * y(b) - x(b) * y(a);
     }
     return sum.abs() / 2;
+  }
+
+  /// Whether any two non-adjacent edges of the closed [ring] cross. A
+  /// crossed boundary (a bow tie) has no meaningful area, so the editor
+  /// refuses to save one. Plots are small enough to test in degrees.
+  static bool selfIntersects(List<LatLng> ring) {
+    final n = ring.length;
+    if (n < 4) return false;
+    double cross(LatLng o, LatLng a, LatLng b) =>
+        (a.longitude - o.longitude) * (b.latitude - o.latitude) -
+        (a.latitude - o.latitude) * (b.longitude - o.longitude);
+    bool crosses(LatLng p1, LatLng p2, LatLng q1, LatLng q2) {
+      final d1 = cross(q1, q2, p1), d2 = cross(q1, q2, p2);
+      final d3 = cross(p1, p2, q1), d4 = cross(p1, p2, q2);
+      return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+    }
+
+    for (var i = 0; i < n; i++) {
+      for (var j = i + 2; j < n; j++) {
+        // The first and last edges share a corner.
+        if (i == 0 && j == n - 1) continue;
+        if (crosses(ring[i], ring[(i + 1) % n], ring[j], ring[(j + 1) % n])) return true;
+      }
+    }
+    return false;
   }
 }
 
