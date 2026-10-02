@@ -1,442 +1,319 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
-/// QR Scanner Screen — Public access, no login required
-/// Scans QR code to extract lot number and navigates to traceability report
+import '../../../core/widgets/widgets.dart';
+
+/// Scans the QR on a TAPTOM package and opens its traceability report.
+/// A lot code can also be typed in when the label is damaged.
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
+
+  /// Pulls the lot number out of a scanned value: a bare code or a link
+  /// ending in /traceability/{lot}.
+  static String? lotFrom(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return null;
+    if (value.contains('/traceability/')) {
+      final lot = value.split('/traceability/').last.split(RegExp(r'[?#/]')).first;
+      return lot.isEmpty ? null : Uri.decodeComponent(lot);
+    }
+    return value.contains(RegExp(r'\s')) ? null : value;
+  }
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen>
-    with SingleTickerProviderStateMixin {
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
-
-  final TextEditingController _manualController = TextEditingController();
-  bool _hasNavigated = false;
-  bool _showManualInput = false;
-  late AnimationController _animController;
-  late Animation<double> _scanLineAnimation;
+class _QrScannerScreenState extends State<QrScannerScreen> with SingleTickerProviderStateMixin {
+  final _scanner = MobileScannerController(detectionSpeed: DetectionSpeed.noDuplicates);
+  late final _line = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
+  bool _done = false;
+  bool _torch = false;
 
   @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _scanLineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
-    );
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (context.reduceMotion) {
+      _line.value = 0.5;
+    } else if (!_line.isAnimating) {
+      _line.repeat(reverse: true);
+    }
   }
 
   @override
   void dispose() {
-    _scannerController.dispose();
-    _manualController.dispose();
-    _animController.dispose();
+    _line.dispose();
+    _scanner.dispose();
     super.dispose();
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_hasNavigated) return;
-
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode == null || barcode.rawValue == null) return;
-
-    final rawValue = barcode.rawValue!.trim();
-    if (rawValue.isEmpty) return;
-
-    // Extract lot number from QR value
-    // Supports: plain lot number, or URL like .../traceability/LOT123
-    String lotNumber = rawValue;
-    if (rawValue.contains('/traceability/')) {
-      final parts = rawValue.split('/traceability/');
-      lotNumber = parts.last.split('?').first.split('#').first;
-    }
-
-    if (lotNumber.isEmpty) return;
-
-    setState(() => _hasNavigated = true);
-    _scannerController.stop();
-    context.push('/traceability/$lotNumber');
+  void _open(String lot) {
+    if (_done) return;
+    _done = true;
+    HapticFeedback.mediumImpact();
+    _scanner.stop();
+    context.push('/traceability/${Uri.encodeComponent(lot)}').then((_) {
+      if (!mounted) return;
+      _done = false;
+      _scanner.start();
+    });
   }
 
-  void _navigateManual() {
-    final lotNumber = _manualController.text.trim();
-    if (lotNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('กรุณากรอกรหัสล็อต', style: const TextStyle()),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    setState(() => _hasNavigated = true);
-    _scannerController.stop();
-    context.push('/traceability/$lotNumber');
+  void _onDetect(BarcodeCapture capture) {
+    final raw = capture.barcodes.firstOrNull?.rawValue;
+    final lot = raw == null ? null : QrScannerScreen.lotFrom(raw);
+    if (lot != null) _open(lot);
+  }
+
+  Future<void> _typeCode() async {
+    final lot = await AppDialogs.prompt(
+      context,
+      title: 'กรอกรหัสล็อต',
+      message: 'รหัสอยู่ใต้ QR บนบรรจุภัณฑ์',
+      hint: 'เช่น TPT-2568-0042',
+      confirmLabel: 'ตรวจสอบ',
+      maxLines: 1,
+    );
+    if (lot != null && lot.isNotEmpty && mounted) _open(lot.toUpperCase());
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final scanAreaSize = size.width * 0.7;
+    final size = MediaQuery.sizeOf(context);
+    final window = (size.shortestSide * 0.68).clamp(200.0, 320.0);
+    final top = MediaQuery.paddingOf(context).top;
+    final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Camera
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _onDetect,
-          ),
-
-          // Dark overlay with transparent scan area
-          _buildOverlay(size, scanAreaSize),
-
-          // Scan line animation
-          _buildScanLine(size, scanAreaSize),
-
-          // Top bar
-          _buildTopBar(),
-
-          // Bottom controls
-          _buildBottomPanel(size),
-
-          // Manual input sheet
-          if (_showManualInput) _buildManualInputSheet(size),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverlay(Size size, double scanAreaSize) {
-    return ColorFiltered(
-      colorFilter: ColorFilter.mode(
-        Colors.black.withValues(alpha: 0.6),
-        BlendMode.srcOut,
-      ),
-      child: Stack(
-        children: [
-          // Full screen dark
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              backgroundBlendMode: BlendMode.dstOut,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            MobileScanner(
+              controller: _scanner,
+              onDetect: _onDetect,
+              errorBuilder: (context, error, _) => _CameraUnavailable(onType: _typeCode),
             ),
-          ),
-          // Transparent scan area
-          Center(
-            child: Container(
-              width: scanAreaSize,
-              height: scanAreaSize,
-              decoration: BoxDecoration(
-                color: Colors.red, // Any color, will be cut out
-                borderRadius: BorderRadius.circular(20),
+            IgnorePointer(
+              child: CustomPaint(painter: _Cutout(window: window, color: const Color(0xFF0B110D).withValues(alpha: 0.72))),
+            ),
+            Center(
+              child: SizedBox.square(
+                dimension: window,
+                child: Stack(
+                  children: [
+                    const Positioned.fill(child: CustomPaint(painter: _Corners())),
+                    AnimatedBuilder(
+                      animation: _line,
+                      builder: (context, _) => Positioned(
+                        left: 16,
+                        right: 16,
+                        top: 16 + (window - 32) * _line.value,
+                        child: Container(
+                          height: 2,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(1),
+                            gradient: const LinearGradient(
+                              colors: [Color(0x00E9C46A), Color(0xFFE9C46A), Color(0x00E9C46A)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScanLine(Size size, double scanAreaSize) {
-    final top = (size.height - scanAreaSize) / 2;
-
-    return AnimatedBuilder(
-      animation: _scanLineAnimation,
-      builder: (context, child) {
-        return Positioned(
-          top: top + (_scanLineAnimation.value * scanAreaSize),
-          left: (size.width - scanAreaSize) / 2 + 10,
-          child: Container(
-            width: scanAreaSize - 20,
-            height: 2,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  AppColors.success.withValues(alpha: 0.8),
-                  AppColors.success,
-                  AppColors.success.withValues(alpha: 0.8),
-                  Colors.transparent,
+            Positioned(
+              top: top + Space.md,
+              left: Space.lg,
+              right: Space.lg,
+              child: Row(
+                children: [
+                  _RoundButton(icon: AppIcons.back, tooltip: 'ย้อนกลับ', onTap: () => Navigator.of(context).maybePop()),
+                  const Spacer(),
+                  _RoundButton(
+                    icon: _torch ? AppIcons.sun : AppIcons.sunDim,
+                    tooltip: _torch ? 'ปิดไฟฉาย' : 'เปิดไฟฉาย',
+                    onTap: () async {
+                      await _scanner.toggleTorch();
+                      if (mounted) setState(() => _torch = !_torch);
+                    },
+                  ),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.5),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTopBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Back button
-            _buildCircleButton(
-              icon: PhosphorIconsRegular.arrowLeft,
-              onTap: () => Navigator.of(context).pop(),
+            Positioned(
+              left: Space.xl,
+              right: Space.xl,
+              top: size.height / 2 + window / 2 + Space.xl,
+              child: Column(
+                children: [
+                  Text(
+                    'ส่อง QR บนบรรจุภัณฑ์',
+                    style: context.text.titleMedium?.copyWith(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ดูแปลงที่ปลูก วันเก็บเกี่ยว และผลการรับรอง GAP',
+                    style: context.text.bodySmall?.copyWith(color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            // Title
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'สแกน QR Code',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            Positioned(
+              left: Space.xl,
+              right: Space.xl,
+              bottom: bottom + Space.xl,
+              child: Center(
+                child: OutlinedButton.icon(
+                  onPressed: _typeCode,
+                  icon: const Icon(AppIcons.edit, size: 18),
+                  label: const Text('กรอกรหัสล็อตเอง'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: const StadiumBorder(),
                   ),
                 ),
-                Text(
-                  'ตรวจสอบย้อนกลับผลิตภัณฑ์',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-            // Flash toggle
-            ValueListenableBuilder(
-              valueListenable: _scannerController,
-              builder: (context, state, child) {
-                return _buildCircleButton(
-                  icon: state.torchState == TorchState.on
-                      ? PhosphorIconsRegular.lightning
-                      : PhosphorIconsRegular.lightningSlash,
-                  onTap: () => _scannerController.toggleTorch(),
-                  isActive: state.torchState == TorchState.on,
-                );
-              },
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildCircleButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isActive = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.success.withValues(alpha: 0.3)
-              : Colors.black.withValues(alpha: 0.4),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isActive ? AppColors.success : Colors.white30,
-            width: 1.5,
-          ),
+class _RoundButton extends StatelessWidget {
+  const _RoundButton({required this.icon, required this.tooltip, required this.onTap});
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.4),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(dimension: 44, child: Icon(icon, color: Colors.white, size: 22)),
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }
+}
 
-  Widget _buildBottomPanel(Size size) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          top: 24,
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          left: 24,
-          right: 24,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.7),
-              Colors.black.withValues(alpha: 0.9),
+class _CameraUnavailable extends StatelessWidget {
+  const _CameraUnavailable({required this.onType});
+
+  final VoidCallback onType;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF0B110D),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(Space.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FarmerMascot(size: 120, mood: MascotMood.think),
+              const SizedBox(height: Space.lg),
+              Text('เปิดกล้องไม่ได้', style: context.text.titleMedium?.copyWith(color: Colors.white)),
+              const SizedBox(height: 4),
+              Text(
+                'อนุญาตให้แอปใช้กล้อง หรือกรอกรหัสล็อตแทน',
+                style: context.text.bodySmall?.copyWith(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: Space.xl),
+              AppButton(label: 'กรอกรหัสล็อต', onPressed: onType),
             ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'วาง QR Code ไว้ในกรอบเพื่อสแกน',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Manual input button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _showManualInput = !_showManualInput),
-                icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
-                label: Text(
-                  'กรอกรหัสล็อตด้วยตัวเอง',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white38),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
+  }
+}
+
+/// Dims everything except a rounded square in the middle.
+class _Cutout extends CustomPainter {
+  const _Cutout({required this.window, required this.color});
+
+  final double window;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final hole = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: size.center(Offset.zero), width: window, height: window),
+      const Radius.circular(24),
+    );
+    final path = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size)
+      ..addRRect(hole);
+    canvas.drawPath(path, Paint()..color = color);
   }
 
-  Widget _buildManualInputSheet(Size size) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          top: 20,
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          left: 24,
-          right: 24,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'กรอกรหัสล็อต',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'กรอกหมายเลขล็อตจากบรรจุภัณฑ์',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _manualController,
-              autofocus: true,
-              style: TextStyle(fontSize: 16),
-              decoration: InputDecoration(
-                hintText: 'เช่น L20260224-1234',
-                hintStyle: TextStyle(color: AppColors.textTertiary),
-                prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.primary),
-                filled: true,
-                fillColor: AppColors.surfaceVariant,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                ),
-              ),
-              onSubmitted: (_) => _navigateManual(),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => setState(() => _showManualInput = false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text('ยกเลิก', style: const TextStyle()),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _navigateManual,
-                    icon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: Colors.white, size: 20),
-                    label: Text(
-                      'ค้นหา',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+  @override
+  bool shouldRepaint(_Cutout old) => old.window != window || old.color != color;
+}
+
+class _Corners extends CustomPainter {
+  const _Corners();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const len = 28.0;
+    const r = 24.0;
+    final paint = Paint()
+      ..color = const Color(0xFFFFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    final w = size.width, h = size.height;
+    final corners = [
+      Path()
+        ..moveTo(0, len + r)
+        ..lineTo(0, r)
+        ..arcToPoint(const Offset(r, 0), radius: const Radius.circular(r))
+        ..lineTo(len + r, 0),
+      Path()
+        ..moveTo(w - len - r, 0)
+        ..lineTo(w - r, 0)
+        ..arcToPoint(Offset(w, r), radius: const Radius.circular(r))
+        ..lineTo(w, len + r),
+      Path()
+        ..moveTo(w, h - len - r)
+        ..lineTo(w, h - r)
+        ..arcToPoint(Offset(w - r, h), radius: const Radius.circular(r))
+        ..lineTo(w - len - r, h),
+      Path()
+        ..moveTo(len + r, h)
+        ..lineTo(r, h)
+        ..arcToPoint(Offset(0, h - r), radius: const Radius.circular(r))
+        ..lineTo(0, h - len - r),
+    ];
+    for (final c in corners) {
+      canvas.drawPath(c, paint);
+    }
   }
+
+  @override
+  bool shouldRepaint(_Corners old) => false;
 }

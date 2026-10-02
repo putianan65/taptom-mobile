@@ -779,12 +779,22 @@ class DemoBackend {
         if (h['lotNumber'] != lotNumber) continue;
         final plot = _plot(entry.key);
         final owner = _user(plot['userId'] as String);
+        final plotInputs = (inputs[entry.key] ?? const <Map<String, dynamic>>[]);
         return {
-          'lotNumber': lotNumber,
-          'status': 'EXPORTED',
-          'createdAt': h['createdAt'],
-          'product': {'name': 'ใบกระท่อมตากแห้ง', 'quantity': h['yieldAmount'], 'unit': h['yieldUnit'], 'grade': h['qualityGrade']},
-          'farmer': {'firstName': owner['firstName'], 'lastName': owner['lastName'], 'province': owner['province']},
+          'lot': {
+            'lotNumber': lotNumber,
+            'productionDate': h['harvestDate'],
+            'quantity': h['yieldAmount'],
+            'unit': h['yieldUnit'],
+            'grade': h['qualityGrade'],
+            'destination': 'ตลาดกลางสินค้าเกษตรพิษณุโลก',
+          },
+          'farmer': {
+            'firstName': owner['firstName'],
+            'lastName': owner['lastName'],
+            'district': owner['district'],
+            'province': owner['province'],
+          },
           'plot': {
             'id': plot['id'],
             'name': plot['name'],
@@ -793,18 +803,28 @@ class DemoBackend {
             'province': plot['province'],
             'district': plot['district'],
             'subDistrict': plot['subDistrict'],
-            'status': plot['status'],
-            'geometry': plot['geometry'],
           },
+          'geometry': plot['geometry'],
           'gap': {
-            ...?gap[entry.key],
-            'certified': plot['status'] == 'APPROVED',
+            'status': plot['status'],
+            'season': gap[entry.key]?['seasonLabel'],
+            'farmingSystem': gap[entry.key]?['farmingSystem'],
+            'certifiedDate': plot['status'] == 'APPROVED' ? plot['updatedAt'] : null,
           },
-          'inputs': inputs[entry.key] ?? const [],
-          'activities': activities[entry.key] ?? const [],
-          'harvest': h,
+          'chemicals': [
+            for (final i in plotInputs)
+              {'name': i['name'], 'type': i['type'], 'usageDate': i['appliedDate'], 'amount': i['amount'], 'unit': i['unit']},
+          ],
+          'harvests': [
+            {
+              'productName': 'ใบกระท่อม${h['qualityGrade'] == 'A' ? ' เกรด A' : ''}',
+              'harvestDate': h['harvestDate'],
+              'quantity': h['yieldAmount'],
+              'unit': h['yieldUnit'],
+              'lotNumber': lotNumber,
+            },
+          ],
           'postHarvests': h['postHarvests'] ?? const [],
-          'trainings': trainings[entry.key] ?? const [],
         };
       }
     }
