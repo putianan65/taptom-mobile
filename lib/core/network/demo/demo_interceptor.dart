@@ -260,7 +260,7 @@ class DemoBackend {
       r('POST', '/auth/verify-pin', (q) {
         final claims = decode(q.body['tempToken'] as String?);
         if (claims == null || claims['type'] != 'temp') throw DemoHttpError(401, 'Invalid token');
-        if (q.body['pin'] != DemoAccounts.pin && q.body['pin'] != '${DemoAccounts.pin}78') {
+        if (q.body['pin'] != DemoAccounts.pin && q.body['pin'] != DemoAccounts.superPin) {
           throw DemoHttpError(401, 'Invalid PIN');
         }
         return (200, _session(_user(claims['sub'] as String)));
@@ -273,7 +273,7 @@ class DemoBackend {
       }),
       r('PATCH', '/auth/change-pin', (q) {
         q.requireUser();
-        if (q.body['oldPin'] != DemoAccounts.pin) throw DemoHttpError(400, 'Invalid current PIN');
+        if (q.body['oldPin'] != DemoAccounts.pin && q.body['oldPin'] != DemoAccounts.superPin) throw DemoHttpError(400, 'Invalid current PIN');
         return (200, {'message': 'PIN changed successfully.'});
       }),
       r('POST', '/auth/refresh', (q) {

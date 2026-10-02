@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/thai_locations.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/services/location_service.dart';
-import '../../auth/models/location_models.dart';
+import '../../../data/models/location_models.dart';
 
 /// Cascading location selector widget
 /// Provides Region → Province → District → Subdistrict selection

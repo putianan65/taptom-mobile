@@ -1,5 +1,5 @@
 import '../network/api_client.dart';
-import '../../features/auth/models/location_models.dart';
+import '../../data/models/location_models.dart';
 import '../constants/thai_locations.dart';
 
 class LocationService {

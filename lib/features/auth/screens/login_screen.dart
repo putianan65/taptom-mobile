@@ -256,7 +256,7 @@ class _DemoAccounts extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'โหมดสาธิต: เลือกบัญชีตัวอย่าง (PIN ${DemoAccounts.pin})',
+            'โหมดสาธิต: เลือกบัญชีตัวอย่าง  PIN เจ้าหน้าที่ ${DemoAccounts.pin}  ผู้ดูแลระบบ ${DemoAccounts.superPin}',
             style: context.text.labelMedium?.copyWith(color: p.ink),
           ),
           const SizedBox(height: Space.sm),

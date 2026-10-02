@@ -23,8 +23,9 @@ class DemoAccount {
 }
 
 abstract final class DemoAccounts {
-  /// PIN for every demo staff account.
+  /// PIN for the demo officer. Super admins use eight digits.
   static const pin = '123456';
+  static const superPin = '12345678';
 
   static const farmer = DemoAccount(
     label: 'เกษตรกร',

@@ -1,0 +1,48 @@
+# Demo mode
+
+Demo builds run the whole app against an in-memory backend, so the app can be
+shown, tested or screenshotted without the NestJS API or a database.
+
+```bash
+flutter run --dart-define=TAPTOM_DEMO=true
+flutter build web --release --dart-define=TAPTOM_DEMO=true
+```
+
+## How it works
+
+`DemoInterceptor` (`lib/core/network/demo/`) is added to the Dio pipeline
+after the authentication interceptor. It answers every request with data
+shaped like the real API, including status codes and error bodies, and waits
+180 to 420 ms so loading states show. Writes (approvals, new plots, GAP
+records, messages, tickets) are kept until the app restarts. Tokens are signed
+JWT-shaped strings, so the normal refresh and role checks run unchanged.
+
+The data describes a kratom-growing community in Wang Thong, Phitsanulok:
+members with plots in each review state, a full set of GAP records for one
+plot, harvest lots with traceability reports, notifications, officer messages
+and an audit trail.
+
+## Sample accounts
+
+The login screen in demo builds shows one-tap buttons for each account.
+
+| Role | Phone | Birthday (B.E.) | PIN |
+| --- | --- | --- | --- |
+| Farmer | 0812345678 | 15/01/2518 | none |
+| Officer | 0898765432 | 20/05/2528 | 123456 |
+| System administrator | 0800000001 | 01/01/2525 | 12345678 |
+
+## What still needs the network
+
+- Satellite imagery: MapTiler when `MAPTILER_API_KEY` is set, otherwise Esri
+  World Imagery with no key. Without internet access the map shows a plain
+  ground colour and the plot outlines still draw.
+- Ask Lung Tom answers from built-in samples in demo builds and whenever no
+  `GEMINI_API_KEY` is configured.
+
+## Screenshots
+
+The images in `docs/screenshots` come from a release web build in demo mode,
+driven by Playwright at a 390 x 844 phone viewport (2x) and a 1280 x 800
+desktop viewport. The script taps through the app using Flutter's semantics
+tree, the same labels screen readers use.
