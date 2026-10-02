@@ -120,7 +120,7 @@ class MascotPainter extends CustomPainter {
   static const _lip = Color(0xFF7A3B2B);
   static const _shirt = Color(0xFF2F3B52);
   static const _shirtShade = Color(0xFF263045);
-  static const _scarf = Color(0xFFF1E8D3);
+  static const _scarf = Color(0xFFFFFFFF);
   static const _check = Color(0xFF2F6B3B);
   static const _leaf = Color(0xFF3F7D45);
   static const _leafVein = Color(0xFF9CC79A);

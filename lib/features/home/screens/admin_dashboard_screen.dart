@@ -495,7 +495,7 @@ class _RequestCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl, tone: Tone.warning),
+              InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl),
               const SizedBox(width: Space.md),
               Expanded(
                 child: Column(

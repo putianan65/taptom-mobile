@@ -248,8 +248,9 @@ class _DemoAccounts extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Space.md),
       decoration: BoxDecoration(
-        color: p.accentSoft,
+        color: p.surface,
         borderRadius: Radii.control,
+        border: Border.all(color: p.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

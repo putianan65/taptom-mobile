@@ -227,8 +227,8 @@ class FieldColors {
       );
     }
     return const FieldColors(
-      skyTop: Color(0xFFF4EFE0),
-      skyBottom: Color(0xFFE6EBD6),
+      skyTop: Color(0xFFFFFFFF),
+      skyBottom: Color(0xFFEDF3EA),
       far: Color(0xFFA7C29B),
       near: Swatch.green800,
       sun: Color(0xFFF5DE9E),

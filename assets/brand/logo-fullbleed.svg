@@ -3,8 +3,8 @@
   <g transform="translate(50 50) scale(0.8) translate(-50 -50)">
   <circle cx="27" cy="27" r="7" fill="#E3B34C"/>
   <g transform="translate(50 52) rotate(38)">
-    <path d="M0 33 C17 29 26 11 24 -5 C22 -21 9 -32 0 -41 C-9 -32 -22 -21 -24 -5 C-26 11 -17 29 0 33 Z" fill="#F3EEDC"/>
-    <path d="M0 33 L0 42" stroke="#F3EEDC" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M0 33 C17 29 26 11 24 -5 C22 -21 9 -32 0 -41 C-9 -32 -22 -21 -24 -5 C-26 11 -17 29 0 33 Z" fill="#FFFFFF"/>
+    <path d="M0 33 L0 42" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
     <g fill="none" stroke="#245A33" stroke-linecap="round">
       <path d="M0 31 L0 -35" stroke-width="2.6"/>
       <path d="M0 20 Q8 17 15 8 M0 8 Q9 4 17 -6 M0 -4 Q8 -8 14 -18 M0 -15 Q6 -19 9 -27" stroke-width="2"/>

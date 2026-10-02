@@ -42,7 +42,7 @@ abstract final class Swatch {
   static const gold700 = Color(0xFF8A5D0E);
   static const gold500 = Color(0xFFC8931F);
   static const gold300 = Color(0xFFE9C46A);
-  static const gold100 = Color(0xFFF6EAD0);
+  static const gold100 = Color(0xFFFDF1CC);
 
   // Laterite clay for destructive and rejected states.
   static const clay700 = Color(0xFF9A3A27);
@@ -160,7 +160,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     heroInk: Swatch.paper50,
     heroLine: Swatch.green400,
     accent: Swatch.gold500,
-    accentSoft: Swatch.gold100,
+    accentSoft: Swatch.paper100,
     success: Swatch.green600,
     successSoft: Swatch.green100,
     warning: Swatch.gold700,

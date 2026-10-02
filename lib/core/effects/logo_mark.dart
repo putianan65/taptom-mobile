@@ -33,7 +33,7 @@ class _LogoPainter extends CustomPainter {
   final bool tile;
 
   static const _green = Swatch.green700;
-  static const _cream = Color(0xFFF3EEDC);
+  static const _cream = Color(0xFFFFFFFF);
   static const _sun = Color(0xFFE3B34C);
 
   @override
