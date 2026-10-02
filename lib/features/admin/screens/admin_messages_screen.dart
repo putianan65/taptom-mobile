@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../data/models/message_model.dart';
-import '../../../../data/models/user_model.dart';
-import '../../auth/auth_provider.dart';
+
+import '../../../app/routes.dart';
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/conversation_model.dart';
 import '../providers/message_provider.dart';
 
+/// Staff inbox: one row per conversation partner, newest first.
 class AdminMessagesScreen extends StatefulWidget {
   const AdminMessagesScreen({super.key});
 
@@ -20,428 +22,134 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ✅ NEW: Load conversations with unread counts
-      context.read<MessageProvider>().loadConversations();
+      if (mounted) context.read<MessageProvider>().loadConversations();
     });
+  }
+
+  Future<void> _compose() async {
+    final sent = await context.push<bool>(Routes.adminMessageNew);
+    if (sent == true && mounted) context.read<MessageProvider>().loadConversations();
+  }
+
+  Future<void> _open(Conversation c) async {
+    await context.push(Routes.adminMessage(c.partner.id), extra: c.partner);
+    if (mounted) context.read<MessageProvider>().loadConversations();
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().currentUser;
-    final isSuperAdmin = user?.role == UserRole.superAdmin;
+    final provider = context.watch<MessageProvider>();
+    final list = provider.conversationList;
 
-    // Theme Configuration
-    final bgColor = isSuperAdmin ? null : const Color(0xFFF5F7FA);
-    final bgGradient = isSuperAdmin ? LuxuryTheme.backgroundGradient : null;
-    final textColor = isSuperAdmin ? Colors.white : Colors.black87;
-    final subTextColor = isSuperAdmin ? LuxuryTheme.textSecondary : Colors.grey[600];
-    final cardColor = isSuperAdmin ? LuxuryTheme.glassSurface : Colors.white;
-    final primaryColor = isSuperAdmin ? LuxuryTheme.purpleNeon : AppColors.adminPrimary;
-    final accentColor = isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.secondary;
-
-    return Stack(
-      children: [
-        // Background
-        Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            gradient: bgGradient,
-          ),
-        ),
-        
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(
-              'ข้อความสนทนา', 
-              style: isSuperAdmin 
-                  ? TextStyle(
-                      color: Colors.white, 
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    )
-                  : TextStyle(
-                      color: Colors.black, 
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-            ),
-            backgroundColor: isSuperAdmin ? Colors.transparent : Colors.white,
-            elevation: isSuperAdmin ? 0 : 1,
-            centerTitle: !isSuperAdmin,
-            iconTheme: IconThemeData(
-              color: isSuperAdmin ? Colors.white : Colors.black,
-            ),
-            leading: isSuperAdmin 
-                ? Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: LuxuryTheme.glassSurface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: LuxuryTheme.glassBorder),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white, size: 20),
-                      onPressed: () => context.pop(),
-                    ),
-                  )
-                : IconButton(
-                    icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.black),
-                    onPressed: () => context.pop(),
-                  ),
-          ),
-          body: Consumer<MessageProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    color: isSuperAdmin ? LuxuryTheme.cyanNeon : primaryColor,
-                  ),
-                );
-              }
-
-              if (provider.error != null) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       Icon(
-                         PhosphorIconsRegular.warningCircle, 
-                         color: AppColors.error, 
-                         size: 48),
-                       const SizedBox(height: 16),
-                       Text(
-                         'เกิดข้อผิดพลาด: ${provider.error}', 
-                         style: TextStyle(
-                           color: isSuperAdmin ? Colors.white70 : Colors.grey[700],
-                         ),
-                       ),
-                       TextButton(
-                         onPressed: () => provider.loadConversations(),
-                         child: Text(
-                           'ลองใหม่', 
-                           style: TextStyle(
-                             color: isSuperAdmin ? LuxuryTheme.cyanNeon : primaryColor,
-                           ),
-                         ),
-                       )
-                    ],
-                  ),
-                );
-              }
-
-              final conversations = provider.conversationList; // ✅ Updated
-
-              if (conversations.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        PhosphorIconsRegular.chatsCircle, 
-                        size: 64, 
-                        color: (isSuperAdmin ? Colors.white : Colors.grey).withValues(alpha: 0.3)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'ยังไม่มีการสนทนา',
-                        style: TextStyle(
-                          color: (isSuperAdmin ? Colors.white : Colors.black).withValues(alpha: 0.5), 
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                color: primaryColor,
-                onRefresh: () => provider.loadConversations(),
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: conversations.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final conversation = conversations[index];
-                    final msg = conversation.lastMessage;
-                    final partner = conversation.partner;
-                    final unreadCount = conversation.unreadCount;
-                    
-                    if (msg == null) return const SizedBox.shrink();
-
-                    return _buildConversationTile(
-                      context, 
-                      provider, 
-                      msg, 
-                      partner,
-                      unreadCount: unreadCount, // ✅ Pass unread count
-                      isSuperAdmin: isSuperAdmin,
-                      cardColor: cardColor,
-                      textColor: textColor,
-                      subTextColor: subTextColor,
-                      accentColor: accentColor,
-                      primaryColor: primaryColor,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          floatingActionButton: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: isSuperAdmin ? [] : [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: FloatingActionButton.extended(
-              onPressed: () async {
-                final result = await context.push('/admin/messages/new');
-                if (result == true && mounted) {
-                  context.read<MessageProvider>().loadConversations();
-                }
-              },
-              backgroundColor: primaryColor,
-              elevation: 0,
-              icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
-              label: Text(
-                'เริ่มสนทนาใหม่', 
-                style: isSuperAdmin 
-                    ? TextStyle(
-                        color: Colors.white, 
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16
-                      )
-                    : TextStyle(
-                        color: Colors.white, 
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16
-                      ),
+    return PageScaffold(
+      title: 'ข้อความ',
+      subtitle: provider.totalUnreadCount > 0 ? 'ยังไม่ได้อ่าน ${provider.totalUnreadCount} ข้อความ' : 'ติดต่อระหว่างเจ้าหน้าที่',
+      onRefresh: provider.loadConversations,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _compose,
+        icon: const Icon(AppIcons.edit),
+        label: const Text('เขียนข้อความ'),
+      ),
+      slivers: [
+        if (provider.isLoading && list.isEmpty)
+          const SliverToBoxAdapter(child: SkeletonList(count: 5))
+        else if (list.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: EmptyState(
+                title: 'ยังไม่มีข้อความ',
+                message: 'เริ่มบทสนทนากับเจ้าหน้าที่หรือผู้ดูแลระบบได้จากปุ่มเขียนข้อความ',
+                actionLabel: 'เขียนข้อความ',
+                onAction: _compose,
               ),
             ),
+          )
+        else
+          SliverToBoxAdapter(
+            child: ListGroup(
+              children: [
+                for (final c in list) _ConversationRow(conversation: c, onTap: () => _open(c)),
+              ],
+            ).entrance(context),
           ),
-        ),
       ],
     );
   }
+}
 
-  Widget _buildConversationTile(
-    BuildContext context, 
-    MessageProvider provider, 
-    Message lastMsg, 
-    UserModel partner, {
-    required int unreadCount, // ✅ Receive unread count
-    required bool isSuperAdmin,
-    required Color cardColor,
-    required Color textColor,
-    required Color? subTextColor,
-    required Color accentColor,
-    required Color primaryColor,
-  }) {
-    // Check if unread based on count > 0
-    final isUnread = unreadCount > 0;
+class _ConversationRow extends StatelessWidget {
+  const _ConversationRow({required this.conversation, required this.onTap});
 
-    // Border config
-    final border = isSuperAdmin 
-        ? Border.all(
-            color: isUnread ? LuxuryTheme.cyanNeon : LuxuryTheme.glassBorder,
-            width: isUnread ? 1.5 : 1,
-          )
-        : Border.all(
-            color: isUnread ? primaryColor.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.2),
-            width: isUnread ? 1.5 : 1,
-          );
+  final Conversation conversation;
+  final VoidCallback onTap;
 
-    final shadow = isSuperAdmin ? <BoxShadow>[] : [
-      BoxShadow(
-        color: Colors.grey.withValues(alpha: 0.05),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ];
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final c = conversation;
+    final unread = c.unreadCount > 0;
+    final last = c.lastMessage;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: border,
-        boxShadow: shadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            // Navigate to detail screen passing the partner ID to filter the thread
-            context.push('/admin/messages/${partner.id}', extra: partner); 
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: isSuperAdmin 
-                        ? LuxuryTheme.purpleNeon.withValues(alpha: 0.1)
-                        : primaryColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSuperAdmin 
-                          ? LuxuryTheme.purpleNeon.withValues(alpha: 0.3)
-                          : primaryColor.withValues(alpha: 0.3)
-                    ),
-                    image: (partner.photoUrl != null && partner.photoUrl!.isNotEmpty)
-                        ? DecorationImage(
-                            image: NetworkImage(partner.photoUrl!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                  ),
-                  child: (partner.photoUrl == null || partner.photoUrl!.isEmpty)
-                      ? Center(
-                          child: Text(
-                            partner.firstName.isNotEmpty ? partner.firstName[0] : '?',
-                            style: isSuperAdmin 
-                                ? TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: LuxuryTheme.purpleNeon,
-                                  )
-                                : TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryColor,
-                                  ),
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+        child: Row(
+          children: [
+            InitialsAvatar(name: c.partner.fullName, photoUrl: c.partner.photoUrl),
+            const SizedBox(width: Space.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              partner.fullName,
-                              style: isSuperAdmin 
-                                  ? TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: textColor,
-                                    )
-                                  : TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: textColor,
-                                    ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Flexible(
+                        child: Text(
+                          c.partner.fullName,
+                          style: context.text.titleSmall?.copyWith(
+                            fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
                           ),
-                          Text(
-                            _formatDate(lastMsg.createdAt),
-                            style: isSuperAdmin
-                                ? TextStyle(
-                                    fontSize: 12,
-                                    color: subTextColor,
-                                  )
-                                : TextStyle(
-                                    fontSize: 12,
-                                    color: subTextColor,
-                                  ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (lastMsg.sender.id != partner.id)
-                            Text(
-                              'คุณ: ',
-                              style: isSuperAdmin
-                                  ? TextStyle(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                    )
-                                  : TextStyle(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                    ),
-                            ),
-                          Expanded(
-                            child: Text(
-                              lastMsg.message,
-                              style: isSuperAdmin
-                                  ? TextStyle(
-                                      fontSize: 14,
-                                      color: isUnread ? Colors.white : subTextColor,
-                                      fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
-                                    )
-                                  : TextStyle(
-                                      fontSize: 14,
-                                      color: isUnread ? Colors.black87 : subTextColor,
-                                      fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
-                                    ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (isUnread)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                    decoration: BoxDecoration(
-                      color: isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.error,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.error).withValues(alpha: 0.4),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        unreadCount > 99 ? '99+' : unreadCount.toString(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
+                      const SizedBox(width: Space.sm),
+                      Text(StatusLabels.role(c.partner.role), style: context.text.labelSmall),
+                    ],
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    last?.preview ?? 'เริ่มบทสนทนา',
+                    style: context.text.bodySmall?.copyWith(color: unread ? p.ink : p.inkMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Space.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (last != null) Text(ThaiDate.relative(last.createdAt), style: context.text.labelSmall),
+                const SizedBox(height: 4),
+                if (unread)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(color: p.brand, borderRadius: Radii.chip),
+                    child: Text(
+                      '${c.unreadCount}',
+                      style: context.text.labelSmall?.tabular.copyWith(color: p.onBrand),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 18),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    }
-    return '${date.day}/${date.month}/${date.year+543}';
   }
 }

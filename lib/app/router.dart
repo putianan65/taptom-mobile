@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/models/message_model.dart';
 import '../data/models/ticket_model.dart';
+import '../data/models/user_model.dart';
 import '../features/admin/screens/admin_message_compose_screen.dart';
 import '../features/admin/screens/admin_messages_screen.dart';
 import '../features/admin/screens/admin_plots_map_screen.dart';
@@ -118,6 +119,7 @@ GoRouter buildRouter(AuthProvider auth) {
             builder: (_, state) => MessageDetailScreen(
               id: state.pathParameters['id'] ?? '',
               message: state.extra is Message ? state.extra as Message : null,
+              partner: state.extra is UserModel ? state.extra as UserModel : null,
             ),
           ),
         ],

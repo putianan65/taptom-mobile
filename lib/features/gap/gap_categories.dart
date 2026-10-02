@@ -101,4 +101,29 @@ class GapProgress {
     }
     return latest;
   }
+
+  /// The records behind a list category. Traceability prefers issued lots
+  /// and falls back to harvests that carry a lot number.
+  List<dynamic> items(GapCategory c) => switch (c) {
+        GapCategory.general => general == null ? const [] : [general],
+        GapCategory.inputs => inputs,
+        GapCategory.management => activities,
+        GapCategory.harvest => harvests,
+        GapCategory.postHarvest => postHarvests,
+        GapCategory.safety => trainings,
+        GapCategory.traceability => lots.isNotEmpty ? lots : harvests.where(_hasLot).toList(),
+      };
+
+  /// The shape the PDF report expects: one entry per category key with the
+  /// raw records under 'data', or null when the category is empty.
+  Map<String, dynamic> reportSummary() => {
+        for (final c in GapCategory.values)
+          c.name: isDone(c)
+              ? {
+                  'completed': true,
+                  'count': count(c),
+                  'data': c == GapCategory.general ? general : items(c),
+                }
+              : null,
+      };
 }

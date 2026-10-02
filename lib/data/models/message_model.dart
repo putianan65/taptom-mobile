@@ -22,15 +22,32 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: json['id'] as String,
-      subject: json['subject'] as String,
-      message: json['message'] as String,
+      id: '${json['id']}',
+      subject: json['subject'] as String? ?? '',
+      message: json['message'] as String? ?? '',
       status: json['status'] as String? ?? 'UNREAD',
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.tryParse('${json['createdAt']}')?.toLocal() ?? DateTime.now(),
       sender: UserModel.fromJson(json['sender'] as Map<String, dynamic>),
       recipient: json['recipient'] != null
           ? UserModel.fromJson(json['recipient'] as Map<String, dynamic>)
           : null,
     );
+  }
+
+  bool get isUnread => status.toUpperCase() == 'UNREAD';
+
+  static final _image = RegExp(r'!\[[^\]]*\]\((\S+?)\)');
+
+  /// Text without the markdown image links staff attach to messages.
+  String get text => message.replaceAll(_image, '').trim();
+
+  /// Image URLs attached as markdown links.
+  List<String> get images => [for (final m in _image.allMatches(message)) m.group(1)!];
+
+  /// One-line preview for conversation lists.
+  String get preview {
+    final t = text.replaceAll(RegExp(r'\s+'), ' ');
+    if (t.isNotEmpty) return t;
+    return images.isNotEmpty ? 'ส่งรูปภาพ' : subject;
   }
 }
