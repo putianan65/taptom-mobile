@@ -56,7 +56,14 @@ SCENES=farmer,admin node tool/screenshots/capture.js
 ```
 
 Scenes: `login`, `motion` (the login GIF, needs ffmpeg), `farmer`, `trace`,
-`admin`, `super`, `dark` and `desktop`. Environment variables are listed at
+`admin`, `super`, `dark` and `desktop`.
+
+The committed images were taken against a local TAPTOM backend instead of
+demo mode: PostgreSQL with PostGIS, the backend's migrations, Thai locations,
+and the same fictional people, plots and GAP records created through the API.
+Build with `--dart-define=API_BASE_URL=http://localhost:3000/api/v1` and run
+the script with `REAL_API=1` (sign in by typing rather than the demo buttons)
+and `TRACE_LOT` set to a lot number from the database. Environment variables are listed at
 the top of `tool/screenshots/driver.js`; `OFFLINE_TILES=1` and
 `MAPLIBRE_DIST` let it run where map hosts are blocked, which is how the
 committed images were made, so their maps show the ground colour instead of

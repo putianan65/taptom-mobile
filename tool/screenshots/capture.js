@@ -5,7 +5,8 @@
 //   node tool/screenshots/capture.js            every scene
 //   SCENES=farmer,admin node tool/screenshots/capture.js
 //
-// See driver.js for the environment variables.
+// See driver.js for the environment variables. TRACE_LOT picks the lot
+// report to capture (default: the demo lot TPT-2568-0042).
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -18,6 +19,10 @@ const scenes = {
       const { browser, page } = await D.open({ scheme });
       await D.boot(page);
       await D.shot(page, `${scheme}-login`, 2500);
+      if (scheme === 'light') {
+        await D.scroll(page, 2000);
+        await D.shot(page, 'login-credit');
+      }
       await browser.close();
     }
   },
@@ -47,6 +52,7 @@ const scenes = {
     await D.signIn(page, 'farmer');
     await D.shot(page, 'farmer-home', 2500);
 
+    await D.scroll(page, 900);
     await D.tap(page, 'สวนกระท่อมหนองปลิง', { wait: 3500 });
     await D.shot(page, 'plot-detail', 1500);
     await D.back(page);
@@ -64,6 +70,10 @@ const scenes = {
     await D.tab(page, 'แผนที่');
     await D.shot(page, 'map', 4000);
 
+    await D.tab(page, 'บัญชี');
+    await D.scroll(page, 3000);
+    await D.shot(page, 'farmer-account', 1500);
+
     await D.tab(page, 'บันทึก GAP');
     await D.shot(page, 'gap-overview', 2000);
     await D.tap(page, 'ถัดไป: 1.4', { wait: 2500 });
@@ -75,7 +85,7 @@ const scenes = {
 
   async trace() {
     const { browser, page } = await D.open();
-    await D.boot(page, '/#/traceability/TPT-2568-0042');
+    await D.boot(page, `/#/traceability/${process.env.TRACE_LOT || 'TPT-2568-0042'}`);
     await D.shot(page, 'traceability', 3000);
     await browser.close();
   },
@@ -87,6 +97,7 @@ const scenes = {
     await D.shot(page, 'admin-home', 2500);
 
     await D.tap(page, 'ตรวจข้อมูล GAP', { wait: 2000 });
+    await D.fill(page, 'ชื่อ เบอร์โทร หรือพื้นที่', 'สมชาย');
     await D.tap(page, 'สมชาย ใจดี', { wait: 2000 });
     await D.shot(page, 'admin-farmer-plots');
     await D.tap(page, 'แปลงริมคลองวังทอง', { wait: 3000 });

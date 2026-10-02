@@ -14,6 +14,12 @@ A centralized agricultural management app built with Flutter for kratom farmers 
   <img src="docs/screenshots/login-motion.gif" width="300" alt="Login screen with the animated field backdrop and Lung Tom waving">
 </p>
 
+<p align="center">
+  Developed by<br>
+  <a href="https://www.gistnu.nu.ac.th/"><img src="assets/images/partners/gistnu.png" width="220" alt="GISTNU"></a><br>
+  ศูนย์ภูมิสารสนเทศเพื่อการพัฒนาภาคเหนือตอนล่าง, Naresuan University
+</p>
+
 ---
 
 ## Screenshots
@@ -38,13 +44,19 @@ A centralized agricultural management app built with Flutter for kratom farmers 
 | --- | --- | --- | --- |
 | ![Super admin home](docs/screenshots/super-admin-home.png) | ![Charts](docs/screenshots/super-admin-charts.png) | ![Officers](docs/screenshots/super-admin-officers.png) | ![Dark farmer home](docs/screenshots/dark-farmer-home.png) |
 
+### Credits in the app
+
+| Login | Account | Certified plot |
+| --- | --- | --- |
+| ![GISTNU credit on the login screen](docs/screenshots/login-credit.png) | ![GISTNU credit on the account tab](docs/screenshots/farmer-account.png) | ![GAP, ONCB and GISTNU marks on a certified plot](docs/screenshots/plot-detail.png) |
+
 ### Tablet and web
 
 On wider screens the bottom bar becomes a navigation rail and content is centred.
 
 ![Administrator console on desktop](docs/screenshots/desktop-super-admin.png)
 
-The screenshots are produced from a demo build by `tool/screenshots`; see [docs/demo-mode.md](docs/demo-mode.md). Map imagery was unavailable where they were taken, so the maps show the plain ground colour under the plot shapes.
+The screenshots show the app running against a local copy of the TAPTOM backend, seeded with fictional members, plots and GAP records through its API, and were captured by `tool/screenshots` (see [docs/demo-mode.md](docs/demo-mode.md)). Map imagery was unavailable where they were taken, so the maps show the plain ground colour under the plot shapes.
 
 ---
 
@@ -77,7 +89,7 @@ Farmers register plots by drawing their boundaries on satellite imagery, record 
 - **1.4** Harvest (date, amount, quality grade)
 - **1.5** Post-harvest handling (sorting, drying, packing, storage)
 - **1.6** Hygiene and worker safety
-- **1.7** Traceability lots
+- **1.7** Traceability lots: every harvest gets a lot number automatically, and officers can issue extra lots for split shipments
 - Progress per plot with the next category to fill in; records become read-only once the plot is certified
 - Drafts are kept on the device (SQLite on mobile) and the general form autosaves
 
@@ -92,13 +104,14 @@ Farmers register plots by drawing their boundaries on satellite imagery, record 
 - The router guard and the territory check mirror the server rules, so screens never offer an action that would be rejected
 
 ### Ask Lung Tom
-- An assistant for questions about fertiliser, plant disease and GAP steps, with voice input
+- An assistant for questions about fertiliser, plant disease and GAP steps, with voice input (built-in sample answers when no Gemini key is set)
 - Lung Tom, a farmer mascot drawn in code, greets on login, fills empty states and reacts while the assistant thinks
 
 ### Also Included
 - GAP inspection report and certificate as PDF, with Thai fonts and partner logos bundled for offline use
 - Notification centre, officer messaging and help tickets
 - Light and dark themes, four text sizes, reduce-motion support
+- GISTNU credited on the splash, login, account, settings, contact and public lot pages, and on certificates
 - PDPA consent on sign-up
 
 ---

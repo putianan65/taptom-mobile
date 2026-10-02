@@ -7,6 +7,7 @@
 //   HTTPS_PROXY        optional proxy for CDN and map tiles
 //   MAPLIBRE_DIST      optional local maplibre-gl/dist folder served instead of unpkg
 //   OFFLINE_TILES      set to answer map tile requests with empty tiles
+//   REAL_API           set when the build talks to a seeded backend: sign in by typing
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
@@ -73,7 +74,7 @@ async function nodes(page) {
 }
 
 async function tap(page, text, { exact = false, nth = 0, wait = 700, scroll = true } = {}) {
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < 16; attempt++) {
     const all = await nodes(page);
     const hits = all.filter((n) => (exact ? n.text === text : n.text.includes(text)));
     if (hits.length) {
@@ -89,6 +90,12 @@ async function tap(page, text, { exact = false, nth = 0, wait = 700, scroll = tr
       await page.mouse.click(n.x, n.y);
       await page.waitForTimeout(wait);
       return;
+    }
+    // Give the page a moment to load, then look further down long lists.
+    if (scroll && attempt >= 4) {
+      const vp = page.viewportSize();
+      await page.mouse.move(vp.width / 2, vp.height / 2);
+      await page.mouse.wheel(0, vp.height * 0.6);
     }
     await page.waitForTimeout(400);
   }
@@ -120,14 +127,41 @@ async function shot(page, name, wait = 1200) {
   console.log('saved', path.relative(process.cwd(), file));
 }
 
+/// Focuses the text field labelled [label] and types [text].
+async function fill(page, label, text) {
+  await page.click(`input[aria-label="${label}"]`);
+  await page.waitForTimeout(300);
+  await page.keyboard.type(text, { delay: 30 });
+  await page.waitForTimeout(200);
+}
+
+// The demo accounts, also seeded into a local backend for REAL_API runs.
+const accounts = {
+  farmer: ['0812345678', '15', '01', '2518'],
+  admin: ['0898765432', '20', '05', '2528'],
+  super: ['0800000001', '01', '01', '2525'],
+};
+
 async function signIn(page, role) {
-  const label = { farmer: 'เกษตรกร', admin: 'เจ้าหน้าที่', super: 'ผู้ดูแลระบบ' }[role];
-  await tap(page, label, { exact: true });
-  await tap(page, 'เข้าสู่ระบบ', { exact: true, wait: 2000 });
+  if (process.env.REAL_API) {
+    // No one-tap demo accounts: type the phone number and birthday.
+    const [phone, d, m, y] = accounts[role];
+    await fill(page, '08X XXX XXXX', phone);
+    await fill(page, 'วัน', d);
+    await fill(page, 'เดือน', m);
+    await fill(page, 'ปี พ.ศ.', y);
+    // A complete birthday submits the form by itself.
+    await page.waitForTimeout(2500);
+    if ((await nodes(page)).some((n) => n.text === 'เข้าสู่ระบบ')) await tap(page, 'เข้าสู่ระบบ', { exact: true, wait: 2000 });
+  } else {
+    const label = { farmer: 'เกษตรกร', admin: 'เจ้าหน้าที่', super: 'ผู้ดูแลระบบ' }[role];
+    await tap(page, label, { exact: true });
+    await tap(page, 'เข้าสู่ระบบ', { exact: true, wait: 2000 });
+  }
   if (role !== 'farmer') {
     for (const d of role === 'super' ? '12345678' : '123456') await tap(page, d, { exact: true, wait: 120 });
     await page.waitForTimeout(3000);
   }
 }
 
-module.exports = { OUT, open, boot, nodes, tap, tab, back, scroll, shot, signIn };
+module.exports = { OUT, open, boot, nodes, tap, fill, tab, back, scroll, shot, signIn };
