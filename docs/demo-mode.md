@@ -46,3 +46,18 @@ The images in `docs/screenshots` come from a release web build in demo mode,
 driven by Playwright at a 390 x 844 phone viewport (2x) and a 1280 x 800
 desktop viewport. The script taps through the app using Flutter's semantics
 tree, the same labels screen readers use.
+
+```bash
+flutter build web --release --dart-define=TAPTOM_DEMO=true
+(cd build/web && python3 -m http.server 8787) &
+npm install --no-save playwright && npx playwright install chromium
+node tool/screenshots/capture.js                 # every scene
+SCENES=farmer,admin node tool/screenshots/capture.js
+```
+
+Scenes: `login`, `motion` (the login GIF, needs ffmpeg), `farmer`, `trace`,
+`admin`, `super`, `dark` and `desktop`. Environment variables are listed at
+the top of `tool/screenshots/driver.js`; `OFFLINE_TILES=1` and
+`MAPLIBRE_DIST` let it run where map hosts are blocked, which is how the
+committed images were made, so their maps show the ground colour instead of
+imagery. Run it on a normal connection to get satellite imagery.
