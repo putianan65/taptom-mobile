@@ -35,31 +35,15 @@ class AdminStateProvider extends ChangeNotifier {
   GapAnalytics? get gapAnalytics => _gapAnalytics;
   List<UserTrendsData> get userTrends => _userTrends;
 
-  /// Load all users from the admin service
+  /// Load all users in the admin's territory and split them by membership
+  /// status. [status] is accepted for compatibility; both lists are always
+  /// computed so dashboard counts stay correct.
   Future<void> loadUsers({String? status}) async {
     _setLoading(true);
     _error = null;
-
     try {
       final users = await _adminService.getUsers();
       _allUsers = users;
-
-      // Filter based on status if provided
-      if (status != null && status.isNotEmpty) {
-        if (status.toUpperCase() == 'PENDING') {
-          _pendingUsers = users
-              .where((u) => u.membershipStatus == MembershipStatus.pending)
-              .toList();
-          return;
-        } else if (status.toUpperCase() == 'APPROVED') {
-          _approvedUsers = users
-              .where((u) => u.membershipStatus == MembershipStatus.approved)
-              .toList();
-          return;
-        }
-      }
-
-      // Default: load all statuses
       _pendingUsers = users
           .where((u) => u.membershipStatus == MembershipStatus.pending)
           .toList();
@@ -71,6 +55,19 @@ class AdminStateProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  List<dynamic> _pendingPlots = [];
+  List<dynamic> get pendingPlots => _pendingPlots;
+
+  /// Plots waiting for this admin's review.
+  Future<void> loadPendingPlots() async {
+    try {
+      _pendingPlots = await _adminService.getAdminPlots(status: 'PENDING');
+    } catch (_) {
+      _pendingPlots = [];
+    }
+    notifyListeners();
   }
 
   /// Approve a user membership
@@ -177,12 +174,28 @@ class AdminStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Get stats
-  Map<String, dynamic> get stats {
+  int _read(List<String> keys) {
+    for (final k in keys) {
+      final v = _dashboardStats[k];
+      if (v is num) return v.toInt();
+    }
+    return -1;
+  }
+
+  /// Dashboard figures. Server statistics win; local counts fill any gaps.
+  Map<String, int> get stats {
+    int pick(List<String> keys, int fallback) {
+      final v = _read(keys);
+      return v >= 0 ? v : fallback;
+    }
+
     return {
-      'total': _allUsers.length,
+      'total': pick(['totalUsers', 'total'], _allUsers.length),
       'approved': _approvedUsers.length,
       'pending': _pendingUsers.length,
+      'totalPlots': pick(['totalPlots'], 0),
+      'pendingPlots': pick(['pendingPlots', 'pendingApprovals'], _pendingPlots.length),
+      'approvedPlots': pick(['approvedPlots'], 0),
     };
   }
 
@@ -211,7 +224,7 @@ class AdminStateProvider extends ChangeNotifier {
       _userTrends = results[1] as List<UserTrendsData>;
       notifyListeners();
     } catch (e) {
-      print('Failed to load analytics: $e');
+      debugPrint('Failed to load analytics: $e');
     }
   }
 }

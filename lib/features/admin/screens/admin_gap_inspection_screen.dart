@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/gap_service.dart';
 import '../../../core/services/admin_service.dart';
@@ -45,49 +44,49 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       'key': 'general',
       'title': '1. ข้อมูลทั่วไป',
       'subtitle': 'แหล่งน้ำ, พื้นที่',
-      'icon': HeroIcons.informationCircle,
+      'icon': PhosphorIconsRegular.info,
       'color': AppColors.primary,
     },
     {
       'key': 'inputs',
       'title': '2. ปัจจัยการผลิต',
       'subtitle': 'สารเคมี, ปุ๋ย',
-      'icon': HeroIcons.beaker,
+      'icon': PhosphorIconsRegular.flask,
       'color': AppColors.primary,
     },
     {
       'key': 'management',
       'title': '3. การจัดการแปลง',
       'subtitle': 'การดูแลพื้นที่',
-      'icon': HeroIcons.wrenchScrewdriver,
+      'icon': PhosphorIconsRegular.wrench,
       'color': AppColors.primary,
     },
     {
       'key': 'harvest',
       'title': '4. การเก็บเกี่ยว',
       'subtitle': 'ผลผลิต, คุณภาพ',
-      'icon': HeroIcons.archiveBox,
+      'icon': PhosphorIconsRegular.archive,
       'color': AppColors.primary,
     },
     {
       'key': 'postHarvest',
       'title': '5. หลังเก็บเกี่ยว',
       'subtitle': 'การจัดเก็บ',
-      'icon': HeroIcons.cubeTransparent,
+      'icon': PhosphorIconsRegular.cube,
       'color': AppColors.primary,
     },
     {
       'key': 'safety',
       'title': '6. ความปลอดภัย',
       'subtitle': 'การอบรมบุคลากร',
-      'icon': HeroIcons.shieldCheck,
+      'icon': PhosphorIconsRegular.shieldCheck,
       'color': AppColors.primary,
     },
     {
       'key': 'traceability',
       'title': '7. ตรวจติดตาม',
       'subtitle': 'ระบบติดตาม',
-      'icon': HeroIcons.magnifyingGlass,
+      'icon': PhosphorIconsRegular.magnifyingGlass,
       'color': AppColors.primary,
     },
   ];
@@ -290,7 +289,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     AppColors.primary,
-                    AppColors.primary.withOpacity(0.8),
+                    AppColors.primary.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -343,7 +342,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                                   // Categories
                                   Text(
                                     'รายละเอียด GAP 7 หมวด',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -379,7 +378,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           Expanded(
@@ -388,7 +387,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
               children: [
                 Text(
                   'รายงานตรวจสอบ GAP',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
@@ -396,7 +395,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                 ),
                 Text(
                   widget.plotName,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.white70,
                   ),
@@ -407,7 +406,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
 
           // Gallery Button
           IconButton(
-            icon: const HeroIcon(HeroIcons.photo, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.image, color: Colors.white),
             tooltip: 'ดูรูปแปลง',
             onPressed: () {
                Navigator.push(
@@ -426,13 +425,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _overallStatusColor.withOpacity(0.2),
+              color: _overallStatusColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _overallStatusColor.withOpacity(0.5)),
+              border: Border.all(color: _overallStatusColor.withValues(alpha: 0.5)),
             ),
             child: Text(
               _overallStatus,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -451,12 +450,12 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.1),
+            AppColors.primary.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,7 +474,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   owner?.firstName.isNotEmpty == true
                       ? owner!.firstName[0]
                       : '?',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -489,7 +488,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   children: [
                     Text(
                       'เจ้าของแปลง',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey,
                       ),
@@ -498,7 +497,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                       owner?.fullName ??
                           _generalData?['farmerName'] ??
                           'ไม่ทราบชื่อ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -518,15 +517,14 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   ),
                   child: Row(
                     children: [
-                      const HeroIcon(
-                        HeroIcons.phone,
+                      const Icon(
+                        PhosphorIconsRegular.phone,
                         size: 14,
-                        color: Colors.grey,
-                      ),
+                        color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
                         owner!.phone,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade700,
                         ),
@@ -541,12 +539,12 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const HeroIcon(HeroIcons.mapPin, size: 16, color: Colors.grey),
+                const Icon(PhosphorIconsRegular.mapPin, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     owner.locationDisplay,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
                     ),
@@ -569,7 +567,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -582,14 +580,14 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             children: [
               Text(
                 'ความสมบูรณ์ GAP',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 '$_completedCount / $_totalCategories หมวด',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: _overallStatusColor,
@@ -610,7 +608,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
           const SizedBox(height: 8),
           Text(
             '${(_completionPercentage * 100).toInt()}% สมบูรณ์',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,
             ),
@@ -632,12 +630,12 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         color: isCompleted ? Colors.white : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isCompleted ? color.withOpacity(0.3) : Colors.grey.shade200,
+          color: isCompleted ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
         ),
         boxShadow: isCompleted
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.05),
+                  color: color.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -658,14 +656,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(isCompleted ? 0.15 : 0.08),
+                    color: color.withValues(alpha: isCompleted ? 0.15 : 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: HeroIcon(
-                    category['icon'] as HeroIcons,
+                  child: Icon(
+                    category['icon'] as IconData,
                     color: isCompleted ? color : Colors.grey,
-                    size: 22,
-                  ),
+                    size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -674,7 +671,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                     children: [
                       Text(
                         category['title'] as String,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isCompleted ? Colors.black87 : Colors.grey,
@@ -684,7 +681,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                         isCompleted
                             ? (data['summary'] ?? 'มีข้อมูล')
                             : 'ยังไม่ได้บันทึก',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: isCompleted
                               ? Colors.grey.shade600
@@ -704,14 +701,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: Colors.orange.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const HeroIcon(
-                          HeroIcons.chatBubbleLeftRight,
+                        child: const Icon(
+                          PhosphorIconsRegular.chatsCircle,
                           color: Colors.orange,
-                          size: 20,
-                        ),
+                          size: 20),
                       ),
                     ),
                   ),
@@ -726,7 +722,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isCompleted ? Icons.check : Icons.close,
+                    isCompleted ? PhosphorIconsRegular.check : PhosphorIconsRegular.x,
                     color: isCompleted
                         ? Colors.white
                         : Colors.grey.shade400,
@@ -781,7 +777,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
               const SizedBox(height: 16),
               Text(
                 'รายละเอียด: $title',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1012,13 +1008,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         },
       );
     }
-    return Center(child: Text('รูปแบบข้อมูลไม่ถูกต้อง', style: GoogleFonts.prompt()));
+    return Center(child: Text('รูปแบบข้อมูลไม่ถูกต้อง', style: const TextStyle()));
   }
 
   Widget _buildInfoCard({
     required String label,
     required String value,
-    required HeroIcons icon,
+    required IconData icon,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1029,7 +1025,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1041,10 +1037,10 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: HeroIcon(icon, size: 20, color: AppColors.primary),
+            child: Icon(icon, size: 20, color: AppColors.primary),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1053,7 +1049,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
                     fontWeight: FontWeight.w500,
@@ -1062,7 +1058,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
@@ -1079,7 +1075,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
   Widget _buildListItemCard(String key, Map<dynamic, dynamic> item, int index, {bool isTraceability = false}) {
     String title = 'รายการที่ ${index + 1}';
     String? subtitle;
-    HeroIcons icon = HeroIcons.documentText;
+    IconData icon = PhosphorIconsRegular.fileText;
     Color color = AppColors.primary;
     List<Widget> details = [];
 
@@ -1099,7 +1095,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
            subtitle = 'ประเภท: $inputType'; // Don't show "0 kg"
         }
 
-        icon = HeroIcons.beaker;
+        icon = PhosphorIconsRegular.flask;
         color = Colors.blue;
         details = [
           _buildDetailRow('ประเภท', inputType),
@@ -1134,7 +1130,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         }
 
         subtitle = _formatValue('date', item[dateKey]);
-        icon = HeroIcons.wrenchScrewdriver;
+        icon = PhosphorIconsRegular.wrench;
         color = Colors.teal;
         
         // Identify material/machine/chemical used
@@ -1158,7 +1154,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       case 'harvest': // 4. การเก็บเกี่ยว + 7. Traceability
         title = 'เก็บเกี่ยว ${_formatValue('amount', item['yieldAmount'])} ${_formatValue('unit', item['yieldUnit'])}';
         subtitle = 'เกรด: ${_formatValue('grade', item['qualityGrade'])}';
-        icon = isTraceability ? HeroIcons.magnifyingGlass : HeroIcons.archiveBox;
+        icon = isTraceability ? PhosphorIconsRegular.magnifyingGlass : PhosphorIconsRegular.archive;
         color = isTraceability ? Colors.deepPurple : Colors.orange;
         details = [
           _buildDetailRow('รหัสรุ่น (Lot No)', _formatValue('lotNo', item['lotNo'] ?? item['lotNumber'])),
@@ -1177,7 +1173,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       case 'postHarvest': // 5. หลังเก็บเกี่ยว
         title = _formatValue('activity', item['activity'] ?? item['processType'] ?? 'กิจกรรมหลังเก็บเกี่ยว');
         subtitle = _formatValue('date', item['date'] ?? item['processDate']);
-        icon = HeroIcons.cubeTransparent;
+        icon = PhosphorIconsRegular.cube;
         color = Colors.indigo;
         details = [
           _buildDetailRow('วันที่ดำเนินการ', _formatValue('date', item['date'] ?? item['processDate'])),
@@ -1197,7 +1193,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       case 'safety': // 6. ความปลอดภัย (อบรม/สุขลักษณะ)
         title = _formatValue('topic', item['topic'] ?? item['trainingTopic'] ?? 'หัวข้ออบรม');
         subtitle = _formatValue('date', item['trainingDate']);
-        icon = HeroIcons.academicCap;
+        icon = PhosphorIconsRegular.graduationCap;
         color = Colors.purple;
         details = [
           _buildDetailRow('หัวข้ออบรม', _formatValue('topic', item['topic'] ?? item['trainingTopic'])),
@@ -1220,7 +1216,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-             color: Colors.black.withOpacity(0.03),
+             color: Colors.black.withValues(alpha: 0.03),
              blurRadius: 8,
              offset: const Offset(0, 4),
           ),
@@ -1231,14 +1227,14 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: HeroIcon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: 24),
         ),
-        title: Text(title, style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         subtitle: subtitle != null 
-          ? Text(subtitle, style: GoogleFonts.prompt(fontSize: 14, color: Colors.grey[600])) 
+          ? Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey[600])) 
           : null,
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
@@ -1260,13 +1256,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             width: 120, // Wider label for Thai text
             child: Text(
               label, 
-              style: GoogleFonts.prompt(fontSize: 13, color: Colors.grey[600], height: 1.4),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.4),
             ),
           ),
           Expanded(
             child: Text(
               value, 
-              style: GoogleFonts.prompt(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87, height: 1.4),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87, height: 1.4),
             ),
           ),
         ],
@@ -1279,9 +1275,9 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       child: Column(
          mainAxisAlignment: MainAxisAlignment.center,
          children: [
-           Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[200]),
+           Icon(PhosphorIconsRegular.tray, size: 64, color: Colors.grey[200]),
            const SizedBox(height: 16),
-           Text('ยังไม่มีข้อมูลบันทึกในหมวดนี้', style: GoogleFonts.prompt(color: Colors.grey[400], fontSize: 16)),
+           Text('ยังไม่มีข้อมูลบันทึกในหมวดนี้', style: TextStyle(color: Colors.grey[400], fontSize: 16)),
          ],
       ),
     );
@@ -1291,68 +1287,68 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
   Map<String, dynamic> _getFieldInfo(String key) {
     switch (key) {
       // General Info
-      case 'farmerName': return {'label': 'ชื่อเกษตรกร', 'icon': HeroIcons.user};
-      case 'plotName': return {'label': 'ชื่อแปลง', 'icon': HeroIcons.map};
-      case 'address': return {'label': 'ที่อยู่', 'icon': HeroIcons.mapPin};
-      case 'subDistrict': return {'label': 'ตำบล', 'icon': HeroIcons.map};
-      case 'district': return {'label': 'อำเภอ', 'icon': HeroIcons.buildingOffice2};
-      case 'province': return {'label': 'จังหวัด', 'icon': HeroIcons.buildingLibrary};
-      case 'zipcode': return {'label': 'รหัสไปรษณีย์', 'icon': HeroIcons.envelope};
-      case 'location': return {'label': 'พิกัด', 'icon': HeroIcons.globeAsiaAustralia};
-      case 'farmingSystem': return {'label': 'ระบบการผลิต', 'icon': HeroIcons.cpuChip};
-      case 'waterSource': return {'label': 'แหล่งน้ำ', 'icon': HeroIcons.cloud};
-      case 'soilType': return {'label': 'ชนิดดิน', 'icon': HeroIcons.globeAmericas};
-      case 'cropType': return {'label': 'พืชที่ปลูก', 'icon': HeroIcons.sparkles};
-      case 'cropVariety': return {'label': 'พันธุ์พืช', 'icon': HeroIcons.tag};
-      case 'area': return {'label': 'พื้นที่ (ไร่)', 'icon': HeroIcons.square2Stack};
-      case 'landOwnership': return {'label': 'กรรมสิทธิ์', 'icon': HeroIcons.documentCheck};
-      case 'irrigationSystem': return {'label': 'ระบบน้ำ', 'icon': HeroIcons.playCircle};
-      case 'registerDate': return {'label': 'วันที่ขึ้นทะเบียน', 'icon': HeroIcons.calendar};
-      case 'expireDate': return {'label': 'วันที่หมดอายุ', 'icon': HeroIcons.clock};
-      case 'createdById': return {'label': 'ผู้บันทึก (ID)', 'icon': HeroIcons.userCircle};
-      case 'createdAt': return {'label': 'วันที่สร้าง', 'icon': HeroIcons.calendarDays};
-      case 'updatedAt': return {'label': 'อัปเดตล่าสุด', 'icon': HeroIcons.arrowPath};
+      case 'farmerName': return {'label': 'ชื่อเกษตรกร', 'icon': PhosphorIconsRegular.user};
+      case 'plotName': return {'label': 'ชื่อแปลง', 'icon': PhosphorIconsRegular.mapTrifold};
+      case 'address': return {'label': 'ที่อยู่', 'icon': PhosphorIconsRegular.mapPin};
+      case 'subDistrict': return {'label': 'ตำบล', 'icon': PhosphorIconsRegular.mapTrifold};
+      case 'district': return {'label': 'อำเภอ', 'icon': PhosphorIconsRegular.buildings};
+      case 'province': return {'label': 'จังหวัด', 'icon': PhosphorIconsRegular.bank};
+      case 'zipcode': return {'label': 'รหัสไปรษณีย์', 'icon': PhosphorIconsRegular.envelopeSimple};
+      case 'location': return {'label': 'พิกัด', 'icon': PhosphorIconsRegular.globeHemisphereEast};
+      case 'farmingSystem': return {'label': 'ระบบการผลิต', 'icon': PhosphorIconsRegular.cpu};
+      case 'waterSource': return {'label': 'แหล่งน้ำ', 'icon': PhosphorIconsRegular.cloud};
+      case 'soilType': return {'label': 'ชนิดดิน', 'icon': PhosphorIconsRegular.globe};
+      case 'cropType': return {'label': 'พืชที่ปลูก', 'icon': PhosphorIconsRegular.sparkle};
+      case 'cropVariety': return {'label': 'พันธุ์พืช', 'icon': PhosphorIconsRegular.tag};
+      case 'area': return {'label': 'พื้นที่ (ไร่)', 'icon': PhosphorIconsRegular.copy};
+      case 'landOwnership': return {'label': 'กรรมสิทธิ์', 'icon': PhosphorIconsRegular.fileText};
+      case 'irrigationSystem': return {'label': 'ระบบน้ำ', 'icon': PhosphorIconsRegular.playCircle};
+      case 'registerDate': return {'label': 'วันที่ขึ้นทะเบียน', 'icon': PhosphorIconsRegular.calendarBlank};
+      case 'expireDate': return {'label': 'วันที่หมดอายุ', 'icon': PhosphorIconsRegular.clock};
+      case 'createdById': return {'label': 'ผู้บันทึก (ID)', 'icon': PhosphorIconsRegular.userCircle};
+      case 'createdAt': return {'label': 'วันที่สร้าง', 'icon': PhosphorIconsRegular.calendarDots};
+      case 'updatedAt': return {'label': 'อัปเดตล่าสุด', 'icon': PhosphorIconsRegular.arrowsClockwise};
 
       // Inputs (ปัจจัยการผลิต)
-      case 'type': return {'label': 'ประเภท', 'icon': HeroIcons.beaker};
-      case 'name': return {'label': 'ชื่อสามัญ/การค้า', 'icon': HeroIcons.tag};
-      case 'source': return {'label': 'แหล่งที่มา', 'icon': HeroIcons.shoppingBag};
-      case 'purchaseDate': return {'label': 'วันที่ซื้อ', 'icon': HeroIcons.calendar};
-      case 'registrationNo': return {'label': 'เลขทะเบียน', 'icon': HeroIcons.identification};
-      case 'usageMethod': return {'label': 'วิธีใช้', 'icon': HeroIcons.wrench};
-      case 'usageRate': return {'label': 'อัตราการใช้', 'icon': HeroIcons.scale};
-      case 'recorder': return {'label': 'ผู้บันทึก', 'icon': HeroIcons.pencil};
+      case 'type': return {'label': 'ประเภท', 'icon': PhosphorIconsRegular.flask};
+      case 'name': return {'label': 'ชื่อสามัญ/การค้า', 'icon': PhosphorIconsRegular.tag};
+      case 'source': return {'label': 'แหล่งที่มา', 'icon': PhosphorIconsRegular.shoppingBag};
+      case 'purchaseDate': return {'label': 'วันที่ซื้อ', 'icon': PhosphorIconsRegular.calendarBlank};
+      case 'registrationNo': return {'label': 'เลขทะเบียน', 'icon': PhosphorIconsRegular.identificationCard};
+      case 'usageMethod': return {'label': 'วิธีใช้', 'icon': PhosphorIconsRegular.wrench};
+      case 'usageRate': return {'label': 'อัตราการใช้', 'icon': PhosphorIconsRegular.scales};
+      case 'recorder': return {'label': 'ผู้บันทึก', 'icon': PhosphorIconsRegular.pencilSimple};
 
       // Management (การจัดการแปลง)
-      case 'activity': return {'label': 'กิจกรรม', 'icon': HeroIcons.wrenchScrewdriver};
-      case 'date': return {'label': 'วันที่', 'icon': HeroIcons.calendar};
-      case 'time': return {'label': 'เวลา', 'icon': HeroIcons.clock};
-      case 'description': return {'label': 'รายละเอียด', 'icon': HeroIcons.documentText};
-      case 'material': return {'label': 'วัสดุ/อุปกรณ์', 'icon': HeroIcons.cube};
-      case 'operator': return {'label': 'ผู้ปฏิบัติงาน', 'icon': HeroIcons.user};
-      case 'weather': return {'label': 'สภาพอากาศ', 'icon': HeroIcons.cloud};
-      case 'note': return {'label': 'หมายเหตุ', 'icon': HeroIcons.clipboard};
+      case 'activity': return {'label': 'กิจกรรม', 'icon': PhosphorIconsRegular.wrench};
+      case 'date': return {'label': 'วันที่', 'icon': PhosphorIconsRegular.calendarBlank};
+      case 'time': return {'label': 'เวลา', 'icon': PhosphorIconsRegular.clock};
+      case 'description': return {'label': 'รายละเอียด', 'icon': PhosphorIconsRegular.fileText};
+      case 'material': return {'label': 'วัสดุ/อุปกรณ์', 'icon': PhosphorIconsRegular.cube};
+      case 'operator': return {'label': 'ผู้ปฏิบัติงาน', 'icon': PhosphorIconsRegular.user};
+      case 'weather': return {'label': 'สภาพอากาศ', 'icon': PhosphorIconsRegular.cloud};
+      case 'note': return {'label': 'หมายเหตุ', 'icon': PhosphorIconsRegular.clipboard};
 
       // Harvest (เก็บเกี่ยว)
-      case 'harvestDate': return {'label': 'วันที่เก็บเกี่ยว', 'icon': HeroIcons.calendar};
-      case 'yieldAmount': return {'label': 'ปริมาณ', 'icon': HeroIcons.scale};
-      case 'qualityGrade': return {'label': 'เกรด/คุณภาพ', 'icon': HeroIcons.star};
-      case 'container': return {'label': 'ภาชนะบรรจุ', 'icon': HeroIcons.cube};
-      case 'transport': return {'label': 'การขนย้าย', 'icon': HeroIcons.truck};
+      case 'harvestDate': return {'label': 'วันที่เก็บเกี่ยว', 'icon': PhosphorIconsRegular.calendarBlank};
+      case 'yieldAmount': return {'label': 'ปริมาณ', 'icon': PhosphorIconsRegular.scales};
+      case 'qualityGrade': return {'label': 'เกรด/คุณภาพ', 'icon': PhosphorIconsRegular.star};
+      case 'container': return {'label': 'ภาชนะบรรจุ', 'icon': PhosphorIconsRegular.cube};
+      case 'transport': return {'label': 'การขนย้าย', 'icon': PhosphorIconsRegular.truck};
       
       // Safety (ความปลอดภัย)
-      case 'topic': return {'label': 'หัวข้ออบรม', 'icon': HeroIcons.academicCap};
-      case 'trainingDate': return {'label': 'วันที่อบรม', 'icon': HeroIcons.calendar};
-      case 'trainer': return {'label': 'วิทยากร/หน่วยงาน', 'icon': HeroIcons.userGroup};
-      case 'location': return {'label': 'สถานที่', 'icon': HeroIcons.mapPin};
-      case 'durationHours': return {'label': 'จำนวนชั่วโมง', 'icon': HeroIcons.clock};
-      case 'attendees': return {'label': 'จำนวนผู้เข้าอบรม', 'icon': HeroIcons.users};
-      case 'hygieneNotes': return {'label': 'บันทึกสุขลักษณะ', 'icon': HeroIcons.clipboardDocumentCheck};
-      case 'result': return {'label': 'ผลการประเมิน', 'icon': HeroIcons.checkBadge};
-      case 'attachment': return {'label': 'เอกสารแนบ', 'icon': HeroIcons.paperClip};
+      case 'topic': return {'label': 'หัวข้ออบรม', 'icon': PhosphorIconsRegular.graduationCap};
+      case 'trainingDate': return {'label': 'วันที่อบรม', 'icon': PhosphorIconsRegular.calendarBlank};
+      case 'trainer': return {'label': 'วิทยากร/หน่วยงาน', 'icon': PhosphorIconsRegular.usersThree};
+      case 'location': return {'label': 'สถานที่', 'icon': PhosphorIconsRegular.mapPin};
+      case 'durationHours': return {'label': 'จำนวนชั่วโมง', 'icon': PhosphorIconsRegular.clock};
+      case 'attendees': return {'label': 'จำนวนผู้เข้าอบรม', 'icon': PhosphorIconsRegular.users};
+      case 'hygieneNotes': return {'label': 'บันทึกสุขลักษณะ', 'icon': PhosphorIconsRegular.clipboardText};
+      case 'result': return {'label': 'ผลการประเมิน', 'icon': PhosphorIconsRegular.sealCheck};
+      case 'attachment': return {'label': 'เอกสารแนบ', 'icon': PhosphorIconsRegular.paperclip};
 
       // Default fallback
-      default: return {'label': key, 'icon': HeroIcons.informationCircle};
+      default: return {'label': key, 'icon': PhosphorIconsRegular.info};
     }
   }
 
@@ -1376,7 +1372,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'ส่ง Feedback: $title',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -1385,14 +1381,14 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             children: [
               Text(
                 'ระบุสิ่งที่เกษตรกรต้องแก้ไข:',
-                style: GoogleFonts.prompt(fontSize: 14),
+                style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
                   hintText: 'เช่น รูปภาพไม่ชัดเจน, เอกสารหมดอายุ...',
-                  hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                  hintStyle: TextStyle(color: Colors.grey),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1409,7 +1405,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
+              style: TextStyle(color: Colors.grey),
             ),
           ),
           ElevatedButton(
@@ -1432,7 +1428,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   SnackBar(
                     content: Text(
                       'ส่ง Feedback เรียบร้อย',
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                     ),
                     backgroundColor: AppColors.success,
                   ),
@@ -1444,7 +1440,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                   SnackBar(
                     content: Text(
                       e.toString().replaceAll('Exception: ', ''),
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                     ),
                     backgroundColor: AppColors.error,
                   ),
@@ -1459,7 +1455,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
             ),
             child: Text(
               'ส่ง',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -1524,14 +1520,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _handleApprovePlot(),
-                  icon: const HeroIcon(
-                    HeroIcons.checkCircle,
+                  icon: const Icon(
+                    PhosphorIconsRegular.checkCircle,
                     size: 20,
-                    color: Colors.white,
-                  ),
+                    color: Colors.white),
                   label: Text(
                     'อนุมัติแปลง',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -1549,14 +1544,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _handleRejectPlot(),
-                  icon: const HeroIcon(
-                    HeroIcons.xCircle,
+                  icon: const Icon(
+                    PhosphorIconsRegular.xCircle,
                     size: 20,
-                    color: Colors.white,
-                  ),
+                    color: Colors.white),
                   label: Text(
                     'ปฏิเสธ',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -1580,10 +1574,10 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
              Expanded(
                child: OutlinedButton.icon(
                  onPressed: _completedCount > 0 ? _handlePreview : null,
-                 icon: const HeroIcon(HeroIcons.eye, size: 20),
+                 icon: const Icon(PhosphorIconsRegular.eye, size: 20),
                  label: Text(
                    'ตัวอย่าง',
-                   style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                   style: TextStyle(fontWeight: FontWeight.bold),
                  ),
                  style: OutlinedButton.styleFrom(
                    padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1600,14 +1594,13 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
                flex: 2,
                child: ElevatedButton.icon(
                  onPressed: _completedCount > 0 ? _handleExport : null,
-                 icon: const HeroIcon(
-                   HeroIcons.documentArrowDown,
+                 icon: const Icon(
+                   PhosphorIconsRegular.fileArrowDown,
                    size: 20,
-                   color: Colors.white,
-                 ),
+                   color: Colors.white),
                  label: Text(
                    'ส่งรายงานผู้เชี่ยวชาญ',
-                   style: GoogleFonts.prompt(
+                   style: TextStyle(
                      fontWeight: FontWeight.w600,
                      color: Colors.white,
                    ),
@@ -1656,7 +1649,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('อนุมัติแปลงสำเร็จ', style: GoogleFonts.prompt()),
+          content: Text('อนุมัติแปลงสำเร็จ', style: const TextStyle()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -1671,7 +1664,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         SnackBar(
           content: Text(
             e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -1708,7 +1701,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ปฏิเสธแปลงสำเร็จ', style: GoogleFonts.prompt()),
+          content: Text('ปฏิเสธแปลงสำเร็จ', style: const TextStyle()),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -1723,7 +1716,7 @@ class _AdminGapInspectionScreenState extends State<AdminGapInspectionScreen> {
         SnackBar(
           content: Text(
             e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),

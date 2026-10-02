@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/nature_background.dart';
@@ -82,15 +81,15 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
             CircleAvatar(
               radius: 16,
               backgroundColor: isSuperAdmin 
-                  ? LuxuryTheme.cyanNeon.withOpacity(0.2) 
-                  : Colors.white.withOpacity(0.2),
+                  ? LuxuryTheme.cyanNeon.withValues(alpha: 0.2) 
+                  : Colors.white.withValues(alpha: 0.2),
               backgroundImage: (partner?.photoUrl != null) 
                 ? NetworkImage(partner!.photoUrl!) 
                 : null,
               child: (partner?.photoUrl == null) 
                 ? Text(
                     partnerName.isNotEmpty ? partnerName[0] : '?', 
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       color: isSuperAdmin ? LuxuryTheme.cyanNeon : Colors.white,
                       fontWeight: FontWeight.bold,
                     )
@@ -101,7 +100,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
             Expanded(
               child: Text(
                 partnerName, 
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontWeight: FontWeight.bold, 
                   color: Colors.white, 
                   fontSize: 18
@@ -121,12 +120,12 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                   border: Border.all(color: LuxuryTheme.glassBorder),
                 ),
                 child: IconButton(
-                  icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
+                  icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white, size: 20),
                   onPressed: () => context.pop(),
                 ),
               )
             : IconButton(
-                icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+                icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
                 onPressed: () => context.pop(),
               ),
       ),
@@ -142,7 +141,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                 ? Center(
                     child: Text(
                       'เริ่มต้นบทสนทนา', 
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: isSuperAdmin ? Colors.white54 : Colors.grey
                       )
                     )
@@ -221,7 +220,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
           border: isSuperAdmin && !isMe ? Border.all(color: LuxuryTheme.glassBorder) : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -258,7 +257,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                         height: 100,
                         color: Colors.grey[200],
                         child: const Center(
-                          child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                          child: Icon(PhosphorIconsRegular.imageBroken, color: Colors.grey, size: 48),
                         ),
                       ),
                   ),
@@ -267,7 +266,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
             if (textMessage.isNotEmpty)
               Text(
                 textMessage,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   color: textColor,
                   fontSize: 15,
                 ),
@@ -275,7 +274,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
             const SizedBox(height: 4),
             Text(
               _formatTime(msg.createdAt),
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: timeColor,
                 fontSize: 10,
               ),
@@ -290,11 +289,11 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       decoration: BoxDecoration(
-        color: isSuperAdmin ? LuxuryTheme.midnightBlue.withOpacity(0.9) : Colors.white,
+        color: isSuperAdmin ? LuxuryTheme.midnightBlue.withValues(alpha: 0.9) : Colors.white,
         border: isSuperAdmin ? Border(top: BorderSide(color: LuxuryTheme.glassBorder)) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -307,12 +306,12 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
             Expanded(
               child: TextField(
                 controller: _replyController,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   color: isSuperAdmin ? Colors.white : Colors.black,
                 ),
                 decoration: InputDecoration(
                   hintText: 'พิมพ์ข้อความ...',
-                  hintStyle: GoogleFonts.prompt(
+                  hintStyle: TextStyle(
                     color: isSuperAdmin ? Colors.white38 : Colors.grey[400]
                   ),
                   filled: true,
@@ -352,8 +351,8 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                         strokeWidth: 2
                       )
                     )
-                  : const HeroIcon(
-                      HeroIcons.paperAirplane, 
+                  : const Icon(
+                      PhosphorIconsRegular.paperPlaneTilt, 
                       color: Colors.white, 
                       size: 20
                     ),
@@ -378,7 +377,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
         SnackBar(
           content: Text(
             'ข้อความยาวเกิน 5000 ตัวอักษร', 
-            style: GoogleFonts.prompt()
+            style: const TextStyle()
           ),
           backgroundColor: AppColors.error,
         ),
@@ -415,7 +414,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
           SnackBar(
             content: Text(
               'ส่งข้อความไม่สำเร็จ: $e', 
-              style: GoogleFonts.prompt()
+              style: const TextStyle()
             ),
             backgroundColor: AppColors.error,
           ),

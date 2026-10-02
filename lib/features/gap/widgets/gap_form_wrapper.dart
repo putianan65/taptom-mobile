@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 
 /// Wrapper for GAP forms to ensure consistent layout and styling
 class GapFormWrapper extends StatefulWidget {
   final String title;
   final String subtitle;
-  final HeroIcons headerIcon;
+  final IconData headerIcon;
   final Color headerColor;
   final Widget child;
   final VoidCallback? onSave;
@@ -47,18 +46,18 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
         ),
         title: Text(
           'ออกจากฟอร์ม?',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'ข้อมูลที่ยังไม่ได้บันทึกจะสูญหาย\nคุณต้องการออกหรือไม่?',
-          style: GoogleFonts.prompt(),
+          style: const TextStyle(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -71,7 +70,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
             ),
             child: Text(
               'ออก',
-              style: GoogleFonts.prompt(color: AppColors.textLight),
+              style: TextStyle(color: AppColors.textLight),
             ),
           ),
         ],
@@ -98,7 +97,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
         appBar: AppBar(
           title: Text(
             widget.title,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -107,7 +106,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
           backgroundColor: AppColors.surface,
           elevation: 0,
           leading: IconButton(
-            icon: HeroIcon(HeroIcons.arrowLeft, color: AppColors.textPrimary),
+            icon: Icon(PhosphorIconsRegular.arrowLeft, color: AppColors.textPrimary),
             onPressed: () async {
               // GAP-FIX-002: Use shared method for consistent behavior
               final shouldPop = await _onWillPop();
@@ -122,7 +121,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                 onPressed: widget.isSaving ? null : widget.onSaveDraft,
                 child: Text(
                   'บันทึกร่าง',
-                  style: GoogleFonts.prompt(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
           ],
@@ -160,7 +159,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                   )
                 : Text(
                     'บันทึกข้อมูล',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textLight,
@@ -179,14 +178,14 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [widget.headerColor.withOpacity(0.8), widget.headerColor],
+                    colors: [widget.headerColor.withValues(alpha: 0.8), widget.headerColor],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.headerColor.withOpacity(0.3),
+                      color: widget.headerColor.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 8),
                     ),
@@ -197,14 +196,13 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.textLight.withOpacity(0.2),
+                        color: AppColors.textLight.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: HeroIcon(
+                      child: Icon(
                         widget.headerIcon,
                         color: AppColors.textLight,
-                        size: 32,
-                      ),
+                        size: 32),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -213,7 +211,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                         children: [
                           Text(
                             widget.title,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textLight,
@@ -222,9 +220,9 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
                           const SizedBox(height: 4),
                           Text(
                             widget.subtitle,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textLight.withOpacity(0.9),
+                              color: AppColors.textLight.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -251,7 +249,7 @@ class _GapFormWrapperState extends State<GapFormWrapper> {
 class FormSectionCard extends StatelessWidget {
   final String title;
   final String example;
-  final HeroIcons icon;
+  final IconData icon;
   final Color iconColor;
   final Widget child;
 
@@ -274,7 +272,7 @@ class FormSectionCard extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -288,7 +286,7 @@ class FormSectionCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                HeroIcon(icon, color: iconColor, size: 24),
+                Icon(icon, color: iconColor, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -296,7 +294,7 @@ class FormSectionCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -304,7 +302,7 @@ class FormSectionCard extends StatelessWidget {
                       ),
                       Text(
                         example,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -329,7 +327,7 @@ class FormSectionCard extends StatelessWidget {
 /// Info card for form guidance
 class FormInfoCard extends StatelessWidget {
   final String message;
-  final HeroIcons icon;
+  final IconData icon;
   final Color color;
 
   const FormInfoCard({
@@ -345,21 +343,21 @@ class FormInfoCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          HeroIcon(icon, color: color, size: 20),
+          Icon(icon, color: color, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 13,
-                color: color.withOpacity(0.8),
+                color: color.withValues(alpha: 0.8),
                 height: 1.5,
               ),
             ),
@@ -377,7 +375,7 @@ class FormDropdownWithOther extends StatefulWidget {
   final List<String> options;
   final String value;
   final ValueChanged<String> onChanged;
-  final HeroIcons icon;
+  final IconData icon;
 
   const FormDropdownWithOther({
     super.key,
@@ -444,12 +442,12 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    HeroIcon(widget.icon, color: Colors.grey, size: 20),
+                    Icon(widget.icon, color: Colors.grey, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         widget.hint,
-                        style: GoogleFonts.prompt(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
@@ -460,7 +458,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
               isExpanded: true,
               icon: const Padding(
                 padding: EdgeInsets.only(right: 16),
-                child: HeroIcon(HeroIcons.chevronDown, color: Colors.grey, size: 20),
+                child: Icon(PhosphorIconsRegular.caretDown, color: Colors.grey, size: 20),
               ),
               items: [
                 ...widget.options.map((option) => DropdownMenuItem(
@@ -469,7 +467,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       option,
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
@@ -481,7 +479,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'อื่นๆ (ระบุ)',
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                     ),
                   ),
                 ),
@@ -506,7 +504,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
             controller: _otherController,
             decoration: InputDecoration(
               hintText: 'ระบุ${widget.label}',
-              hintStyle: GoogleFonts.prompt(color: Colors.grey),
+              hintStyle: TextStyle(color: Colors.grey),
               filled: true,
               fillColor: Colors.grey.shade50,
               border: OutlineInputBorder(
@@ -515,7 +513,7 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
             onChanged: widget.onChanged,
           ),
         ],
@@ -536,12 +534,12 @@ Future<bool> showIncompleteFieldsDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+          const Icon(PhosphorIconsRegular.warning, color: Colors.orange, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'ข้อมูลไม่ครบถ้วน',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
         ],
@@ -557,17 +555,17 @@ Future<bool> showIncompleteFieldsDialog(
             children: [
               Text(
                 'ฟอร์ม "$formTitle" มีข้อมูลที่ยังไม่ได้กรอก:',
-                style: GoogleFonts.prompt(fontSize: 14),
+                style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 12),
               ...incompleteFields.map((field) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.circle, size: 6, color: Colors.orange),
+                    const Icon(PhosphorIconsFill.circle, size: 6, color: Colors.orange),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(field, style: GoogleFonts.prompt(fontSize: 14)),
+                      child: Text(field, style: TextStyle(fontSize: 14)),
                     ),
                   ],
                 ),
@@ -575,7 +573,7 @@ Future<bool> showIncompleteFieldsDialog(
               const SizedBox(height: 16),
               Text(
                 'คุณต้องการบันทึกต่อไปหรือไม่?',
-                style: GoogleFonts.prompt(fontSize: 14, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -584,7 +582,7 @@ Future<bool> showIncompleteFieldsDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text('กลับไปกรอก', style: GoogleFonts.prompt()),
+          child: Text('กลับไปกรอก', style: const TextStyle()),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
@@ -592,7 +590,7 @@ Future<bool> showIncompleteFieldsDialog(
             backgroundColor: AppColors.primary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child: Text('บันทึกต่อไป', style: GoogleFonts.prompt(color: Colors.white)),
+          child: Text('บันทึกต่อไป', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),
@@ -617,11 +615,11 @@ Future<void> showGapSuccessDialog(
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.check_circle,
+              PhosphorIconsFill.checkCircle,
               color: AppColors.success,
               size: 64,
             ),
@@ -629,7 +627,7 @@ Future<void> showGapSuccessDialog(
           const SizedBox(height: 20),
           Text(
             formTitle,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -639,7 +637,7 @@ Future<void> showGapSuccessDialog(
           const SizedBox(height: 8),
           Text(
             formSubtitle,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
             ),
@@ -659,7 +657,7 @@ Future<void> showGapSuccessDialog(
               ),
               child: Text(
                 'ตกลง',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

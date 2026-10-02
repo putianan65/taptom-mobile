@@ -2,8 +2,7 @@ import 'dart:async';
 import '../../super_admin/widgets/luxury_dialog.dart'; // Added
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -103,7 +102,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         context,
         title: 'ยืนยันการอนุมัติ',
         content: 'คุณต้องการอนุมัติ ${user.fullName} หรือไม่?\nสมาชิกจะสามารถเข้าใช้งานระบบได้ทันที',
-        icon: HeroIcons.checkBadge,
+        icon: PhosphorIconsRegular.sealCheck,
         accentColor: LuxuryTheme.emeraldNeon,
         confirmText: 'อนุมัติสมาชิก',
       );
@@ -135,7 +134,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 const SizedBox(height: 16),
                 Text(
                   'กำลังอนุมัติ...',
-                  style: GoogleFonts.prompt(fontSize: 14),
+                  style: TextStyle(fontSize: 14),
                 ),
               ],
             ),
@@ -240,19 +239,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const HeroIcon(
-                HeroIcons.xCircle,
+              child: const Icon(
+                PhosphorIconsRegular.xCircle,
                 color: AppColors.error,
-                size: 24,
-              ),
+                size: 24),
             ),
             const SizedBox(width: 12),
             Text(
               'ปฏิเสธคำขอ',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -264,7 +262,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Text(
                 'กรุณาระบุเหตุผลในการปฏิเสธ เพื่อแจ้งให้ผู้สมัครทราบ',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -274,7 +272,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 controller: controller,
                 decoration: InputDecoration(
                   hintText: 'เช่น ข้อมูลไม่ครบถ้วน, เอกสารไม่ถูกต้อง...',
-                  hintStyle: GoogleFonts.prompt(
+                  hintStyle: TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 13,
                   ),
@@ -286,7 +284,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   contentPadding: const EdgeInsets.all(16),
                 ),
                 maxLines: 4,
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'กรุณาระบุเหตุผลในการปฏิเสธ';
@@ -301,22 +299,21 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const HeroIcon(
-                      HeroIcons.informationCircle,
+                    const Icon(
+                      PhosphorIconsRegular.info,
                       color: AppColors.warning,
-                      size: 20,
-                    ),
+                      size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'เหตุผลนี้จะถูกส่งเป็นการแจ้งเตือนไปยังผู้สมัคร',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[700],
                         ),
@@ -333,7 +330,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton.icon(
@@ -342,14 +339,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 Navigator.pop(context, controller.text.trim());
               }
             },
-            icon: const HeroIcon(
-              HeroIcons.xMark,
+            icon: const Icon(
+              PhosphorIconsRegular.x,
               size: 18,
-              color: AppColors.textLight,
-            ),
+              color: AppColors.textLight),
             label: Text(
               'ปฏิเสธ',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: AppColors.textLight,
                 fontWeight: FontWeight.w600,
               ),
@@ -376,7 +372,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       builder: (context) => AlertDialog(
         title: Text(
           'Admin Debug Info',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -390,7 +386,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               const Divider(),
               Text(
                 'Territory (พื้นที่ที่ดูแล):',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.info,
                 ),
@@ -405,12 +401,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   _getTerritoryDescription(user),
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.info,
                     fontWeight: FontWeight.w500,
@@ -421,7 +417,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               const Divider(),
               Text(
                 'คำอธิบาย:',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
@@ -431,7 +427,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 '• คุณสามารถอนุมัติได้เฉพาะสมาชิกในพื้นที่ที่คุณดูแล\n'
                 '• หลังอนุมัติ สมาชิกจะถูก assign ให้คุณอัตโนมัติ\n'
                 '• Super Admin สามารถจัดการได้ทุกพื้นที่',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 11,
                   color: AppColors.textTertiary,
                 ),
@@ -459,14 +455,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             width: 80,
             child: Text(
               '$label:',
-              style: GoogleFonts.robotoMono(
+              style: TextStyle(fontFamily: 'IBMPlexMono', 
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: GoogleFonts.robotoMono(fontSize: 12)),
+            child: Text(value, style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12)),
           ),
         ],
       ),
@@ -529,7 +525,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           ),
           title: Text(
             'ย้าย User ไปยัง Admin อื่น',
-            style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -537,13 +533,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Text(
                 'ย้าย ${user.fullName} ไปให้ Admin:',
-                style: GoogleFonts.prompt(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
                   labelText: 'เลือก Admin',
-                  labelStyle: GoogleFonts.prompt(),
+                  labelStyle: const TextStyle(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -556,7 +552,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   final phone = admin['phone'] ?? '';
                   return DropdownMenuItem<String>(
                     value: admin['id'] as String?,
-                    child: Text('$name ($phone)', style: GoogleFonts.prompt()),
+                    child: Text('$name ($phone)', style: const TextStyle()),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -570,7 +566,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+              child: Text('ยกเลิก', style: const TextStyle()),
             ),
             ElevatedButton(
               onPressed: selectedAdminId != null
@@ -581,7 +577,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               ),
               child: Text(
                 'ย้าย',
-                style: GoogleFonts.prompt(color: AppColors.textLight),
+                style: TextStyle(color: AppColors.textLight),
               ),
             ),
           ],
@@ -706,8 +702,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.white.withOpacity(0.9),
-                        Colors.white.withOpacity(0.4),
+                        Colors.white.withValues(alpha: 0.9),
+                        Colors.white.withValues(alpha: 0.4),
                       ],
                     ),
                   ),
@@ -731,17 +727,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 border: isSuperAdmin ? Border.all(color: LuxuryTheme.glassBorder) : null,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(isSuperAdmin ? 0.3 : 0.1),
+                                    color: Colors.black.withValues(alpha: isSuperAdmin ? 0.3 : 0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                             child: IconButton(
-                              icon: const HeroIcon(
-                                HeroIcons.arrowLeft,
-                                color: Colors.black87,
-                              ),
+                              icon: const Icon(
+                                PhosphorIconsRegular.arrowLeft,
+                                color: Colors.black87),
                               onPressed: () {
                                 if (context.canPop()) {
                                   context.pop();
@@ -757,12 +752,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             child: Text(
                               'รายชื่อสมาชิก',
                               style: isSuperAdmin 
-                                  ? GoogleFonts.outfit(
+                                  ? TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     )
-                                  : GoogleFonts.prompt(
+                                  : TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black87,
@@ -771,7 +766,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ),
                           IconButton(
                             icon: const Icon(
-                              Icons.info_outline,
+                              PhosphorIconsRegular.info,
                               color: AppColors.primary,
                             ),
                             onPressed: () => _showDebugInfo(context),
@@ -790,14 +785,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Text(
                             'รายชื่อสมาชิก',
                             style: isSuperAdmin
-                                ? GoogleFonts.outfit(
+                                ? TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                     shadows: LuxuryTheme.neonShadow(LuxuryTheme.cyanNeon),
                                     height: 1,
                                   )
-                                : GoogleFonts.prompt(
+                                : TextStyle(
                                     fontSize: 32, // Large and Bold
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
@@ -811,7 +806,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -819,7 +814,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             ),
                             child: IconButton(
                               icon: Icon(
-                                Icons.info_outline,
+                                PhosphorIconsRegular.info,
                                 color: isSuperAdmin
                                     ? AppColors.superAdminPrimary
                                     : AppColors.adminPrimary,
@@ -842,24 +837,24 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSuperAdmin
-                                ? Colors.black.withOpacity(0.2) // Dark glass for better blending
+                                ? Colors.black.withValues(alpha: 0.2) // Dark glass for better blending
                                 : (isEmbedded
                                     ? Colors.white
-                                    : Colors.white.withOpacity(0.95)),
+                                    : Colors.white.withValues(alpha: 0.95)),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
                                 color: isSuperAdmin 
                                     ? Colors.transparent 
-                                    : Colors.black.withOpacity(0.05),
+                                    : Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
                             ],
                             border: Border.all(
                               color: isSuperAdmin 
-                                  ? Colors.white.withOpacity(0.1) // Subtle border
-                                  : Colors.white.withOpacity(0.6),
+                                  ? Colors.white.withValues(alpha: 0.1) // Subtle border
+                                  : Colors.white.withValues(alpha: 0.6),
                               width: 1.0,
                             ),
                           ),
@@ -867,24 +862,23 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           child: TextField(
                             onChanged: _onSearchChanged,
                             style: isSuperAdmin
-                                ? GoogleFonts.outfit(
+                                ? TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                   )
-                                : GoogleFonts.prompt(
+                                : TextStyle(
                                     fontWeight: FontWeight.w500,
                                   ),
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Colors.transparent, // Override global theme
-                              icon: HeroIcon(
-                                HeroIcons.magnifyingGlass,
+                              icon: Icon(
+                                PhosphorIconsRegular.magnifyingGlass,
                                 color: isSuperAdmin 
                                     ? LuxuryTheme.textSecondary 
-                                    : AppColors.textSecondary,
-                              ),
+                                    : AppColors.textSecondary),
                               hintText: 'ค้นหาชื่อ, เบอร์โทร...',
-                              hintStyle: GoogleFonts.prompt(
+                              hintStyle: TextStyle(
                                 color: isSuperAdmin 
                                     ? LuxuryTheme.textDisabled 
                                     : AppColors.textTertiary,
@@ -942,11 +936,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ? LuxuryTheme.textSecondary 
                           : Colors.grey[600],
                       labelStyle: isSuperAdmin
-                          ? GoogleFonts.outfit(
+                          ? TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             )
-                          : GoogleFonts.prompt(
+                          : TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
@@ -1001,15 +995,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const HeroIcon(
-            HeroIcons.exclamationTriangle,
+          const Icon(
+            PhosphorIconsRegular.warning,
             size: 48,
-            color: AppColors.error,
-          ),
+            color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             'เกิดข้อผิดพลาด',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -1017,13 +1010,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           const SizedBox(height: 8),
           Text(
             error,
-            style: GoogleFonts.prompt(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () => context.read<AdminStateProvider>().loadUsers(),
-            icon: const Icon(Icons.refresh),
-            label: Text('ลองใหม่', style: GoogleFonts.prompt()),
+            icon: const Icon(PhosphorIconsRegular.arrowsClockwise),
+            label: Text('ลองใหม่', style: const TextStyle()),
           ),
         ],
       ),
@@ -1038,15 +1031,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HeroIcon(
-              isDeletedTab ? HeroIcons.trash : HeroIcons.users,
+            Icon(
+              isDeletedTab ? PhosphorIconsRegular.trash : PhosphorIconsRegular.users,
               size: 48,
-              color: AppColors.textSecondary,
-            ),
+              color: AppColors.textSecondary),
             const SizedBox(height: 16),
             Text(
               isDeletedTab ? 'ไม่มีผู้ใช้ที่ถูกลบ' : 'ไม่พบสมาชิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1116,7 +1108,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       context,
       title: 'ลบผู้ใช้',
       content: 'คุณต้องการลบ ${user.fullName} หรือไม่?\nผู้ใช้จะถูก Soft Delete และสามารถกู้คืนได้ภายหลัง',
-      icon: HeroIcons.trash,
+      icon: PhosphorIconsRegular.trash,
       accentColor: AppColors.error,
       confirmText: 'ลบผู้ใช้',
       isDestructive: true,
@@ -1165,19 +1157,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const HeroIcon(
-                  HeroIcons.userCircle,
+                child: const Icon(
+                  PhosphorIconsRegular.userCircle,
                   color: AppColors.warning,
-                  size: 24,
-                ),
+                  size: 24),
               ),
               const SizedBox(width: 12),
               Text(
                 'เปลี่ยนสิทธิ์ผู้ใช้',
-                style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -1187,15 +1178,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             children: [
               Text(
                 'เปลี่ยนสิทธิ์ของ ${user.fullName}',
-                style: GoogleFonts.prompt(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               ...UserRole.values.map((role) {
                 return RadioListTile<UserRole>(
-                  title: Text(_getRoleName(role), style: GoogleFonts.prompt()),
+                  title: Text(_getRoleName(role), style: const TextStyle()),
                   subtitle: Text(
                     _getRoleDescription(role),
-                    style: GoogleFonts.prompt(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                   value: role,
                   groupValue: selectedRole,
@@ -1210,7 +1201,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+              child: Text('ยกเลิก', style: const TextStyle()),
             ),
             ElevatedButton(
               onPressed: selectedRole != user.role
@@ -1221,7 +1212,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               ),
               child: Text(
                 'บันทึก',
-                style: GoogleFonts.prompt(color: AppColors.textLight),
+                style: TextStyle(color: AppColors.textLight),
               ),
             ),
           ],
@@ -1313,13 +1304,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: isSA
-                        ? LuxuryTheme.cyanNeon.withOpacity(0.15)
+                        ? LuxuryTheme.cyanNeon.withValues(alpha: 0.15)
                         : AppColors.primary.withValues(alpha: 0.1),
                     child: Text(
                       user.firstName.isNotEmpty
                           ? user.firstName[0].toUpperCase()
                           : '?',
-                      style: GoogleFonts.outfit(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: isSA ? LuxuryTheme.cyanNeon : AppColors.primary,
@@ -1334,12 +1325,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           user.fullName,
                           style: isSA
-                              ? GoogleFonts.outfit(
+                              ? TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 )
-                              : GoogleFonts.prompt(
+                              : TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1347,8 +1338,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           user.phone,
                           style: isSA
-                              ? GoogleFonts.outfit(color: LuxuryTheme.textSecondary)
-                              : GoogleFonts.prompt(color: Colors.grey),
+                              ? TextStyle(color: LuxuryTheme.textSecondary)
+                              : TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
@@ -1365,18 +1356,17 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: LuxuryTheme.goldNeon.withOpacity(0.5)),
-                    color: LuxuryTheme.goldNeon.withOpacity(0.08),
+                    border: Border.all(color: LuxuryTheme.goldNeon.withValues(alpha: 0.5)),
+                    color: LuxuryTheme.goldNeon.withValues(alpha: 0.08),
                   ),
                   child: ListTile(
-                    leading: const HeroIcon(
-                      HeroIcons.userCircle,
+                    leading: const Icon(
+                      PhosphorIconsRegular.userCircle,
                       color: LuxuryTheme.goldNeon,
-                      size: 24,
-                    ),
+                      size: 24),
                     title: Text(
                       'เปลี่ยนสิทธิ์ (Role)',
-                      style: GoogleFonts.outfit(
+                      style: TextStyle(
                         color: LuxuryTheme.goldNeon,
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -1384,16 +1374,15 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     ),
                     subtitle: Text(
                       'Role ปัจจุบัน: ${_getRoleName(user.role)}',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: LuxuryTheme.textSecondary,
                         fontSize: 12,
                       ),
                     ),
-                    trailing: const HeroIcon(
-                      HeroIcons.chevronRight,
+                    trailing: const Icon(
+                      PhosphorIconsRegular.caretRight,
                       color: LuxuryTheme.goldNeon,
-                      size: 20,
-                    ),
+                      size: 20),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1415,16 +1404,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.success.withOpacity(0.3),
+                      color: AppColors.success.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.person_add_alt_1,
+                        PhosphorIconsRegular.userPlus,
                         size: 16,
                         color: AppColors.success,
                       ),
@@ -1432,7 +1421,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       Expanded(
                         child: Text(
                           '✅ สมาชิกของคุณ (Assigned to you)',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: AppColors.success,
                             fontWeight: FontWeight.w500,
@@ -1462,17 +1451,17 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       ),
                     );
                   },
-                  icon: HeroIcon(HeroIcons.map,
+                  icon: Icon(PhosphorIconsRegular.mapTrifold,
                     color: isSA ? LuxuryTheme.emeraldNeon : AppColors.primary),
                   label: Text(
                     'ดูแปลงเกษตร',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       color: isSA ? LuxuryTheme.emeraldNeon : AppColors.primary,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: isSA ? LuxuryTheme.emeraldNeon.withOpacity(0.5) : AppColors.primary,
+                      color: isSA ? LuxuryTheme.emeraldNeon.withValues(alpha: 0.5) : AppColors.primary,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(double.infinity, 48),
@@ -1513,10 +1502,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Navigator.pop(context);
                           _rejectUser(user);
                         },
-                        icon: const Icon(Icons.close, color: AppColors.error),
+                        icon: const Icon(PhosphorIconsRegular.x, color: AppColors.error),
                         label: Text(
                           'ปฏิเสธ',
-                          style: GoogleFonts.prompt(color: AppColors.error),
+                          style: TextStyle(color: AppColors.error),
                         ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.error),
@@ -1532,8 +1521,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           Navigator.pop(context);
                           _approveUser(user);
                         },
-                        icon: const Icon(Icons.check),
-                        label: Text('อนุมัติ', style: GoogleFonts.prompt()),
+                        icon: const Icon(PhosphorIconsRegular.check),
+                        label: Text('อนุมัติ', style: const TextStyle()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1563,21 +1552,20 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Navigator.pop(context);
                               _showReassignDialog(user);
                             },
-                            icon: const HeroIcon(
-                              HeroIcons.arrowsRightLeft,
+                            icon: const Icon(
+                              PhosphorIconsRegular.arrowsLeftRight,
                               size: 18,
-                              color: LuxuryTheme.cyanNeon,
-                            ),
+                              color: LuxuryTheme.cyanNeon),
                             label: Text(
                               'ย้าย Admin',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 color: LuxuryTheme.cyanNeon,
                                 fontSize: 13,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
-                                color: LuxuryTheme.cyanNeon.withOpacity(0.5),
+                                color: LuxuryTheme.cyanNeon.withValues(alpha: 0.5),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
@@ -1591,14 +1579,13 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Navigator.pop(context);
                               _deleteUser(user);
                             },
-                            icon: const HeroIcon(
-                              HeroIcons.trash,
+                            icon: const Icon(
+                              PhosphorIconsRegular.trash,
                               size: 18,
-                              color: AppColors.error,
-                            ),
+                              color: AppColors.error),
                             label: Text(
                               'ลบผู้ใช้',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 color: AppColors.error,
                                 fontSize: 13,
                               ),
@@ -1631,10 +1618,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         children: [
           Text(
             label,
-            style: GoogleFonts.prompt(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
           const Spacer(),
-          Text(value, style: GoogleFonts.prompt(fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -1647,14 +1634,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         children: [
           Text(
             label,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               color: isDark ? LuxuryTheme.textSecondary : AppColors.textSecondary,
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               color: isDark ? Colors.white : null,
             ),
@@ -1694,7 +1681,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       ),
       child: Text(
         text,
-        style: GoogleFonts.prompt(
+        style: TextStyle(
           fontSize: 12,
           color: color,
           fontWeight: FontWeight.w500,

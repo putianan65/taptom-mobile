@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/analytics_model.dart';
 
@@ -23,7 +22,7 @@ class UserTrendsChart extends StatelessWidget {
       return Center(
         child: Text(
           'ไม่พบข้อมูล',
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             color: isDarkMode ? LuxuryTheme.textDisabled : Colors.grey[500],
             letterSpacing: 0.5,
           ),
@@ -45,14 +44,14 @@ class UserTrendsChart extends StatelessWidget {
     final subtitleColor = isDarkMode ? LuxuryTheme.textSecondary : Colors.black54;
     final axisLabelColor = isDarkMode ? LuxuryTheme.textSecondary : Colors.grey[600]!;
     final gridLineColor = isDarkMode 
-        ? Colors.white.withOpacity(0.05) 
-        : Colors.grey.withOpacity(0.15);
+        ? Colors.white.withValues(alpha: 0.05) 
+        : Colors.grey.withValues(alpha: 0.15);
     final badgeBgColor = isDarkMode 
-        ? LuxuryTheme.cyanNeon.withOpacity(0.1) 
-        : accentColor.withOpacity(0.1);
+        ? LuxuryTheme.cyanNeon.withValues(alpha: 0.1) 
+        : accentColor.withValues(alpha: 0.1);
     final badgeBorderColor = isDarkMode 
-        ? LuxuryTheme.cyanNeon.withOpacity(0.3) 
-        : accentColor.withOpacity(0.3);
+        ? LuxuryTheme.cyanNeon.withValues(alpha: 0.3) 
+        : accentColor.withValues(alpha: 0.3);
     final containerColor = isDarkMode 
         ? LuxuryTheme.glassSurface 
         : Colors.white;
@@ -60,11 +59,11 @@ class UserTrendsChart extends StatelessWidget {
         ? LuxuryTheme.glassBorder 
         : AppColors.border;
     final tooltipBg = isDarkMode 
-        ? LuxuryTheme.midnightBlue.withOpacity(0.9) 
-        : Colors.white.withOpacity(0.95);
+        ? LuxuryTheme.midnightBlue.withValues(alpha: 0.9) 
+        : Colors.white.withValues(alpha: 0.95);
     final tooltipBorder = isDarkMode 
         ? LuxuryTheme.glassBorder 
-        : Colors.grey.withOpacity(0.2);
+        : Colors.grey.withValues(alpha: 0.2);
     final tooltipDateColor = isDarkMode ? LuxuryTheme.textSecondary : Colors.grey[600]!;
     final tooltipValueColor = isDarkMode ? Colors.white : Colors.black87;
 
@@ -76,7 +75,7 @@ class UserTrendsChart extends StatelessWidget {
         border: Border.all(color: containerBorder),
         boxShadow: isDarkMode ? [] : [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -93,7 +92,7 @@ class UserTrendsChart extends StatelessWidget {
                 children: [
                   Text(
                     'การเติบโต',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 12,
                       color: subtitleColor,
                       letterSpacing: 0.5,
@@ -103,7 +102,7 @@ class UserTrendsChart extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'ผู้ใช้งานใหม่',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: titleColor,
@@ -120,7 +119,7 @@ class UserTrendsChart extends StatelessWidget {
                 ),
                 child: Text(
                   '+${sortedData.last.count} รายใหม่',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     color: accentColor,
                     fontWeight: FontWeight.bold,
                   ),
@@ -164,7 +163,7 @@ class UserTrendsChart extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 12.0),
                               child: Text(
                                 _formatDateShortTh(sortedData[index].date),
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   color: axisLabelColor,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -209,8 +208,8 @@ class UserTrendsChart extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          accentColor.withOpacity(isDarkMode ? 0.2 : 0.15),
-                          accentColor.withOpacity(0.0),
+                          accentColor.withValues(alpha: isDarkMode ? 0.2 : 0.15),
+                          accentColor.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -220,7 +219,7 @@ class UserTrendsChart extends StatelessWidget {
                   getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
                     return spotIndexes.map((spotIndex) {
                       return TouchedSpotIndicatorData(
-                        FlLine(color: accentColor.withOpacity(0.5), strokeWidth: 2, dashArray: [5, 5]),
+                        FlLine(color: accentColor.withValues(alpha: 0.5), strokeWidth: 2, dashArray: [5, 5]),
                         FlDotData(
                           getDotPainter: (spot, percent, barData, index) {
                             return FlDotCirclePainter(
@@ -242,14 +241,14 @@ class UserTrendsChart extends StatelessWidget {
                         final dateStr = _formatDateFullTh(data.date);
                         return LineTooltipItem(
                           '$dateStr\n',
-                          GoogleFonts.prompt(
+                          TextStyle(
                             color: tooltipDateColor,
                             fontSize: 12,
                           ),
                           children: [
                             TextSpan(
                               text: '${touchedSpot.y.toInt()} คน',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 color: tooltipValueColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,

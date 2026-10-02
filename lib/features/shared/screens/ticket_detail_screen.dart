@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/support_service.dart';
@@ -43,21 +42,21 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('รายละเอียดตั๋ว #${_ticket!.id.substring(0, 4)}', style: GoogleFonts.prompt()),
+        title: Text('รายละเอียดตั๋ว #${_ticket!.id.substring(0, 4)}', style: const TextStyle()),
         leading: IconButton(
-          icon: const HeroIcon(HeroIcons.arrowLeft),
+          icon: const Icon(PhosphorIconsRegular.arrowLeft),
           onPressed: () => context.pop(),
         ),
         actions: [
           if (isAdmin)
              PopupMenuButton<String>(
-               icon: const Icon(Icons.edit_note, color: Colors.white),
+               icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
                onSelected: _updateStatus,
                itemBuilder: (context) => [
                  'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
                ].map((status) => PopupMenuItem(
                  value: status,
-                 child: Text(status, style: GoogleFonts.prompt()),
+                 child: Text(status, style: const TextStyle()),
                )).toList(),
              ),
         ],
@@ -81,19 +80,19 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     children: [
                       Text(
                         _ticket!.subject,
-                        style: GoogleFonts.prompt(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _ticket!.message,
-                        style: GoogleFonts.prompt(color: Colors.grey[700]),
+                        style: TextStyle(color: Colors.grey[700]),
                       ),
                       const Divider(height: 24),
                       Row(
                         children: [
-                          Text('โดย: ${_ticket!.user.fullName}', style: GoogleFonts.prompt(fontSize: 12)),
+                          Text('โดย: ${_ticket!.user.fullName}', style: TextStyle(fontSize: 12)),
                           const Spacer(),
-                          Text('สถานะ: ${_ticket!.status}', style: GoogleFonts.prompt(fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text('สถานะ: ${_ticket!.status}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],
@@ -132,7 +131,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     onPressed: _isSending ? null : _sendReply,
                     icon: _isSending 
                         ? const CircularProgressIndicator()
-                        : const Icon(Icons.send, color: AppColors.primary),
+                        : const Icon(PhosphorIconsRegular.paperPlaneTilt, color: AppColors.primary),
                   )
                 ],
               ),
@@ -158,14 +157,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           children: [
             Text(
               reply.message,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: isMe ? Colors.white : Colors.black87,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               reply.author.fullName,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 10,
                 color: isMe ? Colors.white70 : Colors.grey[600],
               ),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
@@ -107,9 +106,9 @@ class _GapInputsFormState extends State<GapInputsForm>
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.cloud_done, color: Colors.white),
+              const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
               const SizedBox(width: 8),
-              Text('บันทึกร่างเรียบร้อย', style: GoogleFonts.prompt()),
+              Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
             ],
           ),
           backgroundColor: Colors.orange,
@@ -127,7 +126,7 @@ class _GapInputsFormState extends State<GapInputsForm>
     return GapFormWrapper(
       title: '2. ปัจจัยการผลิต',
       subtitle: 'บันทึกปัจจัยการผลิตที่ใช้',
-      headerIcon: HeroIcons.beaker,
+      headerIcon: PhosphorIconsRegular.flask,
       headerColor: Colors.teal,
       onSave: () => navigator.pop(true),
       onSaveDraft: _saveDraft,
@@ -147,7 +146,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                   const FormInfoCard(
                     message:
                         'บันทึกเมล็ดพันธุ์ ปุ๋ย และสารป้องกันโรคที่ใช้ในแปลง',
-                    icon: HeroIcons.lightBulb,
+                    icon: PhosphorIconsRegular.lightbulb,
                     color: Colors.teal,
                   ),
 
@@ -166,11 +165,11 @@ class _GapInputsFormState extends State<GapInputsForm>
                       ),
                       labelColor: Colors.white,
                       unselectedLabelColor: Colors.grey[600],
-                      labelStyle: GoogleFonts.prompt(
+                      labelStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
-                      unselectedLabelStyle: GoogleFonts.prompt(fontSize: 12),
+                      unselectedLabelStyle: TextStyle(fontSize: 12),
                       indicatorSize: TabBarIndicatorSize.tab,
                       padding: const EdgeInsets.all(4),
                       tabs: const [
@@ -190,7 +189,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                       children: [
                         _buildTabContent(
                           type: 'SEED',
-                          icon: HeroIcons.sparkles,
+                          icon: PhosphorIconsRegular.sparkle,
                           color: Colors.green,
                           title: 'เมล็ด/กิ่งพันธุ์',
                           emptyText: 'ยังไม่มีข้อมูลเมล็ด/กิ่งพันธุ์',
@@ -203,7 +202,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                         ),
                         _buildTabContent(
                           type: 'FERTILIZER',
-                          icon: HeroIcons.beaker,
+                          icon: PhosphorIconsRegular.flask,
                           color: Colors.brown,
                           title: 'ปุ๋ยและสารบำรุง',
                           emptyText: 'ยังไม่มีข้อมูลปุ๋ย',
@@ -228,7 +227,7 @@ class _GapInputsFormState extends State<GapInputsForm>
 
   Widget _buildTabContent({
     required String type,
-    required HeroIcons icon,
+    required IconData icon,
     required Color color,
     required String title,
     required String emptyText,
@@ -291,17 +290,16 @@ class _GapInputsFormState extends State<GapInputsForm>
                           color: Colors.red.shade100,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const HeroIcon(
-                          HeroIcons.exclamationTriangle,
+                        child: const Icon(
+                          PhosphorIconsRegular.warning,
                           color: Colors.red,
-                          size: 20,
-                        ),
+                          size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'คำเตือน: ต้องหยุดพ่นสารก่อนเก็บเกี่ยว 7-15 วัน',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: Colors.red.shade700,
                           ),
@@ -315,7 +313,7 @@ class _GapInputsFormState extends State<GapInputsForm>
 
                 _buildAddButton(
                   color: Colors.orange,
-                  icon: HeroIcons.shieldExclamation,
+                  icon: PhosphorIconsRegular.shieldWarning,
                   text: 'เพิ่มสารป้องกันโรค',
                   onTap: () =>
                       _showAddInputDialog('PESTICIDE', 'สารป้องกันโรค', {
@@ -329,7 +327,7 @@ class _GapInputsFormState extends State<GapInputsForm>
 
                 if (items.isEmpty)
                   _buildEmptyState(
-                    HeroIcons.shieldExclamation,
+                    PhosphorIconsRegular.shieldWarning,
                     'ยังไม่มีข้อมูลสารป้องกันโรค',
                     Colors.orange,
                   )
@@ -338,7 +336,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                     (item) => _buildInputCard(
                       item,
                       Colors.orange,
-                      HeroIcons.shieldExclamation,
+                      PhosphorIconsRegular.shieldWarning,
                     ),
                   ),
               ],
@@ -351,7 +349,7 @@ class _GapInputsFormState extends State<GapInputsForm>
 
   Widget _buildAddButton({
     required Color color,
-    required HeroIcons icon,
+    required IconData icon,
     required String text,
     required VoidCallback onTap,
   }) {
@@ -361,9 +359,9 @@ class _GapInputsFormState extends State<GapInputsForm>
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3), width: 2),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -371,15 +369,15 @@ class _GapInputsFormState extends State<GapInputsForm>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: HeroIcon(HeroIcons.plus, color: color, size: 20),
+              child: Icon(PhosphorIconsRegular.plus, color: color, size: 20),
             ),
             const SizedBox(width: 12),
             Text(
               text,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: color,
@@ -391,16 +389,16 @@ class _GapInputsFormState extends State<GapInputsForm>
     );
   }
 
-  Widget _buildEmptyState(HeroIcons icon, String text, Color color) {
+  Widget _buildEmptyState(IconData icon, String text, Color color) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          HeroIcon(icon, color: color.withOpacity(0.3), size: 48),
+          Icon(icon, color: color.withValues(alpha: 0.3), size: 48),
           const SizedBox(height: 12),
-          Text(text, style: GoogleFonts.prompt(color: Colors.grey)),
+          Text(text, style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
@@ -409,7 +407,7 @@ class _GapInputsFormState extends State<GapInputsForm>
   Widget _buildInputCard(
     Map<String, dynamic> item,
     Color color,
-    HeroIcons icon,
+    IconData icon,
   ) {
     return Container(
       width: double.infinity,
@@ -421,7 +419,7 @@ class _GapInputsFormState extends State<GapInputsForm>
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -432,10 +430,10 @@ class _GapInputsFormState extends State<GapInputsForm>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: HeroIcon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -445,19 +443,19 @@ class _GapInputsFormState extends State<GapInputsForm>
               children: [
                 Text(
                   item['name'] ?? '-',
-                  style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   'แหล่ง: ${item['source'] ?? '-'}',
-                  style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   'ปริมาณ: ${item['amount'] ?? '0'} ${item['unit'] ?? ''}',
-                  style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -511,7 +509,7 @@ class _GapInputsFormState extends State<GapInputsForm>
             const SizedBox(height: 20),
             Text(
               'เพิ่ม$title',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -567,7 +565,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+                    child: Text('ยกเลิก', style: const TextStyle()),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -580,7 +578,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                           SnackBar(
                             content: Text(
                               'กรุณากรอกชื่อ/ชนิด',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                             ),
                             backgroundColor: Colors.orange,
                           ),
@@ -593,7 +591,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                           SnackBar(
                             content: Text(
                               'กรุณากรอกแหล่งที่มา',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                             ),
                             backgroundColor: Colors.orange,
                           ),
@@ -607,7 +605,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                           SnackBar(
                             content: Text(
                               'กรุณากรอกปริมาณที่ถูกต้อง (จำนวนบวก)',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                             ),
                             backgroundColor: Colors.orange,
                           ),
@@ -620,7 +618,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                           SnackBar(
                             content: Text(
                               'กรุณากรอกหน่วย',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                             ),
                             backgroundColor: Colors.orange,
                           ),
@@ -646,7 +644,7 @@ class _GapInputsFormState extends State<GapInputsForm>
                     ),
                     child: Text(
                       'บันทึก',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -680,9 +678,9 @@ class _GapInputsFormState extends State<GapInputsForm>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                const Icon(PhosphorIconsFill.checkCircle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('เพิ่มข้อมูลสำเร็จ', style: GoogleFonts.prompt()),
+                Text('เพิ่มข้อมูลสำเร็จ', style: const TextStyle()),
               ],
             ),
             backgroundColor: Colors.green,
@@ -695,7 +693,7 @@ class _GapInputsFormState extends State<GapInputsForm>
           SnackBar(
             content: Text(
               ErrorUtils.getReadableError(e),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.red,
           ),
@@ -716,7 +714,7 @@ class _GapInputsFormState extends State<GapInputsForm>
       children: [
         Text(
           label,
-          style: GoogleFonts.prompt(fontSize: 13, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -725,7 +723,7 @@ class _GapInputsFormState extends State<GapInputsForm>
           maxLength: keyboardType == TextInputType.number ? 10 : 100,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.prompt(fontSize: 12, color: Colors.grey),
+            hintStyle: TextStyle(fontSize: 12, color: Colors.grey),
             filled: true,
             fillColor: Colors.grey.shade50,
             border: OutlineInputBorder(
@@ -738,7 +736,7 @@ class _GapInputsFormState extends State<GapInputsForm>
             ),
             counterText: '',
           ),
-          style: GoogleFonts.prompt(fontSize: 14),
+          style: TextStyle(fontSize: 14),
         ),
       ],
     );

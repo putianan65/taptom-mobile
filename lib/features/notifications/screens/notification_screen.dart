@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart'; // Added
-import '../../../core/constants/app_colors.dart';
-import '../providers/notification_provider.dart';
-import '../../../data/models/notification_model.dart';
-import '../../../core/widgets/nature_background.dart'; // Added
 
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/notification_banner.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/notification_model.dart';
+import '../providers/notification_provider.dart';
+
+/// Notification centre: grouped by day, unread filter, swipe to delete.
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -17,257 +16,187 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final ScrollController _scrollController = ScrollController();
+  bool _unreadOnly = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationProvider>().startPolling();
+      if (mounted) context.read<NotificationProvider>().refresh();
     });
   }
 
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      context.read<NotificationProvider>().loadMore();
-    }
+  String _groupOf(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'วันนี้';
+    if (diff == 1) return 'เมื่อวาน';
+    if (diff < 7) return 'สัปดาห์นี้';
+    return 'ก่อนหน้านี้';
   }
 
   @override
   Widget build(BuildContext context) {
-    return NatureBackground.header(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(
-            'การแจ้งเตือน',
-            style: GoogleFonts.prompt(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
-            onPressed: () => context.pop(),
-          ),
-          actions: [
-            // Test Button (Remove in prod)
-            IconButton(
-              icon: const HeroIcon(HeroIcons.plus, color: Colors.white),
-              onPressed: () {
-                context.read<NotificationProvider>().createTestNotification();
-              },
-              tooltip: 'สร้างแจ้งเตือนทดสอบ',
-            ),
-          ],
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: Consumer<NotificationProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading && provider.notifications.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    final provider = context.watch<NotificationProvider>();
+    final all = provider.notifications;
+    final items = _unreadOnly ? all.where((n) => !n.isRead).toList() : all;
 
-              if (provider.notifications.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  // Force refresh logic is inside provider startPolling/fetch
-                  provider.startPolling(); 
-                },
-                child: ListView.separated(
-                  controller: _scrollController, // Attach controller
-                  padding: const EdgeInsets.all(20),
-                  itemCount: provider.notifications.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final notification = provider.notifications[index];
-                    return _buildNotificationItem(context, notification, provider);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          HeroIcon(
-            HeroIcons.bellSlash,
-            size: 64,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'ไม่มีการแจ้งเตือน',
-            style: GoogleFonts.prompt(
-              fontSize: 18,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationItem(
-    BuildContext context, 
-    NotificationModel notification, 
-    NotificationProvider provider
-  ) {
-    final isRead = notification.isRead;
-    
-    return Dismissible(
-      key: Key(notification.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        padding: const EdgeInsets.only(right: 20),
-        alignment: Alignment.centerRight,
-        decoration: BoxDecoration(
-          color: Colors.red[100],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const HeroIcon(HeroIcons.trash, color: Colors.red),
-      ),
-      onDismissed: (_) {
-        provider.deleteNotification(notification.id);
-      },
-      child: GestureDetector(
-        onTap: () {
-          if (!isRead) {
-            provider.markAsRead(notification.id);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isRead ? Colors.white : Colors.blue[50],
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: isRead 
-                ? Border.all(color: Colors.transparent)
-                : Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTypeIcon(notification.type),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            notification.title,
-                            style: GoogleFonts.prompt(
-                              fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                              fontSize: 16,
-                              color: isRead ? Colors.black87 : AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        if (!isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      notification.message ?? '', // Handle null
-                      style: GoogleFonts.prompt(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      DateFormat('dd/MM/yyyy HH:mm', 'th').format(notification.createdAt), 
-                      style: GoogleFonts.prompt(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeIcon(String type) {
-    HeroIcons icon; // Correct type
-    Color color;
-
-    switch (type.toUpperCase()) {
-      case 'WARNING':
-        icon = HeroIcons.exclamationTriangle;
-        color = Colors.orange;
-        break;
-      case 'ERROR':
-        icon = HeroIcons.xCircle;
-        color = Colors.red;
-        break;
-      case 'SUCCESS':
-        icon = HeroIcons.checkCircle;
-        color = Colors.green;
-        break;
-      case 'INFO':
-      default:
-        icon = HeroIcons.informationCircle;
-        color = AppColors.primary;
-        break;
+    final groups = <String, List<NotificationModel>>{};
+    for (final n in items) {
+      groups.putIfAbsent(_groupOf(n.createdAt.toLocal()), () => []).add(n);
     }
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        shape: BoxShape.circle,
+    return PageScaffold(
+      title: 'การแจ้งเตือน',
+      subtitle: provider.unreadCount > 0 ? 'ยังไม่ได้อ่าน ${provider.unreadCount} รายการ' : null,
+      onRefresh: provider.refresh,
+      actions: [
+        if (provider.unreadCount > 0)
+          TextButton(
+            onPressed: provider.markAllAsRead,
+            child: const Text('อ่านทั้งหมด'),
+          ),
+      ],
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: Space.lg),
+            child: FilterChips<bool>(
+              value: _unreadOnly,
+              onChanged: (v) => setState(() => _unreadOnly = v),
+              options: [
+                (false, 'ทั้งหมด', all.length),
+                (true, 'ยังไม่อ่าน', provider.unreadCount),
+              ],
+            ),
+          ),
+        ),
+        if (provider.isLoading && all.isEmpty)
+          const SliverToBoxAdapter(child: SkeletonList(count: 4, thumbnail: false))
+        else if (items.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: EmptyState(
+                title: _unreadOnly ? 'อ่านครบทุกรายการแล้ว' : 'ยังไม่มีการแจ้งเตือน',
+                message: 'ผลการตรวจแปลง การอนุมัติ และข่าวจากเจ้าหน้าที่จะแสดงที่นี่',
+                mood: _unreadOnly ? MascotMood.joy : MascotMood.happy,
+              ),
+            ),
+          )
+        else
+          for (final entry in groups.entries) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: Space.sm, bottom: Space.sm, left: 4),
+                child: Text(entry.key, style: context.text.labelMedium),
+              ),
+            ),
+            SliverList.separated(
+              itemCount: entry.value.length,
+              separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+              itemBuilder: (context, i) {
+                final n = entry.value[i];
+                return Dismissible(
+                  key: ValueKey(n.id),
+                  direction: DismissDirection.endToStart,
+                  onDismissed: (_) => provider.deleteNotification(n.id),
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: Space.xl),
+                    decoration: BoxDecoration(
+                      color: context.palette.dangerSoft,
+                      borderRadius: Radii.card,
+                    ),
+                    child: Icon(AppIcons.delete, color: context.palette.danger),
+                  ),
+                  child: _NotificationTile(
+                    notification: n,
+                    onTap: () => provider.markAsRead(n.id),
+                  ).entrance(context, index: i),
+                );
+              },
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
+          ],
+      ],
+    );
+  }
+}
+
+class _NotificationTile extends StatelessWidget {
+  const _NotificationTile({required this.notification, required this.onTap});
+
+  final NotificationModel notification;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final n = notification;
+    final (icon, tone) = NotificationBanner.visual(n);
+    final reason = n.isRejection ? n.rejectionReason : null;
+
+    return AppCard(
+      onTap: onTap,
+      color: n.isRead ? p.surface : p.surfaceMuted,
+      padding: const EdgeInsets.all(Space.md + 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconTile(icon: icon, tone: tone, size: 40),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        n.title,
+                        style: context.text.titleSmall?.copyWith(
+                          fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(ThaiDate.relative(n.createdAt), style: context.text.labelSmall),
+                  ],
+                ),
+                if ((n.message ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(n.message!, style: context.text.bodySmall),
+                ],
+                if (reason != null && reason.isNotEmpty) ...[
+                  const SizedBox(height: Space.sm),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(Space.sm + 2),
+                    decoration: BoxDecoration(
+                      color: p.dangerSoft,
+                      borderRadius: BorderRadius.circular(Radii.sm),
+                    ),
+                    child: Text(
+                      'เหตุผล: $reason',
+                      style: context.text.bodySmall?.copyWith(color: p.ink),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (!n.isRead) ...[
+            const SizedBox(width: Space.sm),
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: p.brand, shape: BoxShape.circle),
+            ),
+          ],
+        ],
       ),
-      child: HeroIcon(icon, color: color, size: 24),
     );
   }
 }

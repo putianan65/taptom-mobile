@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
@@ -38,7 +37,7 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
         SnackBar(
           content: Text(
             'กำลังดาวน์โหลด... (Mock Mode)',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
         ),
       );
@@ -51,7 +50,7 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
       appBar: AppBar(
         title: Text(
           'ใบรับรอง GAP',
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             color: Theme.of(context).textTheme.titleLarge?.color,
             fontWeight: FontWeight.bold,
           ),
@@ -59,10 +58,9 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: HeroIcon(
-            HeroIcons.arrowLeft,
-            color: Theme.of(context).iconTheme.color,
-          ),
+          icon: Icon(
+            PhosphorIconsRegular.arrowLeft,
+            color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -97,16 +95,15 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                       color: Theme.of(context).cardColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const HeroIcon(
-                      HeroIcons.documentText,
+                    child: const Icon(
+                      PhosphorIconsRegular.fileText,
                       size: 48,
-                      color: Colors.grey,
-                    ),
+                      color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'ไม่พบใบรับรอง',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -114,7 +111,7 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'คุณยังไม่มีแปลงที่ผ่านการรับรอง GAP',
-                    style: GoogleFonts.prompt(color: Colors.grey[600]),
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -134,7 +131,7 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                     ),
                   ],
@@ -144,14 +141,13 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
+                        color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const HeroIcon(
-                        HeroIcons.checkBadge,
+                      child: const Icon(
+                        PhosphorIconsRegular.sealCheck,
                         color: AppColors.success,
-                        size: 32,
-                      ),
+                        size: 32),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -160,21 +156,21 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                         children: [
                           Text(
                             plot.name,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           Text(
                             'พืช: ${plot.species ?? "-"}',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 13,
                             ),
                           ),
                           Text(
                             'ออกเมื่อ: ${DateTime.now().year + 543}', // Mock date
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               color: Colors.grey[400],
                               fontSize: 11,
                             ),
@@ -183,10 +179,9 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const HeroIcon(
-                        HeroIcons.arrowDownTray,
-                        color: AppColors.primary,
-                      ),
+                      icon: const Icon(
+                        PhosphorIconsRegular.downloadSimple,
+                        color: AppColors.primary),
                       onPressed: () => _downloadCertificate(plot.id ?? ''),
                     ),
                   ],

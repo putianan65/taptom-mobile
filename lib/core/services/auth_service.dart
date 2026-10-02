@@ -1,371 +1,296 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
+
+import 'package:dio/dio.dart' show Options;
+
 import '../../data/models/user_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../security/secure_storage.dart';
 import '../utils/logger.dart';
 
-/// Exception thrown when Admin needs to set PIN
+/// Thrown when an admin signs in for the first time and must create a PIN.
 class PinNotSetException implements Exception {
+  PinNotSetException({required this.tempToken, this.user});
+
   final String tempToken;
   final UserModel? user;
 
-  PinNotSetException({required this.tempToken, this.user});
-
   @override
-  String toString() => 'PinNotSetException: Admin needs to set PIN';
+  String toString() => 'PinNotSetException';
 }
 
-/// Exception thrown when Admin needs to verify PIN
+/// Thrown when an admin or super admin must confirm their PIN.
 class PinRequiredException implements Exception {
+  PinRequiredException({required this.tempToken, this.userRole});
+
   final String tempToken;
   final String? userRole;
 
-  PinRequiredException({required this.tempToken, this.userRole});
-
   @override
-  String toString() => 'PinRequiredException: Admin needs to verify PIN (Role: $userRole)';
+  String toString() => 'PinRequiredException($userRole)';
 }
 
+/// Auth failure with a user-facing message.
 class AuthException implements Exception {
+  AuthException(this.message, {this.code = 'AUTH_ERROR'});
+
   final String message;
   final String code;
-
-  AuthException(this.message, {this.code = 'AUTH_ERROR'});
 
   @override
   String toString() => message;
 }
 
 abstract class AuthService {
+  /// Current profile, or null when there is no valid session. Throws
+  /// [ApiException] with [ApiException.isNetwork] when offline so callers can
+  /// fall back to the cached profile.
   Future<UserModel?> getCurrentUser();
-  Future<UserModel> signIn(
-    String phone,
-    String password,
-  ); // password = birthdate
-  Future<UserModel> signInWithPin(
-    String phone,
-    String pin,
-  ); // for admin/super admin
+
+  /// Sign in with phone number and birthday (`yyyy-MM-dd`, Gregorian).
+  Future<UserModel> signIn(String phone, String birthday);
+
+  /// Registers a new farmer account.
+  Future<void> signUp(Map<String, dynamic> data);
   Future<void> signOut();
   Future<UserModel> updateProfile(UserModel user);
-  Future<Map<String, dynamic>> setPin(
-    String pin,
-    String tempToken,
-  ); // Set PIN for Admin/Super Admin - returns Map with user and tokens
-  Future<void> changePin(String oldPin, String newPin); // Change existing PIN
-  Future<Map<String, dynamic>> refreshToken(String refreshToken); // NEW
-  Future<Map<String, dynamic>> verifyPin(String pin, String tempToken); // NEW
+  Future<Map<String, dynamic>> setPin(String pin, String tempToken);
+  Future<void> changePin(String oldPin, String newPin);
+  Future<Map<String, dynamic>> refreshToken(String refreshToken);
+  Future<Map<String, dynamic>> verifyPin(String pin, String tempToken);
 }
 
 class ApiAuthService implements AuthService {
-  final ApiClient _apiClient = ApiClient();
-  final SecureStorage _storage = SecureStorage(); // We might not need this if Provider handles it, but keeping for now
+  final ApiClient _api = ApiClient();
+  final SecureStorage _storage = SecureStorage();
 
-  String? _getRoleFromToken(String token) {
+  String? _roleFromToken(String token) {
     try {
       final parts = token.split('.');
       if (parts.length != 3) return null;
-      
-      final payload = parts[1];
-      final normalized = base64Url.normalize(payload);
-      final resp = utf8.decode(base64Url.decode(normalized));
-      final payloadMap = json.decode(resp);
-      
-      return payloadMap['role'];
-    } catch (e) {
-      AppLogger.error('Failed to decode token role', error: e);
+      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      return (json.decode(payload) as Map<String, dynamic>)['role'] as String?;
+    } catch (error) {
+      AppLogger.error('Failed to decode token role', error: error);
       return null;
     }
   }
 
+  @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
-    try {
-      final response = await _apiClient.post(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      throw Exception('Refresh token failed: $e');
-    }
+    final response = await _api.post(
+      ApiEndpoints.refreshToken,
+      data: {'refreshToken': refreshToken},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   @override
   Future<UserModel?> getCurrentUser() async {
     final token = await _storage.getAccessToken();
-    if (token == null) return null;
-
+    if (token == null || token.isEmpty) return null;
     try {
-      final response = await _apiClient.get(ApiEndpoints.userProfile);
-      final user = UserModel.fromJson(response.data);
+      final response = await _api.get(ApiEndpoints.userProfile);
+      final user = UserModel.fromJson(Map<String, dynamic>.from(response.data));
+      await _storage.saveUserJson(jsonEncode(user.toJson()));
       return user;
-    } catch (e) {
-      // If profile fetch fails (e.g. token expired and refresh failed), clear tokens
-      await _storage.clearTokens();
-      return null;
+    } on ApiException catch (e) {
+      if (e.isUnauthorized || e.isForbidden) {
+        await _storage.clearTokens();
+        return null;
+      }
+      rethrow;
     }
   }
 
   @override
-  Future<UserModel> signIn(String phone, String password) async {
+  Future<UserModel> signIn(String phone, String birthday) async {
+    final Map data;
     try {
-      final response = await _apiClient.post(
+      final response = await _api.post(
         ApiEndpoints.login,
-        data: {
-          'phone': phone,
-          'birthday': password, // Mapped "password" to "birthday"
-        },
+        data: {'phone': phone, 'birthday': birthday},
       );
-
-      final data = response.data;
-
-      // CHECK: Does Admin need to set PIN? (Backend returns 200 + requiresSetup)
-      if (data['requiresSetup'] == true) {
-        // Store tempToken for set-pin flow
-        final tempToken = data['tempToken'] as String?;
-        if (tempToken != null) {
-          await _storage.saveTokens(accessToken: tempToken, refreshToken: '');
-        }
-        throw PinNotSetException(
-          tempToken: tempToken ?? '',
-          user: data['user'] != null ? UserModel.fromJson(data['user']) : null,
-        );
-      }
-
-      // CHECK: Does Admin need to verify PIN? (existing flow)
-      if (data['requiresPin'] == true) {
-        final tempToken = data['tempToken'] as String?;
-        String? extractedRole;
-
-        if (tempToken != null) {
-          await _storage.saveTokens(accessToken: tempToken, refreshToken: '');
-          extractedRole = _getRoleFromToken(tempToken);
-        }
-        
-        throw PinRequiredException(
-          tempToken: tempToken ?? '',
-          userRole: extractedRole,
-        );
-      }
-
-      // Normal login - save full tokens
-      final accessToken = data['accessToken'] as String?;
-      final refreshToken = data['refreshToken'] as String?;
-
-      AppLogger.debug('Login successful', params: {
-        'has_access_token': accessToken != null,
-        'has_refresh_token': refreshToken != null,
-        'token_length': accessToken?.length ?? 0,
-        // NEVER log actual tokens
-      });
-
-      if (accessToken == null) {
-        throw Exception('ไม่พบ Access Token จากเซิร์ฟเวอร์');
-      }
-
-      // ✅ VALIDATION: Ensure refreshToken is not null or empty
-      if (refreshToken == null || refreshToken.isEmpty) {
-        AppLogger.error('CRITICAL: Backend did not return refreshToken!', error: Exception('Missing Refresh Token'));
+      data = response.data as Map;
+    } on ApiException catch (e) {
+      if (e.isUnauthorized || e.isNotFound) {
         throw AuthException(
-          'เกิดข้อผิดพลาดในการเชื่อมต่อ (Missing Token)',
-          code: 'MISSING_REFRESH_TOKEN',
+          'เบอร์โทรศัพท์หรือวันเกิดไม่ถูกต้อง',
+          code: 'INVALID_CREDENTIALS',
         );
       }
-
-      await _storage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-
-      if (data['user'] == null) {
-        throw Exception('ไม่พบข้อมูลผู้ใช้งานจากเซิร์ฟเวอร์');
+      if (e.isForbidden) {
+        throw AuthException(
+          e.serverMessage ?? 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่',
+          code: 'FORBIDDEN',
+        );
       }
-
-      var user = UserModel.fromJson(data['user']);
-      return user;
-    } on PinNotSetException {
-      rethrow; // Pass through PIN exceptions
-    } on PinRequiredException {
-      rethrow;
-    } on AuthException {
-      rethrow;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw Exception('เบอร์โทรศัพท์หรือวันเกิดไม่ถูกต้อง');
-      } else if (e.response?.statusCode == 429) {
-        throw Exception('ทำรายการถี่เกินไป กรุณารอสักครู่');
-      }
-      throw Exception('เข้าสู่ระบบไม่สำเร็จ: ${e.message}');
-    } catch (e) {
-      if (e is PinNotSetException || e is PinRequiredException) rethrow;
-      if (e is AuthException) rethrow;
-      throw Exception('เกิดข้อผิดพลาด: $e');
+      throw AuthException(e.message, code: 'HTTP_${e.statusCode}');
     }
+
+    // First admin sign-in: a PIN must be created.
+    if (data['requiresSetup'] == true) {
+      throw PinNotSetException(
+        tempToken: data['tempToken'] as String? ?? '',
+        user: data['user'] is Map
+            ? UserModel.fromJson(Map<String, dynamic>.from(data['user']))
+            : null,
+      );
+    }
+
+    // Admin and super admin confirm with a PIN.
+    if (data['requiresPin'] == true) {
+      final tempToken = data['tempToken'] as String? ?? '';
+      throw PinRequiredException(
+        tempToken: tempToken,
+        userRole: tempToken.isEmpty ? null : _roleFromToken(tempToken),
+      );
+    }
+
+    final accessToken = data['accessToken'] as String?;
+    final refreshToken = data['refreshToken'] as String?;
+    if (accessToken == null || refreshToken == null || refreshToken.isEmpty) {
+      AppLogger.error('Sign-in response is missing tokens');
+      throw AuthException(
+        'ระบบยืนยันตัวตนตอบกลับไม่ครบถ้วน กรุณาลองใหม่',
+        code: 'MISSING_TOKEN',
+      );
+    }
+    if (data['user'] is! Map) {
+      throw AuthException('ไม่พบข้อมูลผู้ใช้จากเซิร์ฟเวอร์', code: 'MISSING_USER');
+    }
+
+    await _storage.saveTokens(accessToken: accessToken, refreshToken: refreshToken);
+    final user = UserModel.fromJson(Map<String, dynamic>.from(data['user']));
+    await _storage.saveUserJson(jsonEncode(user.toJson()));
+    return user;
   }
 
   @override
-  Future<UserModel> signInWithPin(String phone, String pin) async {
-    // This is the implementation of verifyPin logic
-    throw UnimplementedError('Use verifyPin instead');
+  Future<void> signUp(Map<String, dynamic> data) async {
+    try {
+      await _api.post(ApiEndpoints.signup, data: data);
+    } on ApiException catch (e) {
+      if (e.isConflict) {
+        throw AuthException(
+          'เบอร์โทรศัพท์นี้ลงทะเบียนแล้ว กรุณาเข้าสู่ระบบ',
+          code: 'PHONE_EXISTS',
+        );
+      }
+      throw AuthException(
+        e.statusCode == 400 && e.serverMessage != null ? e.serverMessage! : e.message,
+        code: 'HTTP_${e.statusCode}',
+      );
+    }
   }
 
   @override
   Future<Map<String, dynamic>> verifyPin(String pin, String tempToken) async {
     try {
-      final response = await _apiClient.post(
+      final response = await _api.post(
         ApiEndpoints.verifyPin,
-        data: {
-          'pin': pin,
-          'tempToken': tempToken,
-        },
+        data: {'pin': pin, 'tempToken': tempToken},
       );
-      return response.data;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
-        throw Exception('PIN ไม่ถูกต้อง');
+      return Map<String, dynamic>.from(response.data as Map);
+    } on ApiException catch (e) {
+      if (e.isUnauthorized || e.isForbidden) {
+        throw AuthException('รหัส PIN ไม่ถูกต้อง', code: 'INVALID_PIN');
       }
-      if (e.response?.statusCode == 400) {
-        final message = e.response?.data['message'];
-        if (message is List) {
-          throw Exception(message.join(', '));
-        }
-        throw Exception(message?.toString() ?? 'ข้อมูลไม่ถูกต้อง');
+      throw AuthException(e.message, code: 'HTTP_${e.statusCode}');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> setPin(String pin, String tempToken) async {
+    final Map data;
+    try {
+      final response = await _api.post(
+        ApiEndpoints.setPin,
+        data: {'pin': pin},
+        options: Options(headers: {'Authorization': 'Bearer $tempToken'}),
+      );
+      data = response.data as Map;
+    } on ApiException catch (e) {
+      if (e.isUnauthorized) {
+        throw AuthException('การยืนยันตัวตนหมดเวลา กรุณาเข้าสู่ระบบใหม่', code: 'EXPIRED');
       }
-      throw Exception('เข้าสู่ระบบด้วย PIN ไม่สำเร็จ: ${e.message}');
+      if (e.isForbidden) {
+        throw AuthException('บัญชีนี้ไม่ต้องใช้รหัส PIN', code: 'FORBIDDEN');
+      }
+      throw AuthException(e.message, code: 'HTTP_${e.statusCode}');
+    }
+
+    final accessToken = data['accessToken'] as String?;
+    if (accessToken == null) {
+      throw AuthException('ไม่พบสิทธิ์การเข้าใช้งานจากเซิร์ฟเวอร์', code: 'MISSING_TOKEN');
+    }
+    final refreshToken = data['refreshToken'] as String? ?? '';
+    await _storage.saveTokens(accessToken: accessToken, refreshToken: refreshToken);
+
+    final user = data['user'] is Map
+        ? UserModel.fromJson(Map<String, dynamic>.from(data['user']))
+        : null;
+    if (user != null) await _storage.saveUserJson(jsonEncode(user.toJson()));
+    return {
+      'user': user,
+      'accessToken': accessToken,
+      'refreshToken': refreshToken,
+    };
+  }
+
+  @override
+  Future<void> changePin(String oldPin, String newPin) async {
+    try {
+      await _api.patch(
+        ApiEndpoints.changePin,
+        data: {'oldPin': oldPin, 'newPin': newPin},
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 400 || e.isUnauthorized) {
+        throw AuthException('รหัส PIN เดิมไม่ถูกต้อง', code: 'INVALID_PIN');
+      }
+      throw AuthException(e.message, code: 'HTTP_${e.statusCode}');
     }
   }
 
   @override
   Future<void> signOut() async {
     await _storage.clearTokens();
+    await _storage.clearUserJson();
   }
 
   @override
   Future<UserModel> updateProfile(UserModel user) async {
+    final body = <String, dynamic>{
+      if (user.firstName.isNotEmpty) 'firstName': user.firstName,
+      if (user.lastName.isNotEmpty) 'lastName': user.lastName,
+      if (user.phone.isNotEmpty) 'phone': user.phone,
+      if ((user.job ?? '').isNotEmpty) 'job': user.job,
+      if ((user.region ?? '').isNotEmpty) 'region': user.region,
+      if ((user.province ?? '').isNotEmpty) 'province': user.province,
+      if ((user.district ?? '').isNotEmpty) 'district': user.district,
+      if ((user.subdistrict ?? '').isNotEmpty) 'subDistrict': user.subdistrict,
+      if ((user.photoUrl ?? '').isNotEmpty) 'photoUrl': user.photoUrl,
+      if (user.birthDate != null) 'birthday': _formatBirthday(user.birthDate!),
+    };
     try {
-      // Only send fields that Backend accepts for update
-      final updateData = <String, dynamic>{};
-
-      // Required base fields
-      if (user.firstName.isNotEmpty) updateData['firstName'] = user.firstName;
-      if (user.lastName.isNotEmpty) updateData['lastName'] = user.lastName;
-      if (user.phone.isNotEmpty) updateData['phone'] = user.phone;
-
-      // Optional fields
-      if (user.job != null && user.job!.isNotEmpty)
-        updateData['job'] = user.job;
-      if (user.region != null && user.region!.isNotEmpty)
-        updateData['region'] = user.region;
-      if (user.province != null && user.province!.isNotEmpty)
-        updateData['province'] = user.province;
-      if (user.district != null && user.district!.isNotEmpty)
-        updateData['district'] = user.district;
-      if (user.subdistrict != null && user.subdistrict!.isNotEmpty)
-        updateData['subDistrict'] = user.subdistrict;
-      if (user.photoUrl != null && user.photoUrl!.isNotEmpty)
-        updateData['photoUrl'] = user.photoUrl;
-      if (user.birthDate != null) {
-        final day = user.birthDate!.day.toString().padLeft(2, '0');
-        final month = user.birthDate!.month.toString().padLeft(2, '0');
-        final year = user.birthDate!.year;
-        updateData['birthday'] = '$day/$month/$year';
-      }
-
-      final response = await _apiClient.put(
-        ApiEndpoints.userProfile,
-        data: updateData,
+      // PATCH is the partial-update endpoint; only changed fields are sent.
+      final response = await _api.patch(ApiEndpoints.userProfile, data: body);
+      final updated = UserModel.fromJson(Map<String, dynamic>.from(response.data));
+      await _storage.saveUserJson(jsonEncode(updated.toJson()));
+      return updated;
+    } on ApiException catch (e) {
+      throw AuthException(
+        e.statusCode == 400 && e.serverMessage != null ? e.serverMessage! : e.message,
+        code: 'HTTP_${e.statusCode}',
       );
-      return UserModel.fromJson(response.data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
-        final message = e.response?.data['message'];
-        if (message is List) {
-          throw Exception(message.join(', '));
-        }
-        throw Exception('ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
-      } else if (e.response?.statusCode == 404) {
-        throw Exception('ไม่พบข้อมูลผู้ใช้');
-      }
-      throw Exception(
-        'อัพเดทโปรไฟล์ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
-      );
-    } catch (e) {
-      throw Exception('เกิดข้อผิดพลาด: $e');
     }
   }
 
-  @override
-  Future<Map<String, dynamic>> setPin(String pin, String tempToken) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.setPin,
-        data: {
-          'pin': pin,
-          // tempToken removed from body
-        },
-        // Send tempToken in Authorization header
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $tempToken',
-          },
-        ),
-      );
-      final data = response.data;
-
-      // Backend returns full tokens after setting PIN
-      final accessToken = data['accessToken'] as String?;
-      final refreshToken = data['refreshToken'] as String?;
-
-      if (accessToken == null) {
-        throw Exception('ไม่พบ Access Token จากเซิร์ฟเวอร์');
-      }
-
-      await _storage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken ?? '',
-      );
-
-      return {
-        'user': UserModel.fromJson(data['user']),
-        'accessToken': accessToken,
-        'refreshToken': refreshToken,
-      };
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
-        throw Exception('PIN ไม่ถูกต้อง กรุณากรอก PIN 6 หลัก');
-      } else if (e.response?.statusCode == 403) {
-        throw Exception('คุณไม่มีสิทธิ์ตั้งค่า PIN');
-      } else if (e.response?.statusCode == 401) {
-        throw Exception('Token หมดอายุ กรุณา Login ใหม่');
-      }
-      throw Exception(
-        'ตั้งค่า PIN ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
-      );
-    } catch (e) {
-      throw Exception('เกิดข้อผิดพลาด: $e');
-    }
-  }
-
-  @override
-  Future<void> changePin(String oldPin, String newPin) async {
-    try {
-      await _apiClient.post(
-        ApiEndpoints.changePin,
-        data: {'oldPin': oldPin, 'newPin': newPin},
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
-        throw Exception('PIN เดิมไม่ถูกต้อง');
-      } else if (e.response?.statusCode == 403) {
-        throw Exception('คุณไม่มีสิทธิ์เปลี่ยน PIN');
-      }
-      throw Exception(
-        'เปลี่ยน PIN ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
-      );
-    } catch (e) {
-      throw Exception('เกิดข้อผิดพลาด: $e');
-    }
-  }
+  /// Profile updates take the birthday as dd/MM/yyyy (Gregorian), unlike
+  /// sign-in which uses ISO dates.
+  static String _formatBirthday(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/'
+      '${d.year}';
 }

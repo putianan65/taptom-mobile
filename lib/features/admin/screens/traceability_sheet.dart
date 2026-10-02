@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/gap_service.dart';
 import '../../../core/services/admin_service.dart';
@@ -71,17 +71,17 @@ class _TraceabilityManagementSheetState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('ลบรายการ', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
-        content: Text('ต้องการลบข้อมูลล็อตนี้หรือไม่?', style: GoogleFonts.prompt()),
+        title: Text('ลบรายการ', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('ต้องการลบข้อมูลล็อตนี้หรือไม่?', style: const TextStyle()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('ลบ', style: GoogleFonts.prompt(color: Colors.white)),
+            child: Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -116,13 +116,13 @@ class _TraceabilityManagementSheetState
               children: [
                 Text(
                   'จัดการ Traceability',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(PhosphorIconsRegular.x),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -141,18 +141,18 @@ class _TraceabilityManagementSheetState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(PhosphorIconsRegular.warningCircle, size: 48, color: Colors.red),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
-                      style: GoogleFonts.prompt(color: Colors.red),
+                      style: TextStyle(color: Colors.red),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: _loadLots,
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      label: Text('ลองใหม่', style: GoogleFonts.prompt(color: Colors.white)),
+                      icon: const Icon(PhosphorIconsRegular.arrowsClockwise, color: Colors.white),
+                      label: Text('ลองใหม่', style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                     ),
                   ],
@@ -166,11 +166,11 @@ class _TraceabilityManagementSheetState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
+                    const Icon(PhosphorIconsRegular.tray, size: 48, color: Colors.grey),
                     const SizedBox(height: 16),
                     Text(
                       'ไม่พบข้อมูลล็อต',
-                      style: GoogleFonts.prompt(color: Colors.grey),
+                      style: TextStyle(color: Colors.grey),
                     ),
                   ],
                 ),
@@ -196,7 +196,7 @@ class _TraceabilityManagementSheetState
                       border: Border.all(color: Colors.grey.shade200),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -205,11 +205,11 @@ class _TraceabilityManagementSheetState
                     child: ListTile(
                       title: Text(
                         lotNumber,
-                        style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
                         'สถานะ: ${isExported ? "ส่งออกแล้ว" : "รอดำเนินการ"}',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: isExported ? Colors.green : Colors.orange,
                         ),
@@ -220,15 +220,15 @@ class _TraceabilityManagementSheetState
                           IconButton(
                             icon: Icon(
                               isExported
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
+                                  ? PhosphorIconsFill.checkCircle
+                                  : PhosphorIconsRegular.circle,
                               color: isExported ? Colors.green : Colors.grey,
                             ),
                             tooltip: 'เปลี่ยนสถานะส่งออก',
                             onPressed: () => _toggleExported(id, isExported),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
+                            icon: const Icon(PhosphorIconsRegular.trash, color: Colors.red),
                             onPressed: () => _deleteLot(id),
                           ),
                         ],

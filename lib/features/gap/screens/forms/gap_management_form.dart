@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
@@ -257,9 +256,9 @@ class _GapManagementFormState extends State<GapManagementForm> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.cloud_done, color: Colors.white),
+            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
             const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: GoogleFonts.prompt()),
+            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
           ],
         ),
         backgroundColor: Colors.orange,
@@ -315,7 +314,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
         SnackBar(
           content: Text(
             'กรุณาเลือกวันที่ทำกิจกรรม',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -329,7 +328,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
         SnackBar(
           content: Text(
             'วันที่ทำกิจกรรมไม่สามารถเป็นวันในอนาคต',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -344,7 +343,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
         SnackBar(
           content: Text(
             'รายละเอียดกิจกรรมต้องมีอย่างน้อย 5 ตัวอักษร',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -359,7 +358,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
         SnackBar(
           content: Text(
             'กรุณาระบุผลตรวจคุณภาพน้ำ',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -373,7 +372,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           SnackBar(
             content: Text(
               'กรุณาระบุประเภทความเสี่ยง',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.orange,
           ),
@@ -386,7 +385,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           SnackBar(
             content: Text(
               'กรุณาระบุระดับความเสี่ยง',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.orange,
           ),
@@ -397,7 +396,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
       if (_riskImpactController.text.trim().isEmpty) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text('กรุณาระบุผลกระทบ', style: GoogleFonts.prompt()),
+            content: Text('กรุณาระบุผลกระทบ', style: const TextStyle()),
             backgroundColor: Colors.orange,
           ),
         );
@@ -409,7 +408,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           SnackBar(
             content: Text(
               'กรุณาระบุวิธีการแก้ไข/บรรเทา',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.orange,
           ),
@@ -476,7 +475,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           SnackBar(
             content: Text(
               ErrorUtils.getReadableError(e),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.red,
           ),
@@ -514,7 +513,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
     return GapFormWrapper(
       title: '3. การจัดการแปลง',
       subtitle: 'กิจกรรมดูแลแปลงกระท่อม',
-      headerIcon: HeroIcons.wrenchScrewdriver,
+      headerIcon: PhosphorIconsRegular.wrench,
       headerColor: Colors.teal,
       onSave: _saveToApi,
       onSaveDraft: _saveDraft,
@@ -526,7 +525,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           const FormInfoCard(
             message:
                 'บันทึกกิจกรรมการดูแลแปลงกระท่อม เช่น เตรียมดิน กำจัดวัชพืช ตรวจคุณภาพน้ำ',
-            icon: HeroIcons.lightBulb,
+            icon: PhosphorIconsRegular.lightbulb,
             color: Colors.teal,
           ),
 
@@ -534,7 +533,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           FormSectionCard(
             title: 'ประเภทกิจกรรม *',
             example: 'เลือกประเภทกิจกรรมที่ทำ',
-            icon: HeroIcons.clipboardDocumentList,
+            icon: PhosphorIconsRegular.clipboardText,
             iconColor: Colors.indigo,
             child: Column(
               children: [
@@ -542,7 +541,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   'SOIL_PREP',
                   'เตรียมดิน',
                   'ไถพรวน ปรับหน้าดิน ใส่ปุ๋ยรองพื้น',
-                  HeroIcons.buildingOffice,
+                  PhosphorIconsRegular.building,
                   Colors.brown,
                 ),
                 const SizedBox(height: 8),
@@ -550,7 +549,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   'WATER_QUALITY',
                   'ตรวจคุณภาพน้ำ',
                   'วัดค่า pH, EC, ความสะอาด',
-                  HeroIcons.beaker,
+                  PhosphorIconsRegular.flask,
                   Colors.cyan,
                 ),
                 const SizedBox(height: 8),
@@ -558,7 +557,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   'WEED_CONTROL',
                   'กำจัดวัชพืช',
                   'ถอน/ตัดหญ้ารอบต้นกระท่อม',
-                  HeroIcons.sparkles,
+                  PhosphorIconsRegular.sparkle,
                   Colors.green,
                 ),
                 const SizedBox(height: 8),
@@ -566,7 +565,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   'IPM_PEST_CONTROL',
                   'จัดการศัตรูพืช IPM',
                   'ตรวจโรค แมลง การป้องกัน',
-                  HeroIcons.shieldCheck,
+                  PhosphorIconsRegular.shieldCheck,
                   Colors.orange,
                 ),
                 const SizedBox(height: 8),
@@ -574,7 +573,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   'RISK_EVENT',
                   'เหตุการณ์ความเสี่ยง',
                   'น้ำท่วม, ภัยแล้ง, โรคระบาด',
-                  HeroIcons.exclamationTriangle,
+                  PhosphorIconsRegular.warning,
                   Colors.red,
                 ),
               ],
@@ -585,7 +584,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           FormSectionCard(
             title: 'วันที่ทำกิจกรรม *',
             example: 'ตัวอย่าง: 10 มกราคม 2569',
-            icon: HeroIcons.calendarDays,
+            icon: PhosphorIconsRegular.calendarDots,
             iconColor: Colors.purple,
             child: GestureDetector(
               onTap: _pickDate,
@@ -597,26 +596,24 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 ),
                 child: Row(
                   children: [
-                    const HeroIcon(
-                      HeroIcons.calendarDays,
+                    const Icon(
+                      PhosphorIconsRegular.calendarDots,
                       color: Colors.grey,
-                      size: 20,
-                    ),
+                      size: 20),
                     const SizedBox(width: 10),
                     Text(
                       _formatDate(_activityDate),
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: _activityDate != null
                             ? Colors.black
                             : Colors.grey,
                       ),
                     ),
                     const Spacer(),
-                    const HeroIcon(
-                      HeroIcons.chevronRight,
+                    const Icon(
+                      PhosphorIconsRegular.caretRight,
                       color: Colors.grey,
-                      size: 16,
-                    ),
+                      size: 16),
                   ],
                 ),
               ),
@@ -628,7 +625,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
             title: 'รายละเอียดกิจกรรม *',
             example:
                 'ตัวอย่าง: ไถพรวนดินด้วยรถไถเดินตาม ใส่ปุ๋ยหมักจากใบกระท่อมเก่า',
-            icon: HeroIcons.documentText,
+            icon: PhosphorIconsRegular.fileText,
             iconColor: Colors.blue,
             child: TextField(
               controller: _descriptionController,
@@ -636,7 +633,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
               maxLength: 500,
               decoration: InputDecoration(
                 hintText: 'อธิบายรายละเอียดกิจกรรมที่ทำ (อย่างน้อย 5 ตัวอักษร)',
-                hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                hintStyle: TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
@@ -644,7 +641,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
           ),
 
@@ -652,14 +649,14 @@ class _GapManagementFormState extends State<GapManagementForm> {
           FormSectionCard(
             title: 'ผู้ปฏิบัติงาน',
             example: 'ตัวอย่าง: นายแดง อุดมทรัพย์',
-            icon: HeroIcons.user,
+            icon: PhosphorIconsRegular.user,
             iconColor: Colors.grey,
             child: TextField(
               controller: _workerNameController,
               maxLength: 100,
               decoration: InputDecoration(
                 hintText: 'กรอกชื่อผู้ปฏิบัติงาน',
-                hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                hintStyle: TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
@@ -667,7 +664,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
           ),
 
@@ -675,7 +672,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
           FormSectionCard(
             title: 'เครื่องจักร/อุปกรณ์ที่ใช้',
             example: 'เลือกหรือระบุเครื่องจักรที่ใช้',
-            icon: HeroIcons.cog6Tooth,
+            icon: PhosphorIconsRegular.gear,
             iconColor: Colors.orange,
             child: FormDropdownWithOther(
               label: 'เครื่องจักร/อุปกรณ์',
@@ -684,7 +681,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
               value: _machineUsedController.text,
               onChanged: (val) =>
                   setState(() => _machineUsedController.text = val),
-              icon: HeroIcons.truck,
+              icon: PhosphorIconsRegular.truck,
             ),
           ),
 
@@ -694,7 +691,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
             FormSectionCard(
               title: 'สารเคมี/ชีวภัณฑ์ที่ใช้ (ถ้ามี)',
               example: 'เลือกหรือระบุสารที่ใช้',
-              icon: HeroIcons.beaker,
+              icon: PhosphorIconsRegular.flask,
               iconColor: Colors.red,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,21 +700,20 @@ class _GapManagementFormState extends State<GapManagementForm> {
                     padding: const EdgeInsets.all(10),
                     margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        const HeroIcon(
-                          HeroIcons.exclamationTriangle,
+                        const Icon(
+                          PhosphorIconsRegular.warning,
                           color: Colors.orange,
-                          size: 16,
-                        ),
+                          size: 16),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'สำหรับกระท่อม ควรใช้ชีวภัณฑ์/สมุนไพรแทนสารเคมี',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 11,
                               color: Colors.orange.shade700,
                             ),
@@ -733,7 +729,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                     value: _chemicalUsedController.text,
                     onChanged: (val) =>
                         setState(() => _chemicalUsedController.text = val),
-                    icon: HeroIcons.beaker,
+                    icon: PhosphorIconsRegular.flask,
                   ),
                 ],
               ),
@@ -744,7 +740,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
             FormSectionCard(
               title: 'ผลตรวจคุณภาพน้ำ *',
               example: 'เลือกผลการตรวจ',
-              icon: HeroIcons.beaker,
+              icon: PhosphorIconsRegular.flask,
               iconColor: Colors.cyan,
               child: FormDropdownWithOther(
                 label: 'คุณภาพน้ำ',
@@ -753,7 +749,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 value: _waterQualityController.text,
                 onChanged: (val) =>
                     setState(() => _waterQualityController.text = val),
-                icon: HeroIcons.eyeDropper,
+                icon: PhosphorIconsRegular.eyedropper,
               ),
             ),
 
@@ -762,7 +758,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
             FormSectionCard(
               title: 'ประเภทความเสี่ยง *',
               example: 'เลือกเหตุการณ์ความเสี่ยง',
-              icon: HeroIcons.exclamationTriangle,
+              icon: PhosphorIconsRegular.warning,
               iconColor: Colors.red,
               child: FormDropdownWithOther(
                 label: 'ความเสี่ยง',
@@ -771,13 +767,13 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 value: _riskTypeController.text,
                 onChanged: (val) =>
                     setState(() => _riskTypeController.text = val),
-                icon: HeroIcons.bugAnt,
+                icon: PhosphorIconsRegular.bug,
               ),
             ),
             FormSectionCard(
               title: 'ระดับความเสี่ยง *',
               example: 'เลือกระดับความรุนแรง',
-              icon: HeroIcons.signalSlash,
+              icon: PhosphorIconsRegular.wifiSlash,
               iconColor: Colors.amber,
               child: FormDropdownWithOther(
                 label: 'ระดับความเสี่ยง',
@@ -786,13 +782,13 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 value: _riskLevelController.text,
                 onChanged: (val) =>
                     setState(() => _riskLevelController.text = val),
-                icon: HeroIcons.chartBar,
+                icon: PhosphorIconsRegular.chartBar,
               ),
             ),
             FormSectionCard(
               title: 'ผลกระทบ *',
               example: 'ระบุผลกระทบที่เกิดขึ้น',
-              icon: HeroIcons.fire,
+              icon: PhosphorIconsRegular.fire,
               iconColor: Colors.orange,
               child: FormDropdownWithOther(
                 label: 'ผลกระทบ',
@@ -801,13 +797,13 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 value: _riskImpactController.text,
                 onChanged: (val) =>
                     setState(() => _riskImpactController.text = val),
-                icon: HeroIcons.chartBar,
+                icon: PhosphorIconsRegular.chartBar,
               ),
             ),
             FormSectionCard(
               title: 'การแก้ไข/บรรเทา *',
               example: 'ระบุวิธีแก้ไข',
-              icon: HeroIcons.wrench,
+              icon: PhosphorIconsRegular.wrench,
               iconColor: Colors.green,
               child: FormDropdownWithOther(
                 label: 'การแก้ไข',
@@ -816,7 +812,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 value: _mitigationController.text,
                 onChanged: (val) =>
                     setState(() => _mitigationController.text = val),
-                icon: HeroIcons.lifebuoy,
+                icon: PhosphorIconsRegular.lifebuoy,
               ),
             ),
           ],
@@ -831,7 +827,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
     String value,
     String title,
     String subtitle,
-    HeroIcons icon,
+    IconData icon,
     Color color,
   ) {
     final isSelected = _activityType == value;
@@ -840,7 +836,7 @@ class _GapManagementFormState extends State<GapManagementForm> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade50,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade200,
@@ -852,10 +848,10 @@ class _GapManagementFormState extends State<GapManagementForm> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: HeroIcon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -864,20 +860,20 @@ class _GapManagementFormState extends State<GapManagementForm> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.prompt(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ],
               ),
             ),
             Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              isSelected ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
               color: isSelected ? color : Colors.grey,
               size: 20,
             ),

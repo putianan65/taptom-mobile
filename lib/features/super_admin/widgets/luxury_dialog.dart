@@ -1,13 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import '../../../core/constants/app_colors.dart';
 
 class LuxuryDialog extends StatelessWidget {
   final String title;
   final String content;
-  final HeroIcons icon;
+  final IconData icon;
   final Color accentColor;
   final String confirmText;
   final String cancelText;
@@ -32,7 +30,7 @@ class LuxuryDialog extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String content,
-    required HeroIcons icon,
+    required IconData icon,
     Color accentColor = LuxuryTheme.cyanNeon,
     String confirmText = 'ยืนยัน',
     String cancelText = 'ยกเลิก',
@@ -42,7 +40,7 @@ class LuxuryDialog extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.8),
+      barrierColor: Colors.black.withValues(alpha: 0.8),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Center(
           child: Material(
@@ -96,15 +94,15 @@ class LuxuryDialog extends StatelessWidget {
           width: 320,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: LuxuryTheme.midnightBlue.withOpacity(0.8),
+            color: LuxuryTheme.midnightBlue.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: accentColor.withOpacity(0.2),
+                color: accentColor.withValues(alpha: 0.2),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -118,32 +116,30 @@ class LuxuryDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: accentColor.withOpacity(0.5),
+                    color: accentColor.withValues(alpha: 0.5),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withOpacity(0.2),
+                      color: accentColor.withValues(alpha: 0.2),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: HeroIcon(
+                child: Icon(
                   icon,
                   size: 32,
-                  style: HeroIconStyle.outline,
-                  color: accentColor,
-                ),
+                  color: accentColor),
               ),
               const SizedBox(height: 24),
               
               // Title
               Text(
                 title,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -156,7 +152,7 @@ class LuxuryDialog extends StatelessWidget {
               // Content
               Text(
                 content,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 14,
                   color: Colors.white70,
                   height: 1.5,
@@ -179,7 +175,7 @@ class LuxuryDialog extends StatelessWidget {
                       ),
                       child: Text(
                         cancelText,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           color: Colors.white60,
                           fontWeight: FontWeight.w500,
@@ -202,7 +198,7 @@ class LuxuryDialog extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: (isDestructive ? const Color(0xFFFF1744) : accentColor)
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -223,7 +219,7 @@ class LuxuryDialog extends StatelessWidget {
                         ),
                         child: Text(
                           confirmText,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

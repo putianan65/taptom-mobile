@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/support_service.dart';
@@ -65,16 +64,16 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('รายการแจ้งปัญหา', style: GoogleFonts.prompt()),
+          title: Text('รายการแจ้งปัญหา', style: const TextStyle()),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: () => context.pop(),
           ),
           actions: [
             IconButton(
-              icon: const HeroIcon(HeroIcons.funnel, color: Colors.white),
+              icon: const Icon(PhosphorIconsRegular.funnelSimple, color: Colors.white),
               onPressed: _showFilterDialog,
             )
           ],
@@ -109,8 +108,8 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
              // For now assume just listing/viewing per plan scope "List/Filter tickets"
           },
           backgroundColor: AppColors.primary,
-          label: Text('แจ้งปัญหา', style: GoogleFonts.prompt(color: Colors.white)),
-          icon: const Icon(Icons.add, color: Colors.white),
+          label: Text('แจ้งปัญหา', style: TextStyle(color: Colors.white)),
+          icon: const Icon(PhosphorIconsRegular.plus, color: Colors.white),
         ),
       ),
     );
@@ -121,11 +120,11 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const HeroIcon(HeroIcons.ticket, size: 64, color: Colors.grey),
+          const Icon(PhosphorIconsRegular.ticket, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
           Text(
             'ไม่พบรายการแจ้งปัญหา',
-            style: GoogleFonts.prompt(color: Colors.grey),
+            style: TextStyle(color: Colors.grey),
           ),
         ],
       ),
@@ -166,7 +165,7 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
             Expanded(
               child: Text(
                 ticket.subject,
-                style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -174,12 +173,12 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 statusText,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 10,
                   color: statusColor,
                   fontWeight: FontWeight.bold,
@@ -192,14 +191,14 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
           padding: const EdgeInsets.only(top: 8.0),
           child: Text(
             ticket.message,
-            style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         leading: CircleAvatar(
           backgroundColor: Colors.grey[100],
-          child: const HeroIcon(HeroIcons.ticket, color: AppColors.primary),
+          child: const Icon(PhosphorIconsRegular.ticket, color: AppColors.primary),
         ),
       ),
     );
@@ -209,7 +208,7 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('กรองสถานะ', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
+        title: Text('กรองสถานะ', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((status) {

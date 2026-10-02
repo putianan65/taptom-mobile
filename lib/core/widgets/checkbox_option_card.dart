@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import '../constants/app_colors.dart';
 
-/// A checkbox option card widget for form selections
+import '../design/design.dart';
+import 'pressable.dart';
+
+/// Selectable option row used in the GAP forms.
 class CheckboxOptionCard extends StatelessWidget {
-  final String? title;
-  final String? subtitle;
-  final String? label;
-  final String? description;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final HeroIcons icon;
-
   const CheckboxOptionCard({
     super.key,
     this.title,
@@ -21,71 +13,65 @@ class CheckboxOptionCard extends StatelessWidget {
     this.description,
     required this.isSelected,
     required this.onTap,
-    required this.icon,
+    this.icon,
   });
+
+  final String? title;
+  final String? subtitle;
+  final String? label;
+  final String? description;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.shade200,
-            width: isSelected ? 2 : 1,
+    final p = context.palette;
+    final heading = title ?? label ?? '';
+    final body = subtitle ?? description;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: Pressable(
+        onTap: onTap,
+        scale: 0.985,
+        child: AnimatedContainer(
+          duration: Motion.quick,
+          padding: const EdgeInsets.all(Space.md + 2),
+          decoration: BoxDecoration(
+            color: isSelected ? p.brandSoft : p.surface,
+            borderRadius: Radii.control,
+            border: Border.all(
+              color: isSelected ? p.brand.withValues(alpha: 0.55) : p.line,
+              width: isSelected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: isSelected ? p.brand : p.inkSubtle),
+                const SizedBox(width: Space.md),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(heading, style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w500)),
+                    if (body != null && body.isNotEmpty)
+                      Text(body, style: context.text.bodySmall),
+                  ],
+                ),
               ),
-              child: HeroIcon(
-                icon,
-                color: isSelected ? Colors.white : Colors.grey.shade600,
-                size: 20,
+              AnimatedSwitcher(
+                duration: Motion.quick,
+                child: Icon(
+                  isSelected ? AppIcons.checkCircleFill : AppIcons.checkCircle,
+                  key: ValueKey(isSelected),
+                  color: isSelected ? p.brand : p.lineStrong,
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label ?? title ?? '',
-                    style: GoogleFonts.prompt(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (description != null || subtitle != null)
-                    Text(
-                      description ?? subtitle ?? '',
-                      style: GoogleFonts.prompt(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Checkbox(
-              value: isSelected,
-              onChanged: (_) => onTap(),
-              activeColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

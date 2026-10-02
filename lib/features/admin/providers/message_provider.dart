@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
+
 import 'package:collection/collection.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../../core/services/admin_service.dart';
 import '../../../../core/services/super_admin_service.dart';
 import '../../../../data/models/message_model.dart';
@@ -149,15 +150,15 @@ class MessageProvider extends ChangeNotifier {
       }
       
       await loadMessages();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 403) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 403) {
         throw 'คุณไม่มีสิทธิ์ส่งข้อความถึงผู้ใช้นี้';
-      } else if (e.response?.statusCode == 404) {
+      } else if (e.isNotFound) {
         throw 'ไม่พบผู้รับที่ระบุ';
-      } else if (e.response?.statusCode == 429) {
+      } else if (e.statusCode == 429) {
         throw 'คุณส่งข้อความบ่อยเกินไป กรุณารอสักครู่';
       }
-      throw 'ส่งข้อความไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}';
+      throw 'ส่งข้อความไม่สำเร็จ: ${e.serverMessage ?? e.message}';
     } catch (e) {
       throw 'เกิดข้อผิดพลาด: $e';
     }
@@ -183,13 +184,13 @@ class MessageProvider extends ChangeNotifier {
       }
       
       await loadMessages();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw 'ไม่พบข้อความที่ต้องการตอบกลับ';
-      } else if (e.response?.statusCode == 403) {
+      } else if (e.statusCode == 403) {
         throw 'คุณไม่มีสิทธิ์ตอบกลับข้อความนี้';
       }
-      throw 'ตอบกลับไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}';
+      throw 'ตอบกลับไม่สำเร็จ: ${e.serverMessage ?? e.message}';
     } catch (e) {
       throw 'เกิดข้อผิดพลาด: $e';
     }

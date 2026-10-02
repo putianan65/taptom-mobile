@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -56,7 +55,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
             SnackBar(
               content: Text(
                 'ไม่สามารถโหลดข้อมูลได้',
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
               backgroundColor: Colors.red,
             ),
@@ -83,21 +82,19 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.deepPurple.withOpacity(0.1),
+                color: Colors.deepPurple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const HeroIcon(
-                HeroIcons.qrCode,
+              child: const Icon(
+                PhosphorIconsFill.qrCode,
                 color: Colors.deepPurple,
-                size: 22,
-                style: HeroIconStyle.solid,
-              ),
+                size: 22),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'QR Code ล็อต',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -118,7 +115,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -148,12 +145,12 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.deepPurple.withOpacity(0.08),
+                color: Colors.deepPurple.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 lotId,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Colors.deepPurple,
@@ -164,7 +161,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
             const SizedBox(height: 8),
             Text(
               'ให้ผู้บริโภคสแกนเพื่อดูข้อมูลผลผลิต',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,
               ),
@@ -186,7 +183,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text('ปิด', style: GoogleFonts.prompt()),
+                  child: Text('ปิด', style: const TextStyle()),
                 ),
               ),
               const SizedBox(width: 10),
@@ -197,10 +194,10 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                     Navigator.pop(ctx);
                     _shareQrCode(lotId, qrData);
                   },
-                  icon: const Icon(Icons.share, color: Colors.white, size: 18),
+                  icon: const Icon(PhosphorIconsRegular.shareNetwork, color: Colors.white, size: 18),
                   label: Text(
                     'แชร์ QR Code',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -241,7 +238,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
     return GapFormWrapper(
       title: '7. ตรวจติดตาม',
       subtitle: 'ระบบตรวจสอบย้อนกลับ (Traceability)',
-      headerIcon: HeroIcons.qrCode,
+      headerIcon: PhosphorIconsRegular.qrCode,
       headerColor: Colors.deepPurple,
       onSave: widget.isReadOnly ? null : () => navigator.pop(true),
       hasUnsavedChanges: false,
@@ -255,7 +252,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                   const FormInfoCard(
                     message:
                         'สร้าง QR Code เพื่อให้ผู้บริโภคสแกนตรวจสอบข้อมูลผลผลิตของคุณ',
-                    icon: HeroIcons.qrCode,
+                    icon: PhosphorIconsRegular.qrCode,
                     color: Colors.deepPurple,
                   ),
 
@@ -263,7 +260,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                     title: 'ประวัติล็อตการผลิต',
                     example:
                         'รายการล็อตทั้งหมด ${_harvests.length} ล็อต',
-                    icon: HeroIcons.clipboardDocumentList,
+                    icon: PhosphorIconsRegular.clipboardText,
                     iconColor: Colors.indigo,
                     child: _harvests.isEmpty
                         ? _buildEmptyState()
@@ -307,7 +304,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
           border: Border.all(color: Colors.grey.shade200, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -319,14 +316,13 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.indigo.withOpacity(0.12),
+                color: Colors.indigo.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const HeroIcon(
-                HeroIcons.cubeTransparent,
+              child: const Icon(
+                PhosphorIconsRegular.cube,
                 color: Colors.indigo,
-                size: 24,
-              ),
+                size: 24),
             ),
             const SizedBox(width: 14),
             // Lot info
@@ -337,7 +333,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                 children: [
                   Text(
                     lotId,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: Colors.black87,
@@ -349,16 +345,15 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const HeroIcon(
-                        HeroIcons.calendarDays,
+                      const Icon(
+                        PhosphorIconsRegular.calendarDots,
                         color: Colors.grey,
-                        size: 14,
-                      ),
+                        size: 14),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           date,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
                           ),
@@ -371,15 +366,14 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const HeroIcon(
-                        HeroIcons.scale,
+                      const Icon(
+                        PhosphorIconsRegular.scales,
                         color: Colors.grey,
-                        size: 14,
-                      ),
+                        size: 14),
                       const SizedBox(width: 4),
                       Text(
                         quantity,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
                         ),
@@ -401,25 +395,23 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.1),
+                    color: Colors.deepPurple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.deepPurple.withOpacity(0.2),
+                      color: Colors.deepPurple.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const HeroIcon(
-                        HeroIcons.qrCode,
+                      const Icon(
+                        PhosphorIconsFill.qrCode,
                         color: Colors.deepPurple,
-                        size: 24,
-                        style: HeroIconStyle.solid,
-                      ),
+                        size: 24),
                       const SizedBox(height: 2),
                       Text(
                         'QR',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: Colors.deepPurple,
@@ -464,7 +456,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
       ),
       child: Center(
         child: CircularProgressIndicator(
-          color: Colors.deepPurple.withOpacity(0.3),
+          color: Colors.deepPurple.withValues(alpha: 0.3),
           strokeWidth: 2,
         ),
       ),
@@ -483,16 +475,15 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
               color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
-            child: HeroIcon(
-              HeroIcons.qrCode,
+            child: Icon(
+              PhosphorIconsRegular.qrCode,
               color: Colors.grey.shade400,
-              size: 48,
-            ),
+              size: 48),
           ),
           const SizedBox(height: 16),
           Text(
             'ยังไม่มีข้อมูลการเก็บเกี่ยว',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -501,7 +492,7 @@ class _GapTraceabilityFormState extends State<GapTraceabilityForm> {
           const SizedBox(height: 4),
           Text(
             'บันทึกข้อมูลในหมวด 4 ก่อนเพื่อสร้าง QR Code',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade500,
             ),

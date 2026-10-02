@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -182,26 +181,26 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
     }
   }
 
-  HeroIcons _getActivityIcon(String type) {
+  IconData _getActivityIcon(String type) {
     switch (type) {
       case 'general':
-        return HeroIcons.informationCircle;
+        return PhosphorIconsRegular.info;
       case 'input':
-        return HeroIcons.beaker;
+        return PhosphorIconsRegular.flask;
       case 'management':
-        return HeroIcons.cog6Tooth;
+        return PhosphorIconsRegular.gear;
       case 'harvest':
-        return HeroIcons.scissors;
+        return PhosphorIconsRegular.scissors;
       case 'post_harvest':
-        return HeroIcons.archiveBox;
+        return PhosphorIconsRegular.archive;
       case 'safety':
-        return HeroIcons.shieldCheck;
+        return PhosphorIconsRegular.shieldCheck;
       case 'training':
-        return HeroIcons.academicCap;
+        return PhosphorIconsRegular.graduationCap;
       case 'plot_created':
-        return HeroIcons.mapPin;
+        return PhosphorIconsRegular.mapPin;
       default:
-        return HeroIcons.clipboardDocumentList;
+        return PhosphorIconsRegular.clipboardText;
     }
   }
 
@@ -307,11 +306,11 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.warning_amber_rounded,
+                PhosphorIconsRegular.warning,
                 color: Colors.red,
                 size: 24,
               ),
@@ -319,7 +318,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             const SizedBox(width: 14),
             Text(
               'ลบแปลง',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -329,23 +328,23 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
           children: [
             Text(
               'คุณต้องการลบแปลง "${widget.plot.name}" หรือไม่?',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.05),
+                color: Colors.red.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.red, size: 18),
+                  const Icon(PhosphorIconsRegular.info, color: Colors.red, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'การดำเนินการนี้ไม่สามารถย้อนกลับได้',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.red,
                         fontSize: 12,
                       ),
@@ -361,7 +360,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey[600]),
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ),
           ElevatedButton(
@@ -376,7 +375,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text('ลบแปลง', style: GoogleFonts.prompt()),
+            child: Text('ลบแปลง', style: const TextStyle()),
           ),
         ],
       ),
@@ -387,7 +386,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
     if (widget.plot.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ไม่พบ ID ของแปลง', style: GoogleFonts.prompt()),
+          content: Text('ไม่พบ ID ของแปลง', style: const TextStyle()),
           backgroundColor: Colors.red,
         ),
       );
@@ -404,15 +403,14 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         SnackBar(
           content: Row(
             children: [
-              const HeroIcon(
-                HeroIcons.checkCircle,
+              const Icon(
+                PhosphorIconsRegular.checkCircle,
                 color: Colors.white,
-                size: 20,
-              ),
+                size: 20),
               const SizedBox(width: 10),
               Text(
                 'ลบแปลง "${widget.plot.name}" สำเร็จ',
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
             ],
           ),
@@ -425,7 +423,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
+          content: Text('เกิดข้อผิดพลาด: $e', style: const TextStyle()),
           backgroundColor: Colors.red,
         ),
       );
@@ -452,19 +450,18 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const HeroIcon(
-                  HeroIcons.pencilSquare,
+                child: const Icon(
+                  PhosphorIconsRegular.notePencil,
                   color: Colors.blue,
-                  size: 24,
-                ),
+                  size: 24),
               ),
               const SizedBox(width: 14),
               Text(
                 'แก้ไขข้อมูลแปลง',
-                style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -480,9 +477,9 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    prefixIcon: const Icon(Icons.edit_outlined),
+                    prefixIcon: const Icon(PhosphorIconsRegular.pencilSimple),
                   ),
-                  style: GoogleFonts.prompt(),
+                  style: const TextStyle(),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -493,9 +490,9 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    prefixIcon: const Icon(Icons.eco_outlined),
+                    prefixIcon: const Icon(PhosphorIconsRegular.leaf),
                   ),
-                  style: GoogleFonts.prompt(),
+                  style: const TextStyle(),
                 ),
                 if (isLoading) ...[
                   const SizedBox(height: 20),
@@ -509,7 +506,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
               child: Text(
                 'ยกเลิก',
-                style: GoogleFonts.prompt(color: Colors.grey[600]),
+                style: TextStyle(color: Colors.grey[600]),
               ),
             ),
             ElevatedButton(
@@ -521,7 +518,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                           SnackBar(
                             content: Text(
                               'กรุณากรอกชื่อแปลง',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                             ),
                             backgroundColor: Colors.orange,
                           ),
@@ -561,15 +558,14 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                             SnackBar(
                               content: Row(
                                 children: [
-                                  const HeroIcon(
-                                    HeroIcons.checkCircle,
+                                  const Icon(
+                                    PhosphorIconsRegular.checkCircle,
                                     color: Colors.white,
-                                    size: 20,
-                                  ),
+                                    size: 20),
                                   const SizedBox(width: 10),
                                   Text(
                                     'แก้ไขข้อมูลแปลงสำเร็จ',
-                                    style: GoogleFonts.prompt(),
+                                    style: const TextStyle(),
                                   ),
                                 ],
                               ),
@@ -584,7 +580,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                             setDialogState(() => isLoading = false);
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
                               SnackBar(
-                                content: Text('$e', style: GoogleFonts.prompt()),
+                                content: Text('$e', style: const TextStyle()),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -598,7 +594,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Text('บันทึก', style: GoogleFonts.prompt()),
+              child: Text('บันทึก', style: const TextStyle()),
             ),
           ],
         ),
@@ -649,7 +645,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.5),
+                            Colors.black.withValues(alpha: 0.5),
                           ],
                         ),
                       ),
@@ -670,7 +666,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                             children: [
                               Text(
                                 widget.plot.name,
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -684,29 +680,27 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                               ),
                               Row(
                                 children: [
-                                  const HeroIcon(
-                                    HeroIcons.mapPin,
+                                  const Icon(
+                                    PhosphorIconsRegular.mapPin,
                                     color: Colors.white70,
-                                    size: 14,
-                                  ),
+                                    size: 14),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${widget.plot.areaRai?.toStringAsFixed(2) ?? "-"} ไร่',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const HeroIcon(
-                                    HeroIcons.sparkles,
+                                  const Icon(
+                                    PhosphorIconsRegular.sparkle,
                                     color: Colors.white70,
-                                    size: 14,
-                                  ),
+                                    size: 14),
                                   const SizedBox(width: 4),
                                   Text(
                                     widget.plot.species ?? 'ไม่ระบุพืช',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 14,
                                     ),
@@ -740,7 +734,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 'ปกติ',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   color: Colors.green[700],
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
@@ -765,17 +759,16 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                       ),
                     ],
                   ),
                   child: const Center(
-                    child: HeroIcon(
-                      HeroIcons.arrowLeft,
+                    child: Icon(
+                      PhosphorIconsRegular.arrowLeft,
                       color: Colors.black87,
-                      size: 20,
-                    ),
+                      size: 20),
                   ),
                 ),
               ),
@@ -794,16 +787,15 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 8,
                         ),
                       ],
                     ),
-                    child: const HeroIcon(
-                      HeroIcons.ellipsisHorizontal,
+                    child: const Icon(
+                      PhosphorIconsRegular.dotsThree,
                       color: Colors.black87,
-                      size: 20,
-                    ),
+                      size: 20),
                   ),
                 ),
               ),
@@ -838,7 +830,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         _buildModernActionTile(
                           title: 'QR Code ตรวจสอบย้อนกลับ',
                           subtitle: 'หมวด 7 (ดูข้อมูลและ QR Code ล็อตผลผลิต)',
-                          icon: HeroIcons.qrCode,
+                          icon: PhosphorIconsRegular.qrCode,
                           color: AppColors.gapTraceability,
                           badge: '1/1',
                           onTap: () async {
@@ -861,7 +853,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         // GAP Actions
                         Text(
                           'การจัดการ GAP',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -870,7 +862,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         _buildModernActionTile(
                           title: 'บันทึก GAP',
                           subtitle: 'ข้อมูลการปลูก ดูแล เก็บเกี่ยว',
-                          icon: HeroIcons.clipboardDocumentList,
+                          icon: PhosphorIconsRegular.clipboardText,
                           color: AppColors.primary,
                           badge: '${_gapCompleted}/${_gapTotal}',
                           onTap: () async {
@@ -893,7 +885,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                       // Danger Zone - ซ่อนเมื่อแปลง APPROVED แล้ว
                       Text(
                         'ตั้งค่าแปลง',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -905,19 +897,18 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
+                            color: AppColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.success.withOpacity(0.3),
+                              color: AppColors.success.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
                             children: [
-                              const HeroIcon(
-                                HeroIcons.checkBadge,
+                              const Icon(
+                                PhosphorIconsRegular.sealCheck,
                                 color: AppColors.success,
-                                size: 24,
-                              ),
+                                size: 24),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -925,14 +916,14 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                                   children: [
                                     Text(
                                       'แปลงได้รับการรับรองแล้ว',
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.success,
                                       ),
                                     ),
                                     Text(
                                       'ไม่สามารถแก้ไขหรือลบแปลงที่รับรองแล้วได้',
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
                                       ),
@@ -947,7 +938,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         _buildModernActionTile(
                           title: 'แก้ไขข้อมูลแปลง',
                           subtitle: 'ชื่อ ประเภทพืช',
-                          icon: HeroIcons.pencilSquare,
+                          icon: PhosphorIconsRegular.notePencil,
                           color: Colors.blue,
                           onTap: _showEditPlotDialog,
                         ),
@@ -955,7 +946,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         _buildModernActionTile(
                           title: 'ลบแปลงนี้',
                           subtitle: 'ลบแปลงและข้อมูลทั้งหมด',
-                          icon: HeroIcons.trash,
+                          icon: PhosphorIconsRegular.trash,
                           color: Colors.red,
                           isDanger: true,
                           onTap: _showDeleteConfirmation,
@@ -991,7 +982,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             'ขนาดพื้นที่',
             '${widget.plot.areaRai?.toStringAsFixed(1) ?? "-"}',
             'ไร่',
-            HeroIcons.squares2x2,
+            PhosphorIconsRegular.squaresFour,
             Colors.blue,
             tooltip: 'พื้นที่ของแปลงที่วาดไว้',
           ),
@@ -1002,7 +993,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             'ผลผลิตคาด',
             yieldDisplay,
             'กก.',
-            HeroIcons.chartBar,
+            PhosphorIconsRegular.chartBar,
             Colors.orange,
             tooltip: 'ผลผลิตคาดการณ์ (กก./ไร่)',
           ),
@@ -1013,7 +1004,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             'อายุแปลง',
             ageDisplay,
             'วัน',
-            HeroIcons.calendar,
+            PhosphorIconsRegular.calendarBlank,
             Colors.purple,
             tooltip: 'จำนวนวันนับตั้งแต่สร้างแปลง',
           ),
@@ -1026,7 +1017,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
     String label,
     String value,
     String unit,
-    HeroIcons icon,
+    IconData icon,
     Color color, {
     String? tooltip,
   }) {
@@ -1039,7 +1030,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1054,13 +1045,13 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: HeroIcon(icon, color: color, size: 18),
+                  child: Icon(icon, color: color, size: 18),
                 ),
                 if (tooltip != null)
-                  Icon(Icons.info_outline, size: 14, color: Colors.grey[400]),
+                  Icon(PhosphorIconsRegular.info, size: 14, color: Colors.grey[400]),
               ],
             ),
             const SizedBox(height: 10),
@@ -1069,7 +1060,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1079,7 +1070,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   padding: const EdgeInsets.only(bottom: 2),
                   child: Text(
                     unit,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
                     ),
@@ -1089,7 +1080,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             ),
             Text(
               label,
-              style: GoogleFonts.prompt(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -1102,14 +1093,14 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1130,7 +1121,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   child: CircularProgressIndicator(
                     value: _gapPercent,
                     strokeWidth: 8,
-                    backgroundColor: Colors.white.withOpacity(0.3),
+                    backgroundColor: Colors.white.withValues(alpha: 0.3),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       Colors.white,
                     ),
@@ -1141,7 +1132,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   children: [
                     Text(
                       '${(_gapPercent * 100).toInt()}%',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -1160,7 +1151,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               children: [
                 Text(
                   'ความคืบหน้า GAP',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
@@ -1169,7 +1160,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'บันทึกแล้ว $_gapCompleted จาก $_gapTotal หัวข้อ',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 13,
                     color: Colors.white70,
                   ),
@@ -1188,12 +1179,12 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: e.value
-                                ? Colors.white.withOpacity(0.2)
-                                : Colors.white.withOpacity(0.1),
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                             border: e.value
                                 ? Border.all(
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                   )
                                 : null,
                           ),
@@ -1202,15 +1193,15 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                             children: [
                               Icon(
                                 e.value
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_unchecked,
+                                    ? PhosphorIconsFill.checkCircle
+                                    : PhosphorIconsRegular.circle,
                                 size: 12,
                                 color: e.value ? Colors.white : Colors.white54,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 _getGapLabel(e.key),
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 10,
                                   color: e.value
                                       ? Colors.white
@@ -1260,7 +1251,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         gradient: LinearGradient(
           colors: [
             AppColors.success,
-            AppColors.success.withOpacity(0.8),
+            AppColors.success.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1268,7 +1259,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withOpacity(0.3),
+            color: AppColors.success.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1282,14 +1273,13 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const HeroIcon(
-                  HeroIcons.checkBadge,
+                child: const Icon(
+                  PhosphorIconsRegular.sealCheck,
                   color: Colors.white,
-                  size: 32,
-                ),
+                  size: 32),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1298,7 +1288,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   children: [
                     Text(
                       'ผ่านมาตรฐาน GAP',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -1306,9 +1296,9 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                     ),
                     Text(
                       'แปลงได้รับการรับรองเรียบร้อยแล้ว',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -1362,10 +1352,10 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: const HeroIcon(HeroIcons.eye, size: 20),
+                  icon: const Icon(PhosphorIconsRegular.eye, size: 20),
                   label: Text(
                     'ดูใบรับรอง',
-                    style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -1374,17 +1364,17 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _downloadCertificate,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: const HeroIcon(HeroIcons.arrowDownTray, size: 20),
+                  icon: const Icon(PhosphorIconsRegular.downloadSimple, size: 20),
                   label: Text(
                     'ดาวน์โหลด',
-                    style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -1428,7 +1418,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
+          content: Text('เกิดข้อผิดพลาด: $e', style: const TextStyle()),
           backgroundColor: Colors.red,
         ),
       );
@@ -1459,12 +1449,12 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         SnackBar(
           content: Row(
             children: [
-              const HeroIcon(HeroIcons.checkCircle, color: Colors.white, size: 20),
+              const Icon(PhosphorIconsRegular.checkCircle, color: Colors.white, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'บันทึกใบรับรองแล้ว: ${file.path.split('/').last}',
-                  style: GoogleFonts.prompt(),
+                  style: const TextStyle(),
                 ),
               ),
             ],
@@ -1490,7 +1480,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
+          content: Text('เกิดข้อผิดพลาด: $e', style: const TextStyle()),
           backgroundColor: Colors.red,
         ),
       );
@@ -1501,7 +1491,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
   Widget _buildModernActionTile({
     required String title,
     required String subtitle,
-    required HeroIcons icon,
+    required IconData icon,
     required Color color,
     required VoidCallback onTap,
     String? badge,
@@ -1514,13 +1504,13 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
         border: isDanger
-            ? Border.all(color: Colors.red.withOpacity(0.2))
+            ? Border.all(color: Colors.red.withValues(alpha: 0.2))
             : null,
       ),
       child: ListTile(
@@ -1532,18 +1522,18 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: HeroIcon(icon, color: color, size: 22),
+          child: Icon(icon, color: color, size: 22),
         ),
         title: Text(
           title,
-          style: GoogleFonts.prompt(fontWeight: FontWeight.w600, fontSize: 15),
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Text(
           subtitle,
-          style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1555,12 +1545,12 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   badge,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -1568,11 +1558,10 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                 ),
               ),
             const SizedBox(width: 8),
-            const HeroIcon(
-              HeroIcons.chevronRight,
+            const Icon(
+              PhosphorIconsRegular.caretRight,
               size: 18,
-              color: Colors.grey,
-            ),
+              color: Colors.grey),
           ],
         ),
       ),
@@ -1588,7 +1577,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
           children: [
             Text(
               'กิจกรรมล่าสุด',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -1601,7 +1590,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             //   },
             //   child: Text(
             //     'ดูทั้งหมด',
-            //     style: GoogleFonts.prompt(color: AppColors.primary),
+            //     style: TextStyle(color: AppColors.primary),
             //   ),
             // ),
           ],
@@ -1614,7 +1603,7 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1632,19 +1621,18 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      HeroIcon(
-                        HeroIcons.clipboardDocumentList,
-                        color: Colors.grey.withOpacity(0.3),
-                        size: 40,
-                      ),
+                      Icon(
+                        PhosphorIconsRegular.clipboardText,
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        size: 40),
                       const SizedBox(height: 10),
                       Text(
                         'ยังไม่มีกิจกรรม',
-                        style: GoogleFonts.prompt(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey),
                       ),
                       Text(
                         'เริ่มบันทึกข้อมูล GAP เพื่อดูกิจกรรมที่นี่',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[400],
                         ),
@@ -1665,16 +1653,15 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: (activity['color'] as Color).withOpacity(
+                                color: (activity['color'] as Color).withValues(alpha: 
                                   0.1,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: HeroIcon(
-                                activity['icon'] as HeroIcons,
+                              child: Icon(
+                                activity['icon'] as IconData,
                                 color: activity['color'] as Color,
-                                size: 18,
-                              ),
+                                size: 18),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -1683,14 +1670,14 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                                 children: [
                                   Text(
                                     activity['action'] as String,
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 14,
                                     ),
                                   ),
                                   Text(
                                     activity['date'] as String,
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[500],
                                     ),

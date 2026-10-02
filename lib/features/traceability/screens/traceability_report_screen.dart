@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -97,7 +97,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Center(
@@ -110,7 +110,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
           const SizedBox(height: 24),
           Text(
             'กำลังโหลดข้อมูลตรวจสอบย้อนกลับ...',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 15,
               color: AppColors.textSecondary,
             ),
@@ -118,7 +118,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
           const SizedBox(height: 8),
           Text(
             'Lot: ${widget.lotNumber}',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 13,
               color: AppColors.textTertiary,
               fontWeight: FontWeight.w500,
@@ -144,11 +144,11 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.search_off_rounded,
+                PhosphorIconsRegular.magnifyingGlassMinus,
                 size: 40,
                 color: AppColors.error,
               ),
@@ -156,7 +156,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
             const SizedBox(height: 24),
             Text(
               'ไม่พบข้อมูลล็อต',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -166,7 +166,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
             Text(
               'ไม่พบข้อมูลสำหรับเลขล็อต "${widget.lotNumber}"\nกรุณาตรวจสอบรหัสล็อตอีกครั้ง',
               textAlign: TextAlign.center,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
@@ -177,8 +177,8 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
               children: [
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back),
-                  label: Text('กลับ', style: GoogleFonts.prompt()),
+                  icon: const Icon(PhosphorIconsRegular.arrowLeft),
+                  label: Text('กลับ', style: const TextStyle()),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
@@ -190,9 +190,9 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: _loadReport,
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: const Icon(PhosphorIconsRegular.arrowsClockwise, color: Colors.white),
                   label: Text('ลองใหม่',
-                      style: GoogleFonts.prompt(color: Colors.white)),
+                      style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
@@ -277,12 +277,12 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
       pinned: true,
       backgroundColor: AppColors.primary,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
         onPressed: () => Navigator.of(context).pop(),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.share_outlined, color: Colors.white),
+          icon: const Icon(PhosphorIconsRegular.shareNetwork, color: Colors.white),
           onPressed: _shareReport,
         ),
       ],
@@ -302,18 +302,18 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.verified,
+                            const Icon(PhosphorIconsRegular.sealCheck,
                                 color: Colors.white, size: 14),
                             const SizedBox(width: 4),
                             Text(
                               'Farm-to-Fork Traceability',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
@@ -327,7 +327,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                   const SizedBox(height: 12),
                   Text(
                     'ผลการตรวจสอบย้อนกลับ',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -336,12 +336,12 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.qr_code_2,
+                      const Icon(PhosphorIconsRegular.qrCode,
                           color: Colors.white70, size: 16),
                       const SizedBox(width: 6),
                       Text(
                         'Lot: ${widget.lotNumber}',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           color: Colors.white70,
                         ),
@@ -369,7 +369,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
     final district = plot['district']?.toString() ?? '-';
 
     return _buildSection(
-      icon: Icons.location_on_rounded,
+      icon: PhosphorIconsRegular.mapPin,
       iconColor: AppColors.primary,
       title: 'แหล่งกำเนิด',
       children: [
@@ -399,7 +399,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
         child: Center(
           child: Text(
             'ไม่สามารถแสดงแผนที่ได้',
-            style: GoogleFonts.prompt(color: AppColors.textTertiary),
+            style: TextStyle(color: AppColors.textTertiary),
           ),
         ),
       );
@@ -448,7 +448,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
     final address = farmer['address']?.toString() ?? '-';
 
     return _buildSection(
-      icon: Icons.person_rounded,
+      icon: PhosphorIconsRegular.user,
       iconColor: const Color(0xFF3B82F6),
       title: 'ข้อมูลเกษตรกร',
       children: [
@@ -472,7 +472,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
         status.toUpperCase() == 'APPROVED' || status.toUpperCase() == 'CERTIFIED';
 
     return _buildSection(
-      icon: Icons.verified_user_rounded,
+      icon: PhosphorIconsRegular.shieldCheck,
       iconColor: isApproved ? AppColors.success : AppColors.warning,
       title: 'สถานะมาตรฐาน GAP',
       children: [
@@ -480,19 +480,19 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: isApproved
-                ? AppColors.success.withOpacity(0.08)
-                : AppColors.warning.withOpacity(0.08),
+                ? AppColors.success.withValues(alpha: 0.08)
+                : AppColors.warning.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isApproved
-                  ? AppColors.success.withOpacity(0.2)
-                  : AppColors.warning.withOpacity(0.2),
+                  ? AppColors.success.withValues(alpha: 0.2)
+                  : AppColors.warning.withValues(alpha: 0.2),
             ),
           ),
           child: Row(
             children: [
               Icon(
-                isApproved ? Icons.check_circle : Icons.pending,
+                isApproved ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.hourglassMedium,
                 color: isApproved ? AppColors.success : AppColors.warning,
                 size: 24,
               ),
@@ -503,7 +503,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                   children: [
                     Text(
                       isApproved ? 'ผ่านการรับรอง' : status,
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: isApproved ? AppColors.success : AppColors.warning,
@@ -512,7 +512,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                     if (season != '-')
                       Text(
                         'ฤดูกาล: $season',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -535,7 +535,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
 
   Widget _buildChemicalSection(List chemicals) {
     return _buildSection(
-      icon: Icons.science_rounded,
+      icon: PhosphorIconsRegular.flask,
       iconColor: const Color(0xFFF59E0B),
       title: 'ประวัติการใช้ปัจจัยการผลิต',
       subtitle: '${chemicals.length} รายการล่าสุด',
@@ -563,7 +563,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _getChemicalColor(type).withOpacity(0.12),
+                      color: _getChemicalColor(type).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -579,7 +579,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                       children: [
                         Text(
                           name,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -587,7 +587,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                         ),
                         Text(
                           '$type • ปริมาณ: $amount',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -597,7 +597,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                   ),
                   Text(
                     date,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textTertiary,
                     ),
@@ -622,9 +622,9 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
 
   IconData _getChemicalIcon(String type) {
     final t = type.toLowerCase();
-    if (t.contains('ปุ๋ย') || t.contains('fertilizer')) return Icons.grass;
-    if (t.contains('สาร') || t.contains('pesticide')) return Icons.science;
-    return Icons.opacity;
+    if (t.contains('ปุ๋ย') || t.contains('fertilizer')) return PhosphorIconsRegular.plant;
+    if (t.contains('สาร') || t.contains('pesticide')) return PhosphorIconsRegular.flask;
+    return PhosphorIconsRegular.drop;
   }
 
   // ═══════════════════════════════════════════
@@ -633,7 +633,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
 
   Widget _buildHarvestSection(List harvests) {
     return _buildSection(
-      icon: Icons.agriculture_rounded,
+      icon: PhosphorIconsRegular.tractor,
       iconColor: const Color(0xFFFF6F00),
       title: 'ประวัติการเก็บเกี่ยว',
       subtitle: '${harvests.length} รายการล่าสุด',
@@ -665,11 +665,11 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6F00).withOpacity(0.12),
+                          color: const Color(0xFFFF6F00).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
-                          Icons.eco_rounded,
+                          PhosphorIconsRegular.leaf,
                           size: 20,
                           color: Color(0xFFFF6F00),
                         ),
@@ -681,7 +681,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                           children: [
                             Text(
                               product,
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
@@ -689,7 +689,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                             ),
                             Text(
                               'ปริมาณ: $quantity $unit',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
                               ),
@@ -699,7 +699,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                       ),
                       Text(
                         date,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textTertiary,
                         ),
@@ -712,12 +712,12 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.08),
+                        color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         'Lot: $lotNum',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w500,
@@ -741,20 +741,20 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.verified, color: AppColors.primary, size: 18),
+              Icon(PhosphorIconsRegular.sealCheck, color: AppColors.primary, size: 18),
               const SizedBox(width: 6),
               Text(
                 'TapTom Traceability System',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -765,7 +765,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
           const SizedBox(height: 4),
           Text(
             'ระบบตรวจสอบย้อนกลับมาตรฐาน GAP',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               color: AppColors.textTertiary,
             ),
@@ -792,7 +792,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -810,7 +810,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.12),
+                    color: iconColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: iconColor, size: 20),
@@ -822,7 +822,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -831,7 +831,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
                       if (subtitle != null)
                         Text(
                           subtitle,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: AppColors.textTertiary,
                           ),
@@ -866,7 +866,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
             width: 110,
             child: Text(
               label,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),
@@ -875,7 +875,7 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
@@ -893,12 +893,12 @@ class _TraceabilityReportScreenState extends State<TraceabilityReportScreen>
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.inbox_outlined,
+            Icon(PhosphorIconsRegular.tray,
                 size: 36, color: AppColors.textTertiary),
             const SizedBox(height: 8),
             Text(
               text,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textTertiary,
               ),

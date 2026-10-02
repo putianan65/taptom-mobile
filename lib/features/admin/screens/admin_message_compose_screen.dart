@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -187,8 +186,8 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
           appBar: AppBar(
             title: Text('เขียนข้อความใหม่', 
               style: _isSuperAdmin 
-                  ? GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 24)
-                  : GoogleFonts.prompt(fontWeight: FontWeight.bold, color: Colors.black)
+                  ? TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 24)
+                  : TextStyle(fontWeight: FontWeight.bold, color: Colors.black)
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent,
@@ -202,12 +201,12 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                     border: Border.all(color: LuxuryTheme.glassBorder),
                   ),
                   child: IconButton(
-                    icon: const HeroIcon(HeroIcons.xMark, color: Colors.white, size: 20),
+                    icon: const Icon(PhosphorIconsRegular.x, color: Colors.white, size: 20),
                     onPressed: () => context.pop(),
                   ),
                 )
               : IconButton(
-                  icon: const HeroIcon(HeroIcons.xMark, color: Colors.black),
+                  icon: const Icon(PhosphorIconsRegular.x, color: Colors.black),
                   onPressed: () => context.pop(),
                 ),
           ),
@@ -231,8 +230,8 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                         value: _selectedRecipientId,
                         isExpanded: true,
                         dropdownColor: const Color(0xFF1E2A4A),
-                        hint: Text('แตะเพื่อเลือกผู้รับ', style: GoogleFonts.outfit(color: LuxuryTheme.textSecondary)),
-                        icon: const HeroIcon(HeroIcons.chevronDown, size: 24, color: LuxuryTheme.cyanNeon),
+                        hint: Text('แตะเพื่อเลือกผู้รับ', style: TextStyle(color: LuxuryTheme.textSecondary)),
+                        icon: const Icon(PhosphorIconsRegular.caretDown, size: 24, color: LuxuryTheme.cyanNeon),
                         items: _admins.map<DropdownMenuItem<String>>((admin) {
                           final firstName = admin['firstName']?.toString() ?? '';
                           final lastName = admin['lastName']?.toString() ?? '';
@@ -244,16 +243,16 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 14,
-                                  backgroundColor: LuxuryTheme.purpleNeon.withOpacity(0.1),
+                                  backgroundColor: LuxuryTheme.purpleNeon.withValues(alpha: 0.1),
                                   child: Text(
                                     firstName.isNotEmpty ? firstName[0] : '?',
-                                    style: GoogleFonts.outfit(fontSize: 12, color: LuxuryTheme.purpleNeon, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 12, color: LuxuryTheme.purpleNeon, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
                                   '$firstName $lastName',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.white),
+                                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.white),
                                 ),
                               ],
                             ),
@@ -267,9 +266,9 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                    Container(
                      padding: const EdgeInsets.all(16),
                      decoration: BoxDecoration(
-                       color: AppColors.secondary.withOpacity(0.1),
+                       color: AppColors.secondary.withValues(alpha: 0.1),
                        borderRadius: BorderRadius.circular(16),
-                       border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                       border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
                      ),
                      child: Row(
                        children: [
@@ -279,7 +278,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                              color: AppColors.secondary,
                              shape: BoxShape.circle,
                            ),
-                           child: const HeroIcon(HeroIcons.shieldCheck, color: Colors.white, size: 24),
+                           child: const Icon(PhosphorIconsRegular.shieldCheck, color: Colors.white, size: 24),
                          ),
                          const SizedBox(width: 16),
                          Column(
@@ -287,7 +286,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                            children: [
                              Text(
                                'ติดต่อผู้ดูแลระบบสูงสุด',
-                               style: GoogleFonts.prompt(
+                               style: TextStyle(
                                  fontSize: 16,
                                  fontWeight: FontWeight.bold,
                                  color: AppColors.secondary,
@@ -295,7 +294,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                              ),
                              Text(
                                'ข้อความจะถูกส่งไปยังทีมงานส่วนกลาง',
-                               style: GoogleFonts.prompt(
+                               style: TextStyle(
                                  fontSize: 12,
                                  color: Colors.grey[600],
                                ),
@@ -318,7 +317,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                     border: _isSuperAdmin ? Border.all(color: LuxuryTheme.glassBorder) : null,
                     boxShadow: _isSuperAdmin ? [] : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -328,13 +327,13 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                     controller: _subjectController,
                     cursorColor: _isSuperAdmin ? LuxuryTheme.cyanNeon : null,
                     style: _isSuperAdmin 
-                        ? GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)
-                        : GoogleFonts.prompt(fontSize: 16, fontWeight: FontWeight.w500),
+                        ? TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)
+                        : TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
                       hintText: 'ระบุหัวข้อเรื่อง...',
                       hintStyle: _isSuperAdmin 
-                          ? GoogleFonts.outfit(color: LuxuryTheme.textDisabled)
-                          : GoogleFonts.prompt(color: Colors.grey[400]),
+                          ? TextStyle(color: LuxuryTheme.textDisabled)
+                          : TextStyle(color: Colors.grey[400]),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       border: InputBorder.none,
                       filled: _isSuperAdmin,
@@ -354,7 +353,7 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                     border: _isSuperAdmin ? Border.all(color: LuxuryTheme.glassBorder) : null,
                     boxShadow: _isSuperAdmin ? [] : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -365,13 +364,13 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                     maxLines: 8,
                     cursorColor: _isSuperAdmin ? LuxuryTheme.cyanNeon : null,
                     style: _isSuperAdmin 
-                        ? GoogleFonts.outfit(fontSize: 16, color: Colors.white)
-                        : GoogleFonts.prompt(fontSize: 16),
+                        ? TextStyle(fontSize: 16, color: Colors.white)
+                        : TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       hintText: 'พิมพ์ข้อความของคุณที่นี่...',
                       hintStyle: _isSuperAdmin
-                          ? GoogleFonts.outfit(color: LuxuryTheme.textDisabled)
-                          : GoogleFonts.prompt(color: Colors.grey[400]),
+                          ? TextStyle(color: LuxuryTheme.textDisabled)
+                          : TextStyle(color: Colors.grey[400]),
                       contentPadding: const EdgeInsets.all(20),
                       border: InputBorder.none,
                       filled: _isSuperAdmin,
@@ -406,10 +405,10 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                           child: Container(
                              padding: const EdgeInsets.all(8),
                              decoration: BoxDecoration(
-                               color: Colors.black.withOpacity(0.6),
+                               color: Colors.black.withValues(alpha: 0.6),
                                shape: BoxShape.circle,
                              ),
-                             child: const HeroIcon(HeroIcons.xMark, color: Colors.white, size: 20),
+                             child: const Icon(PhosphorIconsRegular.x, color: Colors.white, size: 20),
                           ),
                         ),
                       ),
@@ -423,19 +422,19 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(
-                          color: _isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.primary.withOpacity(0.5), 
+                          color: _isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.primary.withValues(alpha: 0.5), 
                           width: 1.5
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      icon: HeroIcon(HeroIcons.photo, color: _isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.primary),
+                      icon: Icon(PhosphorIconsRegular.image, color: _isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.primary),
                       label: Text(
                         _selectedImage == null ? 'แนบรูปภาพ' : 'เปลี่ยนรูปภาพ',
                         style: _isSuperAdmin
-                            ? GoogleFonts.outfit(color: LuxuryTheme.cyanNeon, fontWeight: FontWeight.bold, fontSize: 16)
-                            : GoogleFonts.prompt(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16),
+                            ? TextStyle(color: LuxuryTheme.cyanNeon, fontWeight: FontWeight.bold, fontSize: 16)
+                            : TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                  ),
@@ -467,13 +466,13 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const HeroIcon(HeroIcons.paperAirplane, color: Colors.white, size: 24),
+                                const Icon(PhosphorIconsRegular.paperPlaneTilt, color: Colors.white, size: 24),
                                 const SizedBox(width: 8),
                                 Text(
                                   'ส่งข้อความ',
                                   style: _isSuperAdmin
-                                    ? GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)
-                                    : GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                                    ? TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)
+                                    : TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
                                 ),
                               ],
                             ),
@@ -493,8 +492,8 @@ class _AdminMessageComposeScreenState extends State<AdminMessageComposeScreen> {
     return Text(
       label,
       style: _isSuperAdmin
-          ? GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)
-          : GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF2D3748)),
+          ? TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)
+          : TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF2D3748)),
     );
   }
 }

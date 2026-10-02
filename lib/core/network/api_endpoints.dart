@@ -9,7 +9,7 @@ class ApiEndpoints {
 
   // Users
   static const String userProfile = '/users/me';
-  static const String userStats = '/users/statistics';
+  static const String userStats = '/users/stats';
   static const String users = '/users';
   static String user(String id) => '/users/$id';
   static String userRole(String id) => '/users/$id/role';
@@ -96,8 +96,8 @@ class ApiEndpoints {
   static String adminUserApprove(String userId) =>
       '/admin/users/$userId/approve';
   static String adminUserReject(String userId) => '/admin/users/$userId/reject';
-  static String adminAssign(String adminId) => '/admin/admins/$adminId/assign';
-  static String adminReassign(String userId) => '/admin/users/$userId/reassign';
+  static String adminAssign(String adminId) => '/admin/$adminId/assign-users';
+  static String adminReassign(String userId) => '/admin/reassign/$userId';
 
   // Super Admin Analytics
   static const String adminGapAnalytics = '/admin/gap-analytics';

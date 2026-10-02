@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/admin_service.dart';
@@ -64,11 +63,11 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('ลงทะเบียนแปลงใหม่ (ให้เกษตรกร)', style: GoogleFonts.prompt()),
+          title: Text('ลงทะเบียนแปลงใหม่ (ให้เกษตรกร)', style: const TextStyle()),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -85,7 +84,7 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                   children: [
                     Text(
                       'ขั้นตอนที่ 1: ระบุเจ้าของแปลงใหม่',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 18, // Larger
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -94,7 +93,7 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                     const SizedBox(height: 4),
                      Text(
                       'เลือกเกษตรกรที่ต้องการสร้างแปลงให้',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
                       ),
@@ -102,7 +101,7 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'เกษตรกร:',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -116,11 +115,11 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                         value: _selectedUser,
                         decoration: InputDecoration(
                           hintText: 'ค้นหาชื่อ หรือ เบอร์โทร',
-                          hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                          hintStyle: TextStyle(color: Colors.grey),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true,
                           fillColor: Colors.grey[50],
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
                         ),
                         isExpanded: true,
                         items: _users.map((user) {
@@ -128,7 +127,7 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                             value: user,
                             child: Text(
                               '${user.fullName} (${user.phone})',
-                              style: GoogleFonts.prompt(),
+                              style: const TextStyle(),
                               overflow: TextOverflow.ellipsis,
                             ),
                           );
@@ -144,16 +143,15 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                   child: _selectedUser == null
                       ? Text(
                           'กรุณาเลือกเกษตรกรก่อนเริ่มวาดแปลง',
-                          style: GoogleFonts.prompt(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey),
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const HeroIcon(
-                              HeroIcons.map,
+                            const Icon(
+                              PhosphorIconsRegular.mapTrifold,
                               size: 64,
-                              color: AppColors.primary,
-                            ),
+                              color: AppColors.primary),
                             const SizedBox(height: 24),
                             ElevatedButton.icon(
                               onPressed: () {
@@ -168,8 +166,8 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.edit_location_alt),
-                              label: Text('เริ่มวาดแปลง', style: GoogleFonts.prompt()),
+                              icon: const Icon(PhosphorIconsRegular.mapPinLine),
+                              label: Text('เริ่มวาดแปลง', style: const TextStyle()),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
@@ -180,7 +178,7 @@ class _CreatePlotForUserScreenState extends State<CreatePlotForUserScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'กำลังดำเนินการสำหรับ: ${_selectedUser!.fullName}',
-                              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+                              style: TextStyle(color: AppColors.textSecondary),
                             ),
                           ],
                         ),

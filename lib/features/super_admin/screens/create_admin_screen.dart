@@ -1,10 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/super_admin_service.dart';
@@ -57,10 +56,10 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
               // Glass AppBar
               SliverAppBar(
                 pinned: true,
-                backgroundColor: LuxuryTheme.midnightBlue.withOpacity(0.8),
+                backgroundColor: LuxuryTheme.midnightBlue.withValues(alpha: 0.8),
                 title: Text(
                   'สร้าง Admin ใหม่',
-                  style: GoogleFonts.outfit(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     fontSize: 22,
@@ -75,7 +74,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                     border: Border.all(color: LuxuryTheme.glassBorder),
                   ),
                   child: IconButton(
-                    icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
+                    icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white, size: 20),
                     onPressed: () => context.pop(),
                   ),
                 ),
@@ -96,21 +95,20 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: LuxuryTheme.cyanNeon.withOpacity(0.08),
+                                color: LuxuryTheme.cyanNeon.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: LuxuryTheme.cyanNeon.withOpacity(0.3)),
+                                border: Border.all(color: LuxuryTheme.cyanNeon.withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
-                                  const HeroIcon(
-                                    HeroIcons.informationCircle,
-                                    color: LuxuryTheme.cyanNeon,
-                                  ),
+                                  const Icon(
+                                    PhosphorIconsRegular.info,
+                                    color: LuxuryTheme.cyanNeon),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       'สร้าง Admin ใหม่สำหรับระบบ\nPIN จะถูกตั้งค่าให้อัตโนมัติ',
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         color: LuxuryTheme.cyanNeon,
                                       ),
@@ -126,10 +124,10 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // Phone
                         FormBuilderTextField(
                           name: 'phone',
-                          decoration: _inputDecoration('เบอร์โทรศัพท์', HeroIcons.phone),
+                          decoration: _inputDecoration('เบอร์โทรศัพท์', PhosphorIconsRegular.phone),
                           keyboardType: TextInputType.phone,
                           cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                           validator: FormBuilderValidators.compose([
                             FormBuilderValidators.required(
                               errorText: 'กรุณากรอกเบอร์โทรศัพท์',
@@ -145,9 +143,9 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // First Name
                         FormBuilderTextField(
                           name: 'firstName',
-                          decoration: _inputDecoration('ชื่อ', HeroIcons.user),
+                          decoration: _inputDecoration('ชื่อ', PhosphorIconsRegular.user),
                           cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                           validator: FormBuilderValidators.required(
                             errorText: 'กรุณากรอกชื่อ',
                           ),
@@ -157,9 +155,9 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // Last Name
                         FormBuilderTextField(
                           name: 'lastName',
-                          decoration: _inputDecoration('นามสกุล', HeroIcons.user),
+                          decoration: _inputDecoration('นามสกุล', PhosphorIconsRegular.user),
                           cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                           validator: FormBuilderValidators.required(
                             errorText: 'กรุณากรอกนามสกุล',
                           ),
@@ -169,9 +167,9 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // Job
                         FormBuilderTextField(
                           name: 'job',
-                          decoration: _inputDecoration('ตำแหน่งงาน', HeroIcons.briefcase),
+                          decoration: _inputDecoration('ตำแหน่งงาน', PhosphorIconsRegular.briefcase),
                           cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                           validator: FormBuilderValidators.required(
                             errorText: 'กรุณากรอกตำแหน่งงาน',
                           ),
@@ -181,7 +179,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // Location Section
                         Text(
                           'พื้นที่ที่รับผิดชอบ',
-                          style: GoogleFonts.outfit(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -190,7 +188,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Admin จะเห็นเฉพาะ Users ในพื้นที่ที่เลือก',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: LuxuryTheme.textSecondary,
                           ),
@@ -211,7 +209,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                         // Birthday Section
                         Text(
                           'วันเกิด (ใช้เป็นรหัสผ่าน)',
-                          style: GoogleFonts.outfit(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -227,13 +225,13 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                           controller: _pinController,
                           decoration: _inputDecoration(
                             'PIN (4-8 หลัก)',
-                            HeroIcons.lockClosed,
+                            PhosphorIconsRegular.lockKey,
                           ),
                           keyboardType: TextInputType.number,
                           maxLength: 8,
                           obscureText: true,
                           cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                           validator: FormBuilderValidators.compose([
                             FormBuilderValidators.required(errorText: 'กรุณากรอก PIN'),
                             FormBuilderValidators.match(
@@ -271,10 +269,10 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const HeroIcon(HeroIcons.plus, size: 20),
+                                  : const Icon(PhosphorIconsRegular.plus, size: 20),
                               label: Text(
                                 _isLoading ? 'กำลังสร้าง...' : 'สร้าง Admin',
-                                style: GoogleFonts.outfit(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -323,7 +321,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 12,
             color: LuxuryTheme.textSecondary,
           ),
@@ -334,14 +332,14 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
           cursorColor: LuxuryTheme.cyanNeon,
-          style: GoogleFonts.outfit(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.prompt(color: LuxuryTheme.textDisabled),
+            hintStyle: TextStyle(color: LuxuryTheme.textDisabled),
             filled: true,
             fillColor: const Color(0xFF1E2A4A),
             contentPadding: const EdgeInsets.symmetric(
@@ -366,21 +364,19 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, HeroIcons icon) {
+  InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.prompt(color: LuxuryTheme.textSecondary),
+      labelStyle: TextStyle(color: LuxuryTheme.textSecondary),
       prefixIcon: Padding(
         padding: const EdgeInsets.all(12),
-        child: HeroIcon(
+        child: Icon(
           icon,
-          style: HeroIconStyle.outline,
-          color: LuxuryTheme.cyanNeon,
-        ),
+          color: LuxuryTheme.cyanNeon),
       ),
       filled: true,
       fillColor: const Color(0xFF1E2A4A),
-      counterStyle: GoogleFonts.outfit(color: LuxuryTheme.textDisabled),
+      counterStyle: TextStyle(color: LuxuryTheme.textDisabled),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -402,7 +398,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
-      errorStyle: GoogleFonts.prompt(color: AppColors.error, fontSize: 12),
+      errorStyle: TextStyle(color: AppColors.error, fontSize: 12),
     );
   }
 
@@ -433,7 +429,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
     if (day.isEmpty || month.isEmpty || year.isEmpty) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('กรุณากรอกวันเกิดให้ครบ', style: GoogleFonts.prompt()),
+          content: Text('กรุณากรอกวันเกิดให้ครบ', style: const TextStyle()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -467,7 +463,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
 
       messenger.showSnackBar(
         SnackBar(
-          content: Text('สร้าง Admin สำเร็จ', style: GoogleFonts.prompt(color: Colors.white)),
+          content: Text('สร้าง Admin สำเร็จ', style: TextStyle(color: Colors.white)),
           backgroundColor: AppColors.success,
         ),
       );
@@ -484,7 +480,7 @@ class _CreateAdminScreenState extends State<CreateAdminScreen> {
         SnackBar(
           content: Text(
             e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),

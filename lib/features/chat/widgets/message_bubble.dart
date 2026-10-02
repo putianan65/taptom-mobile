@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/chat_message.dart';
 
@@ -49,19 +48,17 @@ class MessageBubble extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: HeroIcon(
-                        HeroIcons.sparkles,
-                        style: HeroIconStyle.solid,
+                      child: Icon(
+                        PhosphorIconsFill.sparkle,
                         color: Colors.white,
-                        size: 16,
-                      ),
+                        size: 16),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -81,7 +78,7 @@ class MessageBubble extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -98,7 +95,7 @@ class MessageBubble extends StatelessWidget {
                                 width: 200,
                                 height: 100,
                                 color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image),
+                                child: const Icon(PhosphorIconsRegular.imageBroken),
                               ),
                             ),
                           ),
@@ -137,8 +134,8 @@ class MessageBubble extends StatelessWidget {
                           boxShadow: [
                             BoxShadow(
                               color: message.isUser
-                                  ? AppColors.primary.withOpacity(0.3)
-                                  : Colors.black.withOpacity(0.08),
+                                  ? AppColors.primary.withValues(alpha: 0.3)
+                                  : Colors.black.withValues(alpha: 0.08),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -146,7 +143,7 @@ class MessageBubble extends StatelessWidget {
                         ),
                         child: Text(
                           message.content,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 15,
                             color: message.isUser
                                 ? Colors.white
@@ -170,7 +167,7 @@ class MessageBubble extends StatelessWidget {
               ),
               child: Text(
                 _formatTime(message.timestamp),
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 10,
                   color: Colors.grey[400],
                 ),
@@ -204,12 +201,10 @@ class MessageBubble extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: HeroIcon(
-                  HeroIcons.sparkles,
-                  style: HeroIconStyle.solid,
+                child: Icon(
+                  PhosphorIconsFill.sparkle,
                   color: Colors.white,
-                  size: 16,
-                ),
+                  size: 16),
               ),
             ),
             const SizedBox(width: 8),
@@ -222,7 +217,7 @@ class MessageBubble extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -301,7 +296,7 @@ class _TypingDotState extends State<_TypingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
+            color: AppColors.primary.withValues(alpha: 
               0.3 + (0.7 * _animation.value),
             ),
             shape: BoxShape.circle,

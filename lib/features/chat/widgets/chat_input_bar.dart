@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 
 /// Enhanced input bar widget with glassmorphic design
@@ -69,7 +68,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -91,12 +90,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                   gradient: LinearGradient(
                     colors: [
                       AppColors.background,
-                      AppColors.background.withOpacity(0.8),
+                      AppColors.background.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -106,7 +105,7 @@ class _ChatInputBarState extends State<ChatInputBar>
 
                     // Image Picker Button
                     _buildCircleButton(
-                      icon: HeroIcons.photo,
+                      icon: PhosphorIconsRegular.image,
                       onPressed: widget.isLoading ? null : widget.onImagePick,
                       size: 36,
                     ),
@@ -137,7 +136,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                           controller: widget.controller,
                           focusNode: widget.focusNode,
                           enabled: !widget.isLoading && !widget.isRecording,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 15,
                             color: AppColors.textMain,
                           ),
@@ -145,7 +144,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                             hintText: widget.isRecording
                                 ? '🎤 กำลังฟัง...'
                                 : 'พิมพ์ข้อความ...',
-                            hintStyle: GoogleFonts.prompt(
+                            hintStyle: TextStyle(
                               color: Colors.grey[400],
                             ),
                             border: InputBorder.none,
@@ -174,7 +173,7 @@ class _ChatInputBarState extends State<ChatInputBar>
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Powered by Gemini AI ✨',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 10,
                     color: Colors.grey[400],
                   ),
@@ -197,7 +196,7 @@ class _ChatInputBarState extends State<ChatInputBar>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -227,12 +226,12 @@ class _ChatInputBarState extends State<ChatInputBar>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withValues(alpha: 0.3),
                       blurRadius: 4,
                     ),
                   ],
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
+                child: const Icon(PhosphorIconsRegular.x, color: Colors.white, size: 14),
               ),
             ),
           ),
@@ -242,7 +241,7 @@ class _ChatInputBarState extends State<ChatInputBar>
   }
 
   Widget _buildCircleButton({
-    required HeroIcons icon,
+    required IconData icon,
     required VoidCallback? onPressed,
     double size = 40,
   }) {
@@ -256,12 +255,10 @@ class _ChatInputBarState extends State<ChatInputBar>
           height: size,
           decoration: const BoxDecoration(shape: BoxShape.circle),
           child: Center(
-            child: HeroIcon(
+            child: Icon(
               icon,
-              style: HeroIconStyle.outline,
               color: onPressed == null ? Colors.grey[300] : AppColors.primary,
-              size: 22,
-            ),
+              size: 22),
           ),
         ),
       ),
@@ -280,8 +277,8 @@ class _ChatInputBarState extends State<ChatInputBar>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.red.withOpacity(0.8 + (_pulseController.value * 0.2)),
-                  Colors.red[700]!.withOpacity(
+                  Colors.red.withValues(alpha: 0.8 + (_pulseController.value * 0.2)),
+                  Colors.red[700]!.withValues(alpha: 
                     0.8 + (_pulseController.value * 0.2),
                   ),
                 ],
@@ -289,7 +286,7 @@ class _ChatInputBarState extends State<ChatInputBar>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(
+                  color: Colors.red.withValues(alpha: 
                     0.3 + (_pulseController.value * 0.2),
                   ),
                   blurRadius: 8 + (_pulseController.value * 4),
@@ -302,12 +299,10 @@ class _ChatInputBarState extends State<ChatInputBar>
                 onTap: widget.onVoiceStop,
                 borderRadius: BorderRadius.circular(18),
                 child: const Center(
-                  child: HeroIcon(
-                    HeroIcons.microphone,
-                    style: HeroIconStyle.solid,
+                  child: Icon(
+                    PhosphorIconsFill.microphone,
                     color: Colors.white,
-                    size: 18,
-                  ),
+                    size: 18),
                 ),
               ),
             ),
@@ -317,7 +312,7 @@ class _ChatInputBarState extends State<ChatInputBar>
     }
 
     return _buildCircleButton(
-      icon: HeroIcons.microphone,
+      icon: PhosphorIconsRegular.microphone,
       onPressed: widget.isLoading ? null : widget.onVoiceStart,
       size: 36,
     );
@@ -345,7 +340,7 @@ class _ChatInputBarState extends State<ChatInputBar>
         boxShadow: canSend && !widget.isLoading
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
+                  color: AppColors.primary.withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -369,12 +364,10 @@ class _ChatInputBarState extends State<ChatInputBar>
                   )
                 : Transform.rotate(
                     angle: -0.4, // Slight rotation for style
-                    child: HeroIcon(
-                      HeroIcons.paperAirplane,
-                      style: HeroIconStyle.solid,
+                    child: Icon(
+                      PhosphorIconsFill.paperPlaneTilt,
                       color: canSend ? Colors.white : Colors.grey[400],
-                      size: 20,
-                    ),
+                      size: 20),
                   ),
           ),
         ),

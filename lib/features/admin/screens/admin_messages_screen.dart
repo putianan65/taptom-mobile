@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/message_model.dart';
@@ -56,12 +55,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             title: Text(
               'ข้อความสนทนา', 
               style: isSuperAdmin 
-                  ? GoogleFonts.outfit(
+                  ? TextStyle(
                       color: Colors.white, 
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
                     )
-                  : GoogleFonts.prompt(
+                  : TextStyle(
                       color: Colors.black, 
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
@@ -82,12 +81,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                       border: Border.all(color: LuxuryTheme.glassBorder),
                     ),
                     child: IconButton(
-                      icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
+                      icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white, size: 20),
                       onPressed: () => context.pop(),
                     ),
                   )
                 : IconButton(
-                    icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.black),
+                    icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.black),
                     onPressed: () => context.pop(),
                   ),
           ),
@@ -106,15 +105,14 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                       HeroIcon(
-                         HeroIcons.exclamationCircle, 
+                       Icon(
+                         PhosphorIconsRegular.warningCircle, 
                          color: AppColors.error, 
-                         size: 48,
-                       ),
+                         size: 48),
                        const SizedBox(height: 16),
                        Text(
                          'เกิดข้อผิดพลาด: ${provider.error}', 
-                         style: GoogleFonts.prompt(
+                         style: TextStyle(
                            color: isSuperAdmin ? Colors.white70 : Colors.grey[700],
                          ),
                        ),
@@ -139,16 +137,15 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      HeroIcon(
-                        HeroIcons.chatBubbleLeftRight, 
+                      Icon(
+                        PhosphorIconsRegular.chatsCircle, 
                         size: 64, 
-                        color: (isSuperAdmin ? Colors.white : Colors.grey).withOpacity(0.3),
-                      ),
+                        color: (isSuperAdmin ? Colors.white : Colors.grey).withValues(alpha: 0.3)),
                       const SizedBox(height: 16),
                       Text(
                         'ยังไม่มีการสนทนา',
-                        style: GoogleFonts.prompt(
-                          color: (isSuperAdmin ? Colors.white : Colors.black).withOpacity(0.5), 
+                        style: TextStyle(
+                          color: (isSuperAdmin ? Colors.white : Colors.black).withValues(alpha: 0.5), 
                           fontSize: 16,
                         ),
                       ),
@@ -195,7 +192,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
               borderRadius: BorderRadius.circular(30),
               boxShadow: isSuperAdmin ? [] : [
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.3),
+                  color: primaryColor.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -210,16 +207,16 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
               },
               backgroundColor: primaryColor,
               elevation: 0,
-              icon: const HeroIcon(HeroIcons.pencilSquare, color: Colors.white),
+              icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
               label: Text(
                 'เริ่มสนทนาใหม่', 
                 style: isSuperAdmin 
-                    ? GoogleFonts.outfit(
+                    ? TextStyle(
                         color: Colors.white, 
                         fontWeight: FontWeight.bold,
                         fontSize: 16
                       )
-                    : GoogleFonts.prompt(
+                    : TextStyle(
                         color: Colors.white, 
                         fontWeight: FontWeight.bold,
                         fontSize: 16
@@ -255,13 +252,13 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             width: isUnread ? 1.5 : 1,
           )
         : Border.all(
-            color: isUnread ? primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.2),
+            color: isUnread ? primaryColor.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.2),
             width: isUnread ? 1.5 : 1,
           );
 
     final shadow = isSuperAdmin ? <BoxShadow>[] : [
       BoxShadow(
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withValues(alpha: 0.05),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
@@ -292,13 +289,13 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   height: 50,
                   decoration: BoxDecoration(
                     color: isSuperAdmin 
-                        ? LuxuryTheme.purpleNeon.withOpacity(0.1)
-                        : primaryColor.withOpacity(0.1),
+                        ? LuxuryTheme.purpleNeon.withValues(alpha: 0.1)
+                        : primaryColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isSuperAdmin 
-                          ? LuxuryTheme.purpleNeon.withOpacity(0.3)
-                          : primaryColor.withOpacity(0.3)
+                          ? LuxuryTheme.purpleNeon.withValues(alpha: 0.3)
+                          : primaryColor.withValues(alpha: 0.3)
                     ),
                     image: (partner.photoUrl != null && partner.photoUrl!.isNotEmpty)
                         ? DecorationImage(
@@ -312,12 +309,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                           child: Text(
                             partner.firstName.isNotEmpty ? partner.firstName[0] : '?',
                             style: isSuperAdmin 
-                                ? GoogleFonts.outfit(
+                                ? TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: LuxuryTheme.purpleNeon,
                                   )
-                                : GoogleFonts.prompt(
+                                : TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: primaryColor,
@@ -338,12 +335,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                             child: Text(
                               partner.fullName,
                               style: isSuperAdmin 
-                                  ? GoogleFonts.outfit(
+                                  ? TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                       color: textColor,
                                     )
-                                  : GoogleFonts.prompt(
+                                  : TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                       color: textColor,
@@ -355,11 +352,11 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                           Text(
                             _formatDate(lastMsg.createdAt),
                             style: isSuperAdmin
-                                ? GoogleFonts.outfit(
+                                ? TextStyle(
                                     fontSize: 12,
                                     color: subTextColor,
                                   )
-                                : GoogleFonts.prompt(
+                                : TextStyle(
                                     fontSize: 12,
                                     color: subTextColor,
                                   ),
@@ -373,11 +370,11 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                             Text(
                               'คุณ: ',
                               style: isSuperAdmin
-                                  ? GoogleFonts.outfit(
+                                  ? TextStyle(
                                       fontSize: 14,
                                       color: subTextColor,
                                     )
-                                  : GoogleFonts.prompt(
+                                  : TextStyle(
                                       fontSize: 14,
                                       color: subTextColor,
                                     ),
@@ -386,12 +383,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                             child: Text(
                               lastMsg.message,
                               style: isSuperAdmin
-                                  ? GoogleFonts.outfit(
+                                  ? TextStyle(
                                       fontSize: 14,
                                       color: isUnread ? Colors.white : subTextColor,
                                       fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
                                     )
-                                  : GoogleFonts.prompt(
+                                  : TextStyle(
                                       fontSize: 14,
                                       color: isUnread ? Colors.black87 : subTextColor,
                                       fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
@@ -415,7 +412,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: (isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.error).withOpacity(0.4),
+                          color: (isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.error).withValues(alpha: 0.4),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         )
@@ -424,7 +421,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                     child: Center(
                       child: Text(
                         unreadCount > 99 ? '99+' : unreadCount.toString(),
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,

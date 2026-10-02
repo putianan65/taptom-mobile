@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
@@ -246,9 +245,9 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.cloud_done, color: Colors.white),
+            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
             const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: GoogleFonts.prompt()),
+            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
           ],
         ),
         backgroundColor: Colors.orange,
@@ -267,7 +266,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
     if (_trainingDate == null) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('กรุณาเลือกวันที่อบรม', style: GoogleFonts.prompt()),
+          content: Text('กรุณาเลือกวันที่อบรม', style: const TextStyle()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -280,7 +279,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'วันที่อบรมไม่สามารถเป็นวันในอนาคต',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -295,7 +294,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'กรุณาระบุหัวข้อการอบรม (อย่างน้อย 5 ตัวอักษร)',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -310,7 +309,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'กรุณาระบุชื่อวิทยากร (อย่างน้อย 3 ตัวอักษร)',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -325,7 +324,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'กรุณาระบุจำนวนผู้เข้าร่วม',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -339,7 +338,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'จำนวนผู้เข้าร่วมต้องเป็นจำนวนเต็มบวก',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -352,7 +351,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
         SnackBar(
           content: Text(
             'จำนวนผู้เข้าร่วมเกิน 1,000 คน กรุณาตรวจสอบ',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -429,7 +428,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
           SnackBar(
             content: Text(
               ErrorUtils.getReadableError(e),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.red,
           ),
@@ -467,7 +466,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
     return GapFormWrapper(
       title: '6. สุขลักษณะและความปลอดภัย',
       subtitle: 'การอบรมและสวัสดิภาพผู้ปฏิบัติงาน',
-      headerIcon: HeroIcons.shieldCheck,
+      headerIcon: PhosphorIconsRegular.shieldCheck,
       headerColor: Colors.pink,
       onSave: _saveToApi,
       onSaveDraft: _saveDraft,
@@ -479,7 +478,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
           const FormInfoCard(
             message:
                 'บันทึกประวัติการอบรม และการจัดสวัสดิการเพื่อความปลอดภัยของผู้ปฏิบัติงาน',
-            icon: HeroIcons.lightBulb,
+            icon: PhosphorIconsRegular.lightbulb,
             color: Colors.pink,
           ),
 
@@ -487,13 +486,13 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
           FormSectionCard(
             title: 'สวัสดิการและความปลอดภัยในแปลง',
             example: 'เลือกรายการที่มี (ถ้ามี)',
-            icon: HeroIcons.heart,
+            icon: PhosphorIconsRegular.heart,
             iconColor: Colors.red,
             child: Column(
               children: [
                 CheckboxOptionCard(
                   label: 'มีชุดปฐมพยาบาลเบื้องต้น',
-                  icon: HeroIcons.plusCircle,
+                  icon: PhosphorIconsRegular.plusCircle,
                   isSelected: _hasFirstAid,
                   onTap: () => setState(() {
                      _hasFirstAid = !_hasFirstAid;
@@ -503,7 +502,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                 const SizedBox(height: 8),
                 CheckboxOptionCard(
                   label: 'มีอุปกรณ์ป้องกัน (ถุงมือ/รองเท้าบูท)',
-                  icon: HeroIcons.shieldCheck,
+                  icon: PhosphorIconsRegular.shieldCheck,
                   isSelected: _hasProtectiveGear,
                   onTap: () =>
                       setState(() {
@@ -514,7 +513,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                 const SizedBox(height: 8),
                 CheckboxOptionCard(
                   label: 'มีห้องน้ำถูกสุขลักษณะ',
-                  icon: HeroIcons.home,
+                  icon: PhosphorIconsRegular.house,
                   isSelected: _hasToilet,
                   onTap: () => setState(() {
                     _hasToilet = !_hasToilet;
@@ -524,7 +523,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                 const SizedBox(height: 8),
                 CheckboxOptionCard(
                   label: 'มีจุดล้างมือ/ชำระล้างร่างกาย',
-                  icon: HeroIcons.sparkles,
+                  icon: PhosphorIconsRegular.sparkle,
                   isSelected: _hasWashingStation,
                   onTap: () =>
                       setState(() {
@@ -540,7 +539,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
           FormSectionCard(
             title: 'บันทึกการอบรม',
             example: 'บันทึกหัวข้อที่ได้รับการอบรม',
-            icon: HeroIcons.academicCap,
+            icon: PhosphorIconsRegular.graduationCap,
             iconColor: Colors.blue,
             child: Column(
               children: [
@@ -557,26 +556,24 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                     ),
                     child: Row(
                       children: [
-                        const HeroIcon(
-                          HeroIcons.calendarDays,
+                        const Icon(
+                          PhosphorIconsRegular.calendarDots,
                           color: Colors.grey,
-                          size: 20,
-                        ),
+                          size: 20),
                         const SizedBox(width: 10),
                         Text(
                           _formatDate(_trainingDate),
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             color: _trainingDate != null
                                 ? Colors.black
                                 : Colors.grey,
                           ),
                         ),
                         const Spacer(),
-                        const HeroIcon(
-                          HeroIcons.chevronRight,
+                        const Icon(
+                          PhosphorIconsRegular.caretRight,
                           color: Colors.grey,
-                          size: 16,
-                        ),
+                          size: 16),
                       ],
                     ),
                   ),
@@ -589,7 +586,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                   value: _topicController.text,
                   onChanged: (val) =>
                       setState(() => _topicController.text = val),
-                  icon: HeroIcons.bookOpen,
+                  icon: PhosphorIconsRegular.bookOpen,
                 ),
                 const SizedBox(height: 12),
                 // วิทยากร/หน่วยงาน
@@ -600,7 +597,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                   value: _trainerController.text,
                   onChanged: (val) =>
                       setState(() => _trainerController.text = val),
-                  icon: HeroIcons.userGroup,
+                  icon: PhosphorIconsRegular.usersThree,
                 ),
                 const SizedBox(height: 12),
                 // ผู้เข้าร่วม
@@ -610,9 +607,9 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                   maxLength: 4,
                   decoration: InputDecoration(
                     hintText: 'จำนวนคน (ตัวเลข)',
-                    hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                    hintStyle: TextStyle(color: Colors.grey),
                     labelText: 'จำนวนผู้เข้าร่วมอบรม *',
-                    labelStyle: GoogleFonts.prompt(color: Colors.grey[700]),
+                    labelStyle: TextStyle(color: Colors.grey[700]),
                     filled: true,
                     fillColor: Colors.grey.shade50,
                     border: OutlineInputBorder(
@@ -621,7 +618,7 @@ class _GapSafetyFormState extends State<GapSafetyForm> {
                     ),
                     counterText: '',
                   ),
-                  style: GoogleFonts.prompt(),
+                  style: const TextStyle(),
                 ),
               ],
             ),

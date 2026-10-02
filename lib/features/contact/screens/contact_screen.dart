@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
@@ -76,8 +75,8 @@ class _ContactScreenState extends State<ContactScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.3),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -96,7 +95,7 @@ class _ContactScreenState extends State<ContactScreen> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 blurRadius: 15,
                               ),
                             ],
@@ -107,11 +106,10 @@ class _ContactScreenState extends State<ContactScreen> {
                               'assets/images/Gistnu_new_logo.webp',
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Center(
-                                child: HeroIcon(
-                                  HeroIcons.buildingOffice2,
+                                child: Icon(
+                                  PhosphorIconsRegular.buildings,
                                   color: AppColors.primary,
-                                  size: 40,
-                                ),
+                                  size: 40),
                               ),
                             ),
                           ),
@@ -119,7 +117,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'ติดต่อเรา',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -147,17 +145,16 @@ class _ContactScreenState extends State<ContactScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                       ),
                     ],
                   ),
                   child: const Center(
-                    child: HeroIcon(
-                      HeroIcons.arrowLeft,
+                    child: Icon(
+                      PhosphorIconsRegular.arrowLeft,
                       color: Colors.black87,
-                      size: 20,
-                    ),
+                      size: 20),
                   ),
                 ),
               ),
@@ -185,7 +182,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       // About Section
                       Text(
                         'ศูนย์ภูมิสารสนเทศเพื่อการพัฒนาภาคเหนือตอนล่าง',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF1E293B),
@@ -194,7 +191,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'มหาวิทยาลัยนเรศวร',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
                         ),
@@ -204,7 +201,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
                       // Contact Cards
                       _buildContactCard(
-                        icon: HeroIcons.mapPin,
+                        icon: PhosphorIconsRegular.mapPin,
                         iconColor: Colors.red,
                         title: 'ที่อยู่',
                         content:
@@ -212,21 +209,21 @@ class _ContactScreenState extends State<ContactScreen> {
                         onTap: _launchMaps,
                       ),
                       _buildContactCard(
-                        icon: HeroIcons.phone,
+                        icon: PhosphorIconsRegular.phone,
                         iconColor: Colors.green,
                         title: 'โทรศัพท์',
                         content: '0-5596-8707',
                         onTap: () => _launchUrl('tel:055968707'),
                       ),
                       _buildContactCard(
-                        icon: HeroIcons.envelope,
+                        icon: PhosphorIconsRegular.envelopeSimple,
                         iconColor: Colors.blue,
                         title: 'อีเมล',
                         content: 'gistnu@nu.ac.th',
                         onTap: () => _launchUrl('mailto:gistnu@nu.ac.th'),
                       ),
                       _buildContactCard(
-                        icon: HeroIcons.globeAlt,
+                        icon: PhosphorIconsRegular.globe,
                         iconColor: Colors.purple,
                         title: 'เว็บไซต์',
                         content: 'www.gistnu.nu.ac.th',
@@ -238,15 +235,14 @@ class _ContactScreenState extends State<ContactScreen> {
                       // Map Section
                       Row(
                         children: [
-                          const HeroIcon(
-                            HeroIcons.map,
+                          const Icon(
+                            PhosphorIconsRegular.mapTrifold,
                             color: AppColors.primary,
-                            size: 22,
-                          ),
+                            size: 22),
                           const SizedBox(width: 8),
                           Text(
                             'แผนที่',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -263,7 +259,7 @@ class _ContactScreenState extends State<ContactScreen> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
                             ),
@@ -314,7 +310,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.15),
+                                          color: Colors.black.withValues(alpha: 0.15),
                                           blurRadius: 8,
                                         ),
                                       ],
@@ -322,15 +318,14 @@ class _ContactScreenState extends State<ContactScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const HeroIcon(
-                                          HeroIcons.arrowTopRightOnSquare,
+                                        const Icon(
+                                          PhosphorIconsRegular.arrowSquareOut,
                                           color: AppColors.primary,
-                                          size: 16,
-                                        ),
+                                          size: 16),
                                         const SizedBox(width: 6),
                                         Text(
                                           'เปิดแผนที่',
-                                          style: GoogleFonts.prompt(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.w600,
@@ -345,12 +340,10 @@ class _ContactScreenState extends State<ContactScreen> {
                               const Center(
                                 child: Padding(
                                   padding: EdgeInsets.only(bottom: 30),
-                                  child: HeroIcon(
-                                    HeroIcons.mapPin,
-                                    style: HeroIconStyle.solid,
+                                  child: Icon(
+                                    PhosphorIconsFill.mapPin,
                                     color: Colors.red,
-                                    size: 40,
-                                  ),
+                                    size: 40),
                                 ),
                               ),
                             ],
@@ -366,7 +359,7 @@ class _ContactScreenState extends State<ContactScreen> {
                           children: [
                             Text(
                               'ติดตามข่าวสาร',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
                               ),
@@ -376,7 +369,7 @@ class _ContactScreenState extends State<ContactScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _buildSocialButton(
-                                  icon: Icons.facebook,
+                                  icon: PhosphorIconsRegular.facebookLogo,
                                   color: const Color(0xFF1877F2),
                                   onTap: () => _launchUrl(
                                     'https://www.facebook.com/gistnu',
@@ -384,7 +377,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                 ),
                                 const SizedBox(width: 16),
                                 _buildSocialButton(
-                                  icon: Icons.language,
+                                  icon: PhosphorIconsRegular.translate,
                                   color: AppColors.primary,
                                   onTap: () => _launchUrl(
                                     'https://www.gistnu.nu.ac.th/',
@@ -409,7 +402,7 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   Widget _buildContactCard({
-    required HeroIcons icon,
+    required IconData icon,
     required Color iconColor,
     required String title,
     required String content,
@@ -421,7 +414,7 @@ class _ContactScreenState extends State<ContactScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.08),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
@@ -432,10 +425,10 @@ class _ContactScreenState extends State<ContactScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: HeroIcon(icon, color: iconColor, size: 22),
+                  child: Icon(icon, color: iconColor, size: 22),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -444,7 +437,7 @@ class _ContactScreenState extends State<ContactScreen> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[500],
                         ),
@@ -452,7 +445,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       const SizedBox(height: 2),
                       Text(
                         content,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF1E293B),
@@ -467,11 +460,10 @@ class _ContactScreenState extends State<ContactScreen> {
                     color: Colors.grey[100],
                     shape: BoxShape.circle,
                   ),
-                  child: HeroIcon(
-                    HeroIcons.chevronRight,
+                  child: Icon(
+                    PhosphorIconsRegular.caretRight,
                     color: Colors.grey[400],
-                    size: 16,
-                  ),
+                    size: 16),
                 ),
               ],
             ),
@@ -491,9 +483,9 @@ class _ContactScreenState extends State<ContactScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Icon(icon, color: color, size: 26),
       ),

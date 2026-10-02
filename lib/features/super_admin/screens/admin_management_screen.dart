@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/super_admin_service.dart';
@@ -58,7 +57,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
       context,
       title: 'ลบ Admin',
       content: 'คุณแน่ใจหรือไม่ที่จะลบ $adminName?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้',
-      icon: HeroIcons.trash,
+      icon: PhosphorIconsRegular.trash,
       accentColor: AppColors.error,
       confirmText: 'ลบข้อมูล',
       isDestructive: true,
@@ -74,7 +73,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ลบ Admin สำเร็จ', style: GoogleFonts.prompt()),
+          content: Text('ลบ Admin สำเร็จ', style: const TextStyle()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -87,7 +86,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         SnackBar(
           content: Text(
             e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -131,7 +130,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: LuxuryTheme.purpleNeon.withOpacity(0.4),
+                              color: LuxuryTheme.purpleNeon.withValues(alpha: 0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 6),
                             ),
@@ -143,15 +142,15 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const HeroIcon(HeroIcons.plus, color: Colors.white, size: 20),
+                              child: const Icon(PhosphorIconsRegular.plus, color: Colors.white, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'เพิ่ม Admin ใหม่',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -179,13 +178,13 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         child: Row(
           children: [
             _buildGlassIconButton(
-              icon: HeroIcons.arrowLeft,
+              icon: PhosphorIconsRegular.arrowLeft,
               onPressed: () => context.pop(),
             ),
             Expanded(
               child: Text(
                 'จัดการ Admin',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -205,7 +204,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Text(
         'จัดการ Admin',
-        style: GoogleFonts.prompt(
+        style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -215,7 +214,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
   }
 
   Widget _buildGlassIconButton({
-    required HeroIcons icon,
+    required IconData icon,
     required VoidCallback onPressed,
     Color color = Colors.white,
   }) {
@@ -228,7 +227,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: LuxuryTheme.glassBorder, width: 1),
         ),
-        child: HeroIcon(icon, color: color, size: 24),
+        child: Icon(icon, color: color, size: 24),
       ),
     );
   }
@@ -243,22 +242,21 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const HeroIcon(
-              HeroIcons.exclamationTriangle,
+            const Icon(
+              PhosphorIconsRegular.warning,
               size: 64,
-              color: AppColors.error,
-            ),
+              color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               _error!,
-              style: GoogleFonts.prompt(fontSize: 16, color: AppColors.error),
+              style: TextStyle(fontSize: 16, color: AppColors.error),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _loadAdmins,
-              icon: const HeroIcon(HeroIcons.arrowPath, size: 20),
-              label: Text('ลองใหม่', style: GoogleFonts.prompt()),
+              icon: const Icon(PhosphorIconsRegular.arrowsClockwise, size: 20),
+              label: Text('ลองใหม่', style: const TextStyle()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.superAdminPrimary,
                 foregroundColor: Colors.white,
@@ -274,15 +272,14 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HeroIcon(
-              HeroIcons.userGroup,
+            Icon(
+              PhosphorIconsRegular.usersThree,
               size: 64,
-              color: LuxuryTheme.textDisabled,
-            ),
+              color: LuxuryTheme.textDisabled),
             const SizedBox(height: 16),
             Text(
               'ยังไม่มี Admin',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 18,
                 color: LuxuryTheme.textSecondary,
               ),
@@ -350,12 +347,12 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.1),
+                        color: accentColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
-                        border: Border.all(color: accentColor.withOpacity(0.5)),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.5)),
                         boxShadow: [
                           BoxShadow(
-                            color: accentColor.withOpacity(0.2),
+                            color: accentColor.withValues(alpha: 0.2),
                             blurRadius: 10,
                             spreadRadius: 2,
                           )
@@ -364,7 +361,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                       child: Center(
                         child: Text(
                           firstName.isNotEmpty ? firstName[0].toUpperCase() : 'A',
-                          style: GoogleFonts.outfit(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: accentColor,
@@ -379,7 +376,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                         children: [
                           Text(
                             fullName,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -387,7 +384,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                           ),
                           Text(
                             phone,
-                            style: GoogleFonts.outfit(
+                            style: TextStyle(
                               fontSize: 14,
                               color: LuxuryTheme.textSecondary,
                             ),
@@ -395,14 +392,13 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                         ],
                       ),
                     ),
-                    HeroIcon(
-                      HeroIcons.chevronRight,
+                    Icon(
+                      PhosphorIconsRegular.caretRight,
                       size: 20,
-                      color: LuxuryTheme.textSecondary,
-                    ),
+                      color: LuxuryTheme.textSecondary),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const HeroIcon(HeroIcons.trash, color: Color(0xFFFF1744)),
+                      icon: const Icon(PhosphorIconsRegular.trash, color: Color(0xFFFF1744)),
                       onPressed: () => _deleteAdmin(id, fullName),
                     ),
                   ],
@@ -410,10 +406,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                  const SizedBox(height: 12),
                  Row(
                    children: [
-                      _buildTag(HeroIcons.users, '$managedUsersCount users', LuxuryTheme.purpleNeon),
+                      _buildTag(PhosphorIconsRegular.users, '$managedUsersCount users', LuxuryTheme.purpleNeon),
                       if(locationStr.isNotEmpty) ...[
                          const SizedBox(width: 8),
-                         _buildTag(HeroIcons.mapPin, locationStr, LuxuryTheme.goldNeon),
+                         _buildTag(PhosphorIconsRegular.mapPin, locationStr, LuxuryTheme.goldNeon),
                       ]
                    ],
                  )
@@ -425,22 +421,22 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
     );
   }
   
-  Widget _buildTag(HeroIcons icon, String text, Color color) {
+  Widget _buildTag(IconData icon, String text, Color color) {
      return Container(
        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
        decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
+         color: color.withValues(alpha: 0.1),
          borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
+         border: Border.all(color: color.withValues(alpha: 0.3)),
        ),
        child: Row(
          mainAxisSize: MainAxisSize.min,
          children: [
-           HeroIcon(icon, size: 14, color: color),
+           Icon(icon, size: 14, color: color),
            const SizedBox(width: 6),
            Text(
              text,
-              style: GoogleFonts.prompt(fontSize: 12, color: color, fontWeight: FontWeight.normal),
+              style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.normal),
            )
          ],
        ),

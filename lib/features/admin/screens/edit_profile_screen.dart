@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -190,7 +189,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       filled: true,
       fillColor: Colors.grey[50],
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      labelStyle: GoogleFonts.prompt(color: Colors.grey[700]),
+      labelStyle: TextStyle(color: Colors.grey[700]),
     );
   }
 
@@ -201,7 +200,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('แก้ไขข้อมูลส่วนตัว', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
+        title: Text('แก้ไขข้อมูลส่วนตัว', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -223,7 +222,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         border: Border.all(color: Colors.grey[200]!, width: 4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -238,12 +237,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Container(
                                       color: Colors.grey[200],
-                                      child: const Icon(Icons.person, size: 60, color: Colors.grey),
+                                      child: const Icon(PhosphorIconsRegular.user, size: 60, color: Colors.grey),
                                     ),
                                   )
                                 : Container(
                                     color: Colors.grey[200],
-                                    child: const Icon(Icons.person, size: 60, color: Colors.grey),
+                                    child: const Icon(PhosphorIconsRegular.user, size: 60, color: Colors.grey),
                                   ),
                       ),
                     ),
@@ -259,7 +258,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           customBorder: const CircleBorder(),
                           child: const Padding(
                             padding: EdgeInsets.all(8.0),
-                            child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                            child: Icon(PhosphorIconsRegular.camera, color: Colors.white, size: 20),
                           ),
                         ),
                       ),
@@ -275,18 +274,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _firstNameController,
-                      decoration: _buildInputDecoration('ชื่อ', Icons.person_outline),
+                      decoration: _buildInputDecoration('ชื่อ', PhosphorIconsRegular.user),
                       validator: (v) => v!.isEmpty ? 'กรุณาระบุชื่อ' : null,
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
                       controller: _lastNameController,
-                      decoration: _buildInputDecoration('นามสกุล', Icons.person_outline),
+                      decoration: _buildInputDecoration('นามสกุล', PhosphorIconsRegular.user),
                       validator: (v) => v!.isEmpty ? 'กรุณาระบุนามสกุล' : null,
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                     ),
                   ),
                 ],
@@ -297,7 +296,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 maxLength: 10,
-                decoration: _buildInputDecoration('เบอร์โทรศัพท์', Icons.phone).copyWith(counterText: ""),
+                decoration: _buildInputDecoration('เบอร์โทรศัพท์', PhosphorIconsRegular.phone).copyWith(counterText: ""),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'กรุณาระบุเบอร์โทรศัพท์';
                   if (!RegExp(r'^\d+$').hasMatch(v)) return 'เบอร์โทรศัพท์ต้องเป็นตัวเลขเท่านั้น';
@@ -305,15 +304,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   if (!v.startsWith('0')) return 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0';
                   return null;
                 },
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: _jobController, // Occupation
-                decoration: _buildInputDecoration('อาชีพ', Icons.work_outline),
+                decoration: _buildInputDecoration('อาชีพ', PhosphorIconsRegular.briefcase),
                  // check prompt: "occupation" -> mapped to job
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
               const SizedBox(height: 16),
 
@@ -322,12 +321,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onTap: () => _selectDate(context),
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
-                  decoration: _buildInputDecoration('วันเกิด', Icons.calendar_today),
+                  decoration: _buildInputDecoration('วันเกิด', PhosphorIconsRegular.calendarBlank),
                   child: Text(
                     _selectedDate != null
                         ? DateFormat('d MMMM yyyy', 'th').format(_selectedDate!)
                         : 'เลือกวันเกิด',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       color: _selectedDate != null ? Colors.black87 : Colors.grey[600],
                     ),
                   ),
@@ -366,7 +365,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 4,
-                    shadowColor: AppColors.primary.withOpacity(0.3),
+                    shadowColor: AppColors.primary.withValues(alpha: 0.3),
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -376,7 +375,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         )
                       : Text(
                           'บันทึกการแก้ไข',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

@@ -91,8 +91,8 @@ class NatureBackground extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.4),
-                  Colors.black.withOpacity(0.6),
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withValues(alpha: 0.6),
                 ],
               ),
             ),
@@ -127,8 +127,8 @@ class NatureCurvesPainter extends CustomPainter {
       canvas,
       size,
       color: isDark
-          ? Colors.white.withOpacity(0.03)
-          : AppColors.primaryLight.withOpacity(0.1),
+          ? Colors.white.withValues(alpha: 0.03)
+          : AppColors.primaryLight.withValues(alpha: 0.1),
       heightFactor: 0.35,
       curvatureCheck: true,
     );
@@ -138,8 +138,8 @@ class NatureCurvesPainter extends CustomPainter {
       canvas,
       size,
       color: isDark
-          ? Colors.white.withOpacity(0.05)
-          : AppColors.gradientStart.withOpacity(0.15),
+          ? Colors.white.withValues(alpha: 0.05)
+          : AppColors.gradientStart.withValues(alpha: 0.15),
       heightFactor: 0.55,
       curvatureCheck: false,
     );
@@ -149,8 +149,8 @@ class NatureCurvesPainter extends CustomPainter {
       canvas,
       size,
       color: isDark
-          ? AppColors.primary.withOpacity(0.1) // Keep a bit of green identity
-          : AppColors.primary.withOpacity(0.05),
+          ? AppColors.primary.withValues(alpha: 0.1) // Keep a bit of green identity
+          : AppColors.primary.withValues(alpha: 0.05),
     );
   }
 
@@ -158,7 +158,7 @@ class NatureCurvesPainter extends CustomPainter {
     // Draw subtle curves ONLY in the top area to add texture to the deep green header
 
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
     // Bubble/Circle 1
@@ -181,7 +181,7 @@ class NatureCurvesPainter extends CustomPainter {
     path.lineTo(0, 0);
     path.close();
 
-    canvas.drawPath(path, paint..color = Colors.white.withOpacity(0.03));
+    canvas.drawPath(path, paint..color = Colors.white.withValues(alpha: 0.03));
   }
 
   void _drawCurve(

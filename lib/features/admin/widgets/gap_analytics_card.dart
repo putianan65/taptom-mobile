@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/analytics_model.dart';
 
@@ -25,7 +24,7 @@ class GapAnalyticsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -36,7 +35,7 @@ class GapAnalyticsCard extends StatelessWidget {
         children: [
           Text(
             'ภาพรวม GAP',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -57,7 +56,7 @@ class GapAnalyticsCard extends StatelessWidget {
                         value: data.plotsWithGap.toDouble(),
                         title: '${percentage.toStringAsFixed(0)}%',
                         radius: 50,
-                        titleStyle: GoogleFonts.prompt(
+                        titleStyle: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -78,14 +77,14 @@ class GapAnalyticsCard extends StatelessWidget {
                     children: [
                       Text(
                         'ทั้งหมด',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         '${data.totalPlots}',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -132,7 +131,7 @@ class GapAnalyticsCard extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 14,
             color: AppColors.textSecondary,
           ),
@@ -140,7 +139,7 @@ class GapAnalyticsCard extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,

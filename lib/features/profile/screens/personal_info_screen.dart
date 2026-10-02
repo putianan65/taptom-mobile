@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:image_picker/image_picker.dart'; // NEW
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -192,16 +191,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       SnackBar(
         content: Row(
           children: [
-            const HeroIcon(
-              HeroIcons.checkCircle,
+            const Icon(
+              PhosphorIconsRegular.checkCircle,
               color: Colors.white,
-              size: 20,
-            ),
+              size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -219,16 +217,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       SnackBar(
         content: Row(
           children: [
-            const HeroIcon(
-              HeroIcons.exclamationCircle,
+            const Icon(
+              PhosphorIconsRegular.warningCircle,
               color: Colors.white,
-              size: 20,
-            ),
+              size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -290,11 +287,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('ข้อมูลส่วนตัว', style: GoogleFonts.prompt()),
+          title: Text('ข้อมูลส่วนตัว', style: const TextStyle()),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: _isLoading ? null : () => Navigator.pop(context),
           ),
         ),
@@ -322,9 +319,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       controller: _nameController,
                       decoration: _inputDecoration(
                         hint: 'กรอกชื่อจริง',
-                        icon: HeroIcons.user,
+                        icon: PhosphorIconsRegular.user,
                       ),
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                       validator: _validateName,
                       enabled: !_isLoading,
                       textInputAction: TextInputAction.next,
@@ -336,9 +333,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       controller: _lastNameController,
                       decoration: _inputDecoration(
                         hint: 'กรอกนามสกุล',
-                        icon: HeroIcons.user,
+                        icon: PhosphorIconsRegular.user,
                       ),
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                       validator: _validateLastName,
                       enabled: !_isLoading,
                       textInputAction: TextInputAction.next,
@@ -350,10 +347,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       controller: _phoneController,
                       decoration: _inputDecoration(
                         hint: '0XX-XXX-XXXX',
-                        icon: HeroIcons.phone,
+                        icon: PhosphorIconsRegular.phone,
                       ),
                       keyboardType: TextInputType.phone,
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                       validator: _validatePhone,
                       enabled: !_isLoading,
                       textInputAction: TextInputAction.next,
@@ -369,9 +366,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       controller: _jobController,
                       decoration: _inputDecoration(
                         hint: 'กรอกอาชีพ (ถ้ามี)',
-                        icon: HeroIcons.briefcase,
+                        icon: PhosphorIconsRegular.briefcase,
                       ),
-                      style: GoogleFonts.prompt(),
+                      style: const TextStyle(),
                       enabled: !_isLoading,
                       textInputAction: TextInputAction.done,
                     ),
@@ -403,7 +400,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           disabledBackgroundColor: AppColors.primary
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -424,7 +421,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                   const SizedBox(width: 12),
                                   Text(
                                     'กำลังบันทึก...',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -435,15 +432,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const HeroIcon(
-                                    HeroIcons.checkCircle,
+                                  const Icon(
+                                    PhosphorIconsRegular.checkCircle,
                                     color: Colors.white,
-                                    size: 20,
-                                  ),
+                                    size: 20),
                                   const SizedBox(width: 8),
                                   Text(
                                     'บันทึกข้อมูล',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -477,12 +473,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             color: Theme.of(context).cardColor,
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -503,7 +499,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                          final initial = auth.user?.firstName.substring(0, 1) ?? 'U';
                          return Text(
                            initial,
-                           style: GoogleFonts.prompt(
+                           style: TextStyle(
                              fontSize: 40,
                              fontWeight: FontWeight.bold,
                              color: AppColors.primary,
@@ -517,7 +513,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 final initial = auth.user?.firstName.substring(0, 1) ?? 'U';
                 return Text(
                   initial,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
@@ -540,7 +536,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -552,11 +548,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     height: 16, 
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                   )
-                : const HeroIcon(
-                    HeroIcons.camera,
+                : const Icon(
+                    PhosphorIconsRegular.camera,
                     color: Colors.white,
-                    size: 16,
-                  ),
+                    size: 16),
             ),
           ),
         ),
@@ -571,7 +566,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: Theme.of(context).textTheme.bodyLarge?.color,
@@ -581,7 +576,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             const SizedBox(width: 4),
             Text(
               '*',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: AppColors.error,
@@ -595,23 +590,22 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   InputDecoration _inputDecoration({
     required String hint,
-    required HeroIcons icon,
+    required IconData icon,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.prompt(
+      hintStyle: TextStyle(
         color: isDark ? Colors.grey[400] : Colors.grey[500],
       ),
       filled: true,
       fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
       prefixIcon: Padding(
         padding: const EdgeInsets.all(12),
-        child: HeroIcon(
+        child: Icon(
           icon,
           size: 20,
-          color: isDark ? Colors.grey[400] : Colors.grey[600],
-        ),
+          color: isDark ? Colors.grey[400] : Colors.grey[600]),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -637,7 +631,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         borderSide: BorderSide(color: AppColors.error, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      errorStyle: GoogleFonts.prompt(fontSize: 12),
+      errorStyle: TextStyle(fontSize: 12),
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -93,14 +92,14 @@ class UserDetailSheet extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [_getAvatarColor(), _getAvatarColor().withOpacity(0.7)],
+                colors: [_getAvatarColor(), _getAvatarColor().withValues(alpha: 0.7)],
               ),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -111,7 +110,7 @@ class UserDetailSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             user.fullName,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -123,13 +122,13 @@ class UserDetailSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   statusText,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: statusColor,
                     fontWeight: FontWeight.w600,
@@ -145,7 +144,7 @@ class UserDetailSheet extends StatelessWidget {
                 ),
                 child: Text(
                   _getRoleName(user.role),
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[700],
                     fontWeight: FontWeight.w500,
@@ -161,11 +160,11 @@ class UserDetailSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                _buildInfoRow(Icons.phone, 'เบอร์โทร', user.phone ?? '-'),
+                _buildInfoRow(PhosphorIconsRegular.phone, 'เบอร์โทร', user.phone ?? '-'),
                 if (user.birthDate != null)
-                  _buildInfoRow(Icons.cake, 'วันเกิด', _formatBirthdate(user.birthDate!)),
+                  _buildInfoRow(PhosphorIconsRegular.cake, 'วันเกิด', _formatBirthdate(user.birthDate!)),
                 if (user.province != null)
-                  _buildInfoRow(Icons.location_on, 'จังหวัด', user.province!),
+                  _buildInfoRow(PhosphorIconsRegular.mapPin, 'จังหวัด', user.province!),
               ],
             ),
           ),
@@ -189,12 +188,12 @@ class UserDetailSheet extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: GoogleFonts.prompt(color: Colors.grey[600], fontSize: 14),
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.prompt(fontWeight: FontWeight.w500, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
         ],
       ),
@@ -245,14 +244,13 @@ class UserDetailSheet extends StatelessWidget {
                       Navigator.pop(context);
                       onReject?.call();
                     },
-                    icon: const HeroIcon(
-                      HeroIcons.xMark,
+                    icon: const Icon(
+                      PhosphorIconsRegular.x,
                       size: 20,
-                      color: AppColors.error,
-                    ),
+                      color: AppColors.error),
                     label: Text(
                       'ปฏิเสธ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: AppColors.error,
                         fontWeight: FontWeight.w600,
                       ),
@@ -274,14 +272,13 @@ class UserDetailSheet extends StatelessWidget {
                       Navigator.pop(context);
                       onApprove?.call();
                     },
-                    icon: const HeroIcon(
-                      HeroIcons.check,
+                    icon: const Icon(
+                      PhosphorIconsRegular.check,
                       size: 20,
-                      color: Colors.white,
-                    ),
+                      color: Colors.white),
                     label: Text(
                       'อนุมัติ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -290,7 +287,7 @@ class UserDetailSheet extends StatelessWidget {
                       backgroundColor: AppColors.success,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 3,
-                      shadowColor: AppColors.success.withOpacity(0.4),
+                      shadowColor: AppColors.success.withValues(alpha: 0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -313,14 +310,13 @@ class UserDetailSheet extends StatelessWidget {
                         Navigator.pop(context);
                         onReassign?.call();
                       },
-                      icon: const HeroIcon(
-                        HeroIcons.arrowsRightLeft,
+                      icon: const Icon(
+                        PhosphorIconsRegular.arrowsLeftRight,
                         size: 20,
-                        color: Colors.purple,
-                      ),
+                        color: Colors.purple),
                       label: Text(
                         'ย้าย Admin',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           color: Colors.purple,
                           fontWeight: FontWeight.w500,
                         ),
@@ -340,14 +336,13 @@ class UserDetailSheet extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _showRoleDialog(context),
-                      icon: const HeroIcon(
-                        HeroIcons.shieldCheck,
+                      icon: const Icon(
+                        PhosphorIconsRegular.shieldCheck,
                         size: 20,
-                        color: Colors.orange,
-                      ),
+                        color: Colors.orange),
                       label: Text(
                         'เปลี่ยน Role',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           color: Colors.orange,
                           fontWeight: FontWeight.w500,
                         ),
@@ -373,13 +368,13 @@ class UserDetailSheet extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('เปลี่ยนสิทธิ์ผู้ใช้', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
+        title: Text('เปลี่ยนสิทธิ์ผู้ใช้', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: Text('Farmer', style: GoogleFonts.prompt()),
-              leading: const Icon(Icons.agriculture),
+              title: Text('Farmer', style: const TextStyle()),
+              leading: const Icon(PhosphorIconsRegular.tractor),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pop(context); // Close sheet
@@ -387,8 +382,8 @@ class UserDetailSheet extends StatelessWidget {
               },
             ),
             ListTile(
-              title: Text('Admin', style: GoogleFonts.prompt()),
-              leading: const Icon(Icons.admin_panel_settings),
+              title: Text('Admin', style: const TextStyle()),
+              leading: const Icon(PhosphorIconsRegular.userGear),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pop(context); // Close sheet

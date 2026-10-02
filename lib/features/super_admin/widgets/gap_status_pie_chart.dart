@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 
 class GapStatusPieChart extends StatefulWidget {
@@ -45,7 +44,7 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
             children: [
               Text(
                 widget.title.toUpperCase(),
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -88,7 +87,7 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
                             children: [
                                Text(
                                 '${((widget.approvedCount / ((widget.approvedCount + widget.pendingCount) == 0 ? 1 : (widget.approvedCount + widget.pendingCount))) * 100).toStringAsFixed(0)}%',
-                                style: GoogleFonts.outfit(
+                                style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -96,7 +95,7 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
                               ),
                                Text(
                                 'รวม',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 10,
                                   color: LuxuryTheme.textSecondary,
                                   letterSpacing: 0.5,
@@ -158,7 +157,7 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
             value: value,
             title: '',
             radius: radius,
-            titleStyle: GoogleFonts.outfit(
+            titleStyle: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -174,7 +173,7 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
             value: value,
             title: '',
             radius: radius,
-            titleStyle: GoogleFonts.outfit(
+            titleStyle: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -198,14 +197,14 @@ class _GapStatusPieChartState extends State<GapStatusPieChart> {
         border: Border.all(color: color),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 10,
           )
         ]
       ),
       child: Text(
         '$value',
-        style: GoogleFonts.outfit(
+        style: TextStyle(
           color: color,
           fontSize: 14,
           fontWeight: FontWeight.bold,
@@ -249,7 +248,7 @@ class _Indicator extends StatelessWidget {
               color: color,
               boxShadow: [
                  BoxShadow(
-                    color: color.withOpacity(0.5),
+                    color: color.withValues(alpha: 0.5),
                     blurRadius: 8,
                     spreadRadius: 2,
                  )
@@ -263,7 +262,7 @@ class _Indicator extends StatelessWidget {
           children: [
             Text(
               text,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: color,
@@ -271,7 +270,7 @@ class _Indicator extends StatelessWidget {
             ),
             Text(
               subText,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.5,
                 color: LuxuryTheme.textSecondary,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/user_model.dart';
 
@@ -18,7 +17,7 @@ class EditUserDialog {
       builder: (context) => AlertDialog(
         title: Text(
           'แก้ไขข้อมูลสมาชิก',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -27,24 +26,24 @@ class EditUserDialog {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'ชื่อ-นามสกุล',
-                labelStyle: GoogleFonts.prompt(),
+                labelStyle: const TextStyle(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: phoneController,
               decoration: InputDecoration(
                 labelText: 'เบอร์โทรศัพท์',
-                labelStyle: GoogleFonts.prompt(),
+                labelStyle: const TextStyle(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
           ],
         ),
@@ -55,7 +54,7 @@ class EditUserDialog {
               phoneController.dispose();
               Navigator.pop(context, null);
             },
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -70,7 +69,7 @@ class EditUserDialog {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: Text(
               'บันทึก',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/auth_service.dart';
@@ -123,14 +123,14 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
       keyboardType: TextInputType.number,
       maxLength: 6,
       validator: validator,
-      style: GoogleFonts.prompt(fontSize: 18, letterSpacing: 2),
+      style: TextStyle(fontSize: 18, letterSpacing: 2),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.prompt(color: Colors.grey[700]),
+        labelStyle: TextStyle(color: Colors.grey[700]),
         counterText: "",
-        prefixIcon: const Icon(Icons.lock_outline),
+        prefixIcon: const Icon(PhosphorIconsRegular.lockKey),
         suffixIcon: IconButton(
-          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+          icon: Icon(obscure ? PhosphorIconsRegular.eyeSlash : PhosphorIconsRegular.eye),
           onPressed: onToggle,
         ),
         border: OutlineInputBorder(
@@ -150,7 +150,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('เปลี่ยนรหัส PIN', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
+        title: Text('เปลี่ยนรหัส PIN', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -200,7 +200,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                         )
                       : Text(
                           'บันทึก',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 16, 
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

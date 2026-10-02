@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/config/env.dart';
 import '../../../core/services/admin_service.dart';
@@ -146,10 +145,10 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
     print('✅ Map style loaded');
     try {
        // 🎨 Register Modern Marker Images
-       await _registerModernMarker(markerPending, const Color(0xFFFF9800), HeroIcons.clock);
-       await _registerModernMarker(markerApproved, const Color(0xFF4CAF50), HeroIcons.checkCircle);
-       await _registerModernMarker(markerRejected, const Color(0xFFF44336), HeroIcons.xCircle);
-       await _registerModernMarker(markerDefault, const Color(0xFF9E9E9E), HeroIcons.mapPin);
+       await _registerModernMarker(markerPending, const Color(0xFFFF9800), PhosphorIconsRegular.clock);
+       await _registerModernMarker(markerApproved, const Color(0xFF4CAF50), PhosphorIconsRegular.checkCircle);
+       await _registerModernMarker(markerRejected, const Color(0xFFF44336), PhosphorIconsRegular.xCircle);
+       await _registerModernMarker(markerDefault, const Color(0xFF9E9E9E), PhosphorIconsRegular.mapPin);
        print('✅ Modern marker images registered');
     } catch (e) {
       print('❌ Error registering markers: $e');
@@ -163,7 +162,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
   }
 
   /// 🎨 Generate Modern Marker with Gradient & Icon
-  Future<void> _registerModernMarker(String name, Color color, HeroIcons icon) async {
+  Future<void> _registerModernMarker(String name, Color color, IconData icon) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     const size = Size(80, 80);
@@ -171,7 +170,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
     
     // 1. Shadow/Glow Effect
     final shadowPaint = Paint()
-      ..color = color.withOpacity(0.3)
+      ..color = color.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(center, 28, shadowPaint);
 
@@ -180,7 +179,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
       ..shader = ui.Gradient.radial(
         center,
         24,
-        [color.withOpacity(0.95), color],
+        [color.withValues(alpha: 0.95), color],
         [0.0, 1.0],
       );
     canvas.drawCircle(center, 24, gradientPaint);
@@ -202,7 +201,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
     
     // 6. Subtle highlight
     final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(center.dx - 8, center.dy - 8), 6, highlightPaint);
 
@@ -401,7 +400,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(color: Colors.white),
               ),
@@ -416,15 +415,15 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
     return AppBar(
       title: Text(
         'แผนที่แปลงทั้งหมด',
-        style: GoogleFonts.prompt(color: Colors.black, fontWeight: FontWeight.w600),
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
       ),
-      backgroundColor: Colors.white.withOpacity(0.95),
+      backgroundColor: Colors.white.withValues(alpha: 0.95),
       elevation: 0,
       automaticallyImplyLeading: !widget.isMainTab, // ✅ Hide auto back button
       leading: widget.isMainTab
           ? null // If main tab, no leading
           : IconButton(
-              icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.black),
+              icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.black),
               onPressed: () {
                 if (context.canPop()) {
                   context.pop();
@@ -435,7 +434,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
             ),
       actions: [
         PopupMenuButton<String>(
-          icon: const HeroIcon(HeroIcons.funnel, color: Colors.black),
+          icon: const Icon(PhosphorIconsRegular.funnelSimple, color: Colors.black),
           onSelected: (value) {
             setState(() {
               _selectedStatus = value == 'ALL' ? null : value;
@@ -450,7 +449,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
         ),
         Builder(
           builder: (context) => IconButton(
-            icon: const HeroIcon(HeroIcons.listBullet, color: Colors.black),
+            icon: const Icon(PhosphorIconsRegular.listBullets, color: Colors.black),
             onPressed: () => Scaffold.of(context).openEndDrawer(),
             tooltip: 'รายชื่อแปลง',
           ),
@@ -465,9 +464,9 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
       value: value,
       child: Row(
         children: [
-          Icon(Icons.circle, size: 12, color: color),
+          Icon(PhosphorIconsFill.circle, size: 12, color: color),
           const SizedBox(width: 8),
-          Text(text, style: GoogleFonts.prompt()),
+          Text(text, style: const TextStyle()),
         ],
       ),
     );
@@ -488,13 +487,13 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
         },
         label: Text(
           'เพิ่มแปลงเกษตร',
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: Colors.white,
           ),
         ),
-        icon: const HeroIcon(HeroIcons.plus, color: Colors.white, size: 24),
+        icon: const Icon(PhosphorIconsRegular.plus, color: Colors.white, size: 24),
         backgroundColor: primaryColor,
         elevation: 4,
       ),
@@ -508,11 +507,11 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -569,7 +568,7 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
               const SizedBox(width: 8),
               Text(
                 '$label: $count แปลง',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   color: Colors.black87,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
@@ -583,14 +582,14 @@ class _AdminPlotsMapScreenState extends State<AdminPlotsMapScreen> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
         ),
         child: Center(
           child: Text(
             '$count',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: color,
@@ -650,7 +649,7 @@ class _SidePlotList extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -660,12 +659,12 @@ class _SidePlotList extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const HeroIcon(HeroIcons.listBullet, color: Colors.white),
+                const Icon(PhosphorIconsRegular.listBullets, color: Colors.white),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'รายการแปลง',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -673,7 +672,7 @@ class _SidePlotList extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const HeroIcon(HeroIcons.xMark, color: Colors.white),
+                  icon: const Icon(PhosphorIconsRegular.x, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -700,7 +699,7 @@ class _SidePlotList extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
-                            Icons.inbox_outlined,
+                            PhosphorIconsRegular.tray,
                             size: 40,
                             color: Colors.grey[400],
                           ),
@@ -708,7 +707,7 @@ class _SidePlotList extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           'ไม่พบข้อมูลแปลง',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -717,7 +716,7 @@ class _SidePlotList extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'ยังไม่มีแปลงในระบบ',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 13,
                           ),
@@ -734,20 +733,20 @@ class _SidePlotList extends StatelessWidget {
                       final status = plot['status'] ?? '';
                       Color statusColor = Colors.grey;
                       String statusText = 'ไม่ระบุ';
-                      IconData statusIcon = Icons.help_outline;
+                      IconData statusIcon = PhosphorIconsRegular.question;
 
                       if (status == 'PENDING') {
                         statusColor = const Color(0xFFFF9800);
                         statusText = 'รอตรวจ';
-                        statusIcon = Icons.access_time_filled;
+                        statusIcon = PhosphorIconsRegular.clock;
                       } else if (status == 'APPROVED') {
                         statusColor = const Color(0xFF4CAF50);
                         statusText = 'อนุมัติ';
-                        statusIcon = Icons.check_circle;
+                        statusIcon = PhosphorIconsFill.checkCircle;
                       } else if (status == 'REJECTED') {
                         statusColor = const Color(0xFFF44336);
                         statusText = 'ปฏิเสธ';
-                        statusIcon = Icons.cancel;
+                        statusIcon = PhosphorIconsRegular.xCircle;
                       }
 
                       final owner = plot['owner'] ?? plot['user'];
@@ -764,12 +763,12 @@ class _SidePlotList extends StatelessWidget {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16), // ⬆️ เพิ่มจาก 12 → 16
                             border: Border.all(
-                              color: statusColor.withOpacity(0.15),
+                              color: statusColor.withValues(alpha: 0.15),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: statusColor.withOpacity(0.08),
+                                color: statusColor.withValues(alpha: 0.08),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -784,8 +783,8 @@ class _SidePlotList extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      statusColor.withOpacity(0.15),
-                                      statusColor.withOpacity(0.08),
+                                      statusColor.withValues(alpha: 0.15),
+                                      statusColor.withValues(alpha: 0.08),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -803,7 +802,7 @@ class _SidePlotList extends StatelessWidget {
                                   children: [
                                     Text(
                                       plot['name'] ?? 'ไม่มีชื่อ',
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -813,7 +812,7 @@ class _SidePlotList extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       ownerName,
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 11,
                                       ),
@@ -830,7 +829,7 @@ class _SidePlotList extends StatelessWidget {
                                 children: [
                                   Text(
                                     '${_formatArea(plot['areaRai'])} ไร่',
-                                    style: GoogleFonts.prompt(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                       color: Colors.grey[800],
@@ -845,21 +844,21 @@ class _SidePlotList extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          statusColor.withOpacity(0.15),
-                                          statusColor.withOpacity(0.1),
+                                          statusColor.withValues(alpha: 0.15),
+                                          statusColor.withValues(alpha: 0.1),
                                         ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
                                       borderRadius: BorderRadius.circular(8), // ⬆️ เพิ่มจาก 4
                                       border: Border.all(
-                                        color: statusColor.withOpacity(0.3),
+                                        color: statusColor.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
                                     child: Text(
                                       statusText,
-                                      style: GoogleFonts.prompt(
+                                      style: TextStyle(
                                         color: statusColor,
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
@@ -993,7 +992,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
        builder: (context) => AlertDialog(
          title: Text(
            'ระบุเหตุผลที่ปฏิเสธ',
-           style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+           style: TextStyle(fontWeight: FontWeight.bold),
          ),
          content: TextField(
            controller: reasonController,
@@ -1006,7 +1005,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
          actions: [
            TextButton(
              onPressed: () => Navigator.pop(context), 
-             child: Text('ยกเลิก', style: GoogleFonts.prompt(color: Colors.grey)),
+             child: Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
            ),
            ElevatedButton(
              onPressed: () => Navigator.pop(context, reasonController.text),
@@ -1015,7 +1014,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
              ),
              child: Text(
                'ยืนยันปฏิเสธ',
-               style: GoogleFonts.prompt(color: Colors.white),
+               style: TextStyle(color: Colors.white),
              ),
            ),
          ],
@@ -1233,7 +1232,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                   children: [
                     Text(
                       _plot['name'] ?? 'แปลงไม่มีชื่อ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1241,21 +1240,21 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.grass, size: 16, color: Colors.grey[600]),
+                        Icon(PhosphorIconsRegular.plant, size: 16, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
                           _plot['species'] ?? '-',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.square_foot, size: 16, color: Colors.grey[600]),
+                        Icon(PhosphorIconsRegular.ruler, size: 16, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
                           '${_formatArea(_plot['areaRai'])} ไร่',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
@@ -1270,13 +1269,13 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: statusColor),
                 ),
                 child: Text(
                   statusText,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -1294,7 +1293,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
               gradient: LinearGradient(
                 colors: [
                   Colors.grey[50]!,
-                  Colors.grey[100]!.withOpacity(0.5),
+                  Colors.grey[100]!.withValues(alpha: 0.5),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1303,7 +1302,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
               border: Border.all(color: Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.08),
+                  color: Colors.grey.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1318,7 +1317,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                     gradient: LinearGradient(
                       colors: [
                         primaryColor,
-                        primaryColor.withOpacity(0.7),
+                        primaryColor.withValues(alpha: 0.7),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1326,7 +1325,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1335,7 +1334,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                   child: Center(
                     child: Text(
                       ownerName.isNotEmpty ? ownerName[0] : '?',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1350,7 +1349,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                     children: [
                       Text(
                         ownerName,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1361,14 +1360,14 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                         Row(
                           children: [
                             Icon(
-                              Icons.phone,
+                              PhosphorIconsRegular.phone,
                               size: 12,
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 4),
                             Text(
                               ownerPhone,
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
                               ),
@@ -1391,14 +1390,13 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: _openGapInspection,
-                  icon: const HeroIcon(
-                    HeroIcons.clipboardDocumentList,
+                  icon: const Icon(
+                    PhosphorIconsRegular.clipboardText,
                     color: Colors.white,
-                    size: 20,
-                  ),
+                    size: 20),
                   label: Text(
                     'ดูรายงาน GAP',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1411,7 +1409,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 2,
-                    shadowColor: primaryColor.withOpacity(0.3),
+                    shadowColor: primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -1429,11 +1427,10 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                       ),
                       side: BorderSide(color: Colors.grey[300]!, width: 1.5),
                     ),
-                    child: const HeroIcon(
-                      HeroIcons.pencilSquare,
+                    child: const Icon(
+                      PhosphorIconsRegular.notePencil,
                       color: Colors.grey,
-                      size: 20,
-                    ),
+                      size: 20),
                   ),
                 ),
             ],
@@ -1447,14 +1444,13 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                  Expanded(
                    child: ElevatedButton.icon(
                      onPressed: _handleApprove,
-                     icon: const HeroIcon(
-                       HeroIcons.checkCircle,
+                     icon: const Icon(
+                       PhosphorIconsRegular.checkCircle,
                        color: Colors.white,
-                       size: 18,
-                     ),
+                       size: 18),
                      label: Text(
                        'อนุมัติ',
-                       style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                       style: TextStyle(fontWeight: FontWeight.bold),
                      ),
                      style: ElevatedButton.styleFrom(
                        backgroundColor: const Color(0xFF4CAF50),
@@ -1464,7 +1460,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                          borderRadius: BorderRadius.circular(16),
                        ),
                        elevation: 2,
-                       shadowColor: const Color(0xFF4CAF50).withOpacity(0.3),
+                       shadowColor: const Color(0xFF4CAF50).withValues(alpha: 0.3),
                      ),
                    ),
                  ),
@@ -1472,14 +1468,13 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                  Expanded(
                    child: ElevatedButton.icon(
                      onPressed: _handleReject,
-                     icon: const HeroIcon(
-                       HeroIcons.xCircle,
+                     icon: const Icon(
+                       PhosphorIconsRegular.xCircle,
                        color: Colors.white,
-                       size: 18,
-                     ),
+                       size: 18),
                      label: Text(
                        'ปฏิเสธ',
-                       style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                       style: TextStyle(fontWeight: FontWeight.bold),
                      ),
                      style: ElevatedButton.styleFrom(
                        backgroundColor: const Color(0xFFF44336),
@@ -1489,7 +1484,7 @@ class _PlotDetailSheetState extends State<_PlotDetailSheet> {
                          borderRadius: BorderRadius.circular(16),
                        ),
                        elevation: 2,
-                       shadowColor: const Color(0xFFF44336).withOpacity(0.3),
+                       shadowColor: const Color(0xFFF44336).withValues(alpha: 0.3),
                      ),
                    ),
                  ),

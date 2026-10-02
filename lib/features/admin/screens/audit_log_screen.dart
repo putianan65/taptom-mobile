@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/audit_log_model.dart';
 import '../../../core/services/audit_service.dart';
@@ -36,7 +36,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         SnackBar(
           content: Text(
             'ไม่สามารถโหลด Audit Logs: $e',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -52,7 +52,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       appBar: AppBar(
         title: Text(
           'บันทึกการใช้งาน (Audit Logs)',
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -60,7 +60,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         backgroundColor: AppColors.primary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(PhosphorIconsRegular.arrowLeft),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -72,7 +72,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _loadAuditLogs,
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.refresh),
+        child: const Icon(PhosphorIconsRegular.arrowsClockwise),
       ),
     );
   }
@@ -82,11 +82,11 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 80, color: Colors.grey[300]),
+          Icon(PhosphorIconsRegular.clockCounterClockwise, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             'ไม่มีประวัติการใช้งาน',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.grey[600],
@@ -95,7 +95,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           const SizedBox(height: 8),
           Text(
             'ยังไม่มีรายการบันทึกในขณะนี้',
-            style: GoogleFonts.prompt(fontSize: 14, color: Colors.grey[400]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[400]),
           ),
         ],
       ),
@@ -122,7 +122,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _getActionColor(log.action).withOpacity(0.1),
+                          color: _getActionColor(log.action).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -137,14 +137,14 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                           children: [
                             Text(
                               _translateAction(log.action),
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               log.details,
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
                               ),
@@ -157,12 +157,12 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey[400]),
+                      Icon(PhosphorIconsRegular.user, size: 16, color: Colors.grey[400]),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           'ผู้ดำเนินการ: ${log.userId ?? "ระบบ (System)"}', 
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
                           ),
@@ -173,11 +173,11 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 16, color: Colors.grey[400]),
+                      Icon(PhosphorIconsRegular.clock, size: 16, color: Colors.grey[400]),
                       const SizedBox(width: 4),
                       Text(
                         _formatDateTh(log.timestamp),
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
@@ -260,21 +260,21 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   IconData _getActionIcon(String action) {
     switch (action.toLowerCase()) {
       case 'create':
-        return Icons.add_circle;
+        return PhosphorIconsFill.plusCircle;
       case 'update':
-        return Icons.edit;
+        return PhosphorIconsRegular.pencilSimple;
       case 'delete':
-        return Icons.delete;
+        return PhosphorIconsRegular.trash;
       case 'approve':
-        return Icons.check_circle;
+        return PhosphorIconsFill.checkCircle;
       case 'reject':
-        return Icons.cancel;
+        return PhosphorIconsRegular.xCircle;
       case 'login':
-        return Icons.login;
+        return PhosphorIconsRegular.signIn;
       case 'logout':
-        return Icons.logout;
+        return PhosphorIconsRegular.signOut;
       default:
-        return Icons.info;
+        return PhosphorIconsRegular.info;
     }
   }
 }

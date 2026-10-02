@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/super_admin_service.dart';
@@ -110,7 +109,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                     border: Border.all(color: LuxuryTheme.glassBorder),
                   ),
                   child: IconButton(
-                    icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
+                    icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white, size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -136,10 +135,10 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: LuxuryTheme.cyanNeon.withOpacity(0.15),
+                                        color: LuxuryTheme.cyanNeon.withValues(alpha: 0.15),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: LuxuryTheme.cyanNeon.withOpacity(0.5),
+                                          color: LuxuryTheme.cyanNeon.withValues(alpha: 0.5),
                                           width: 2,
                                         ),
                                       ),
@@ -148,7 +147,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                                           _adminName.isNotEmpty
                                               ? _adminName[0].toUpperCase()
                                               : 'A',
-                                          style: GoogleFonts.outfit(
+                                          style: TextStyle(
                                             fontSize: 24,
                                             fontWeight: FontWeight.bold,
                                             color: LuxuryTheme.cyanNeon,
@@ -163,7 +162,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                                         children: [
                                           Text(
                                             _adminName,
-                                            style: GoogleFonts.prompt(
+                                            style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.white,
@@ -171,7 +170,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                                           ),
                                           Text(
                                             _adminPhone,
-                                            style: GoogleFonts.outfit(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               color: LuxuryTheme.textSecondary,
                                             ),
@@ -226,10 +225,10 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
               onPressed: _showAssignUsersDialog,
               backgroundColor: LuxuryTheme.purpleNeon,
               elevation: 0,
-              icon: const HeroIcon(HeroIcons.userPlus, color: Colors.white, size: 20),
+              icon: const Icon(PhosphorIconsRegular.userPlus, color: Colors.white, size: 20),
               label: Text(
                 'มอบหมาย User',
-                style: GoogleFonts.outfit(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -258,7 +257,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
           child: _buildInfoCard(
             'พื้นที่ดูแล',
             locationStr.isNotEmpty ? locationStr : 'ไม่ระบุ',
-            HeroIcons.mapPin,
+            PhosphorIconsRegular.mapPin,
             LuxuryTheme.goldNeon,
           ),
         ),
@@ -267,7 +266,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
           child: _buildInfoCard(
             'ภูมิภาค',
             _region ?? 'ไม่ระบุ',
-            HeroIcons.globeAlt,
+            PhosphorIconsRegular.globe,
             LuxuryTheme.cyanNeon,
           ),
         ),
@@ -278,7 +277,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
   Widget _buildInfoCard(
     String label,
     String value,
-    HeroIcons icon,
+    IconData icon,
     Color color,
   ) {
     return Container(
@@ -294,23 +293,23 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withOpacity(0.3)),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
-            child: HeroIcon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 12),
           Text(
             label,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               color: LuxuryTheme.textSecondary,
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -328,7 +327,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
       children: [
         Text(
           title,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -338,13 +337,13 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: LuxuryTheme.purpleNeon.withOpacity(0.1),
+            color: LuxuryTheme.purpleNeon.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: LuxuryTheme.purpleNeon.withOpacity(0.3)),
+            border: Border.all(color: LuxuryTheme.purpleNeon.withValues(alpha: 0.3)),
           ),
           child: Text(
             subtitle,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: LuxuryTheme.purpleNeon,
@@ -377,15 +376,14 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
         ),
         child: Column(
           children: [
-            const HeroIcon(
-              HeroIcons.userGroup,
+            const Icon(
+              PhosphorIconsRegular.usersThree,
               size: 48,
-              color: LuxuryTheme.textDisabled,
-            ),
+              color: LuxuryTheme.textDisabled),
             const SizedBox(height: 12),
             Text(
               'ยังไม่มีผู้ใช้ในความดูแล',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: LuxuryTheme.textSecondary,
                 fontSize: 16,
               ),
@@ -393,7 +391,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
             const SizedBox(height: 8),
             Text(
               'กด "มอบหมาย User" เพื่อเพิ่ม',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 color: LuxuryTheme.textDisabled,
                 fontSize: 12,
               ),
@@ -444,10 +442,10 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: LuxuryTheme.purpleNeon.withOpacity(0.1),
+              backgroundColor: LuxuryTheme.purpleNeon.withValues(alpha: 0.1),
               child: Text(
                 firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
-                style: GoogleFonts.outfit(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: LuxuryTheme.purpleNeon,
                 ),
@@ -455,7 +453,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
             ),
             title: Text(
               fullName,
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: Colors.white,
@@ -467,7 +465,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                 const SizedBox(height: 4),
                 Text(
                   phone,
-                  style: GoogleFonts.outfit(
+                  style: TextStyle(
                     fontSize: 12,
                     color: LuxuryTheme.textSecondary,
                   ),
@@ -476,13 +474,13 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: badgeColor.withOpacity(0.1),
-                    border: Border.all(color: badgeColor.withOpacity(0.3)),
+                    color: badgeColor.withValues(alpha: 0.1),
+                    border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     badgeText,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 10,
                       color: badgeColor,
                       fontWeight: FontWeight.w600,
@@ -492,11 +490,10 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
               ],
             ),
             trailing: IconButton(
-              icon: const HeroIcon(
-                HeroIcons.arrowsRightLeft,
+              icon: const Icon(
+                PhosphorIconsRegular.arrowsLeftRight,
                 size: 20,
-                color: LuxuryTheme.goldNeon,
-              ),
+                color: LuxuryTheme.goldNeon),
               tooltip: 'ย้ายไปยัง Admin อื่น',
               onPressed: () => _showReassignDialog(userId, fullName),
             ),
@@ -572,16 +569,15 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      const HeroIcon(
-                        HeroIcons.userPlus,
+                      const Icon(
+                        PhosphorIconsRegular.userPlus,
                         color: LuxuryTheme.purpleNeon,
-                        size: 24,
-                      ),
+                        size: 24),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'มอบหมาย User ให้ $_adminName',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -598,22 +594,21 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const HeroIcon(
-                                HeroIcons.userGroup,
+                              const Icon(
+                                PhosphorIconsRegular.usersThree,
                                 size: 48,
-                                color: LuxuryTheme.textDisabled,
-                              ),
+                                color: LuxuryTheme.textDisabled),
                               const SizedBox(height: 12),
                               Text(
                                 'ไม่มี User ที่สามารถมอบหมายได้',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   color: LuxuryTheme.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'User ทั้งหมดถูกมอบหมายแล้ว',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   color: LuxuryTheme.textDisabled,
                                   fontSize: 12,
                                 ),
@@ -641,11 +636,11 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                                 checkColor: Colors.white,
                                 title: Text(
                                   name,
-                                  style: GoogleFonts.prompt(fontSize: 14, color: Colors.white),
+                                  style: TextStyle(fontSize: 14, color: Colors.white),
                                 ),
                                 subtitle: Text(
                                   phone,
-                                  style: GoogleFonts.outfit(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: LuxuryTheme.textSecondary,
                                   ),
@@ -677,14 +672,13 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                         onPressed: selectedIds.isEmpty
                             ? null
                             : () => Navigator.pop(context),
-                        icon: const HeroIcon(
-                          HeroIcons.check,
+                        icon: const Icon(
+                          PhosphorIconsRegular.check,
                           size: 20,
-                          color: Colors.white,
-                        ),
+                          color: Colors.white),
                         label: Text(
                           'มอบหมาย ${selectedIds.length} คน',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -755,7 +749,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
           SnackBar(
             content: Text(
               'ไม่มี Admin อื่นในระบบ',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: AppColors.warning,
           ),
@@ -776,16 +770,15 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
             ),
             title: Row(
               children: [
-                const HeroIcon(
-                  HeroIcons.arrowsRightLeft,
+                const Icon(
+                  PhosphorIconsRegular.arrowsLeftRight,
                   color: LuxuryTheme.goldNeon,
-                  size: 24,
-                ),
+                  size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'ย้าย $userName',
-                    style: GoogleFonts.prompt(fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
               ],
@@ -798,7 +791,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                 children: [
                   Text(
                     'เลือก Admin ปลายทาง:',
-                    style: GoogleFonts.outfit(
+                    style: TextStyle(
                       color: LuxuryTheme.textSecondary,
                       fontSize: 13,
                     ),
@@ -816,10 +809,10 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                         value: id,
                         groupValue: selectedAdminId,
                         activeColor: LuxuryTheme.goldNeon,
-                        title: Text(name, style: GoogleFonts.prompt(color: Colors.white)),
+                        title: Text(name, style: TextStyle(color: Colors.white)),
                         subtitle: Text(
                           '$count คนในความดูแล',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: LuxuryTheme.textSecondary,
                           ),
@@ -837,7 +830,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('ยกเลิก', style: GoogleFonts.prompt(color: Colors.white70)),
+                child: Text('ยกเลิก', style: TextStyle(color: Colors.white70)),
               ),
               ElevatedButton(
                 onPressed: selectedAdminId != null
@@ -848,7 +841,7 @@ class _AdminDetailScreenState extends State<AdminDetailScreen> {
                 ),
                 child: Text(
                   'ย้าย',
-                  style: GoogleFonts.prompt(color: Colors.black, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                 ),
               ),
             ],

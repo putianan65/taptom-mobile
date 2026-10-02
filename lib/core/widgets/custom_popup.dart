@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../constants/app_colors.dart';
 
-/// Custom popup utility widget for showing info, error, and success messages
-class CustomPopup {
-  /// Show success message popup
+import '../design/design.dart';
+import '../effects/farmer_mascot.dart';
+import 'feedback.dart';
+
+/// Legacy dialog API, now rendered with [AppDialogs] so every popup in the
+/// app shares one style. Prefer [AppDialogs] and [AppToast] in new code.
+abstract final class CustomPopup {
+  static String _join(String message, String? detail) =>
+      detail == null || detail.isEmpty ? message : '$message\n\n$detail';
+
   static Future<void> showSuccess(
     BuildContext context, {
     String? title,
@@ -13,295 +18,97 @@ class CustomPopup {
     String? buttonText,
     VoidCallback? onDismiss,
     VoidCallback? onConfirm,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(
-          Icons.check_circle,
-          color: AppColors.success,
-          size: 48,
+  }) async {
+    // onConfirm historically closed the dialog itself, so it runs in place of
+    // the default pop.
+    if (onConfirm != null) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => _LegacyDialog(
+          title: title ?? 'สำเร็จ',
+          message: _join(message, detail),
+          tone: Tone.success,
+          mood: MascotMood.joy,
+          buttonText: buttonText ?? 'ตกลง',
+          onPressed: onConfirm,
         ),
-        title: Text(
-          title ?? 'สำเร็จ',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (onConfirm != null) {
-                onConfirm();
-              } else {
-                onDismiss?.call();
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-            child: Text(
-              buttonText ?? 'ตกลง',
-              style: GoogleFonts.prompt(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+      );
+      return;
+    }
+    await AppDialogs.message(
+      context,
+      title: title ?? 'สำเร็จ',
+      message: _join(message, detail),
+      tone: Tone.success,
+      mood: MascotMood.joy,
+      buttonLabel: buttonText ?? 'ตกลง',
     );
+    onDismiss?.call();
   }
 
-  /// Show API error message popup
   static Future<void> showApiError(
     BuildContext context, {
     String? title,
     required String message,
     String? code,
     VoidCallback? onDismiss,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-        title: Text(
-          title ?? 'ข้อผิดพลาด',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (code != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Code: $code',
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onDismiss?.call();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text('ปิด', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+  }) =>
+      showError(
+        context,
+        title: title,
+        message: message,
+        detail: code == null ? null : 'รหัสข้อผิดพลาด: $code',
+        onDismiss: onDismiss,
+      );
 
-  /// Show error message popup
   static Future<void> showError(
     BuildContext context, {
     String? title,
     required String message,
     String? detail,
     VoidCallback? onDismiss,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(Icons.error, color: AppColors.error, size: 48),
-        title: Text(
-          title ?? 'ข้อผิดพลาด',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onDismiss?.call();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text('ตกลง', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
+  }) async {
+    await AppDialogs.message(
+      context,
+      title: title ?? 'ทำรายการไม่สำเร็จ',
+      message: _join(message.replaceFirst('Exception: ', ''), detail),
+      tone: Tone.danger,
     );
+    onDismiss?.call();
   }
 
-  /// Show info message popup
   static Future<void> showInfo(
     BuildContext context, {
     String? title,
     required String message,
     String? detail,
     VoidCallback? onDismiss,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.info, color: AppColors.primary, size: 48),
-        title: Text(
-          title ?? 'ข้อมูล',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onDismiss?.call();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text('ตกลง', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
+  }) async {
+    await AppDialogs.message(
+      context,
+      title: title ?? 'แจ้งเพื่อทราบ',
+      message: _join(message, detail),
+      tone: Tone.info,
     );
+    onDismiss?.call();
   }
 
-  /// Show warning message popup
   static Future<void> showWarning(
     BuildContext context, {
     String? title,
     required String message,
     String? detail,
     VoidCallback? onDismiss,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.warning, color: AppColors.warning, size: 48),
-        title: Text(
-          title ?? 'คำเตือน',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onDismiss?.call();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
-            child: Text('ตกลง', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
+  }) async {
+    await AppDialogs.message(
+      context,
+      title: title ?? 'โปรดตรวจสอบ',
+      message: _join(message, detail),
+      tone: Tone.warning,
     );
+    onDismiss?.call();
   }
 
-  /// Internal method to show the popup
-  static void _showPopup(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String message,
-    String? detail,
-    VoidCallback? onDismiss,
-  }) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(icon, color: iconColor, size: 48),
-        title: Text(
-          title,
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt(fontSize: 14)),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onDismiss?.call();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: iconColor),
-            child: Text('ตกลง', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Show a popup with custom buttons
   static Future<bool?> showConfirmation(
     BuildContext context, {
     required String title,
@@ -309,45 +116,61 @@ class CustomPopup {
     String? detail,
     String confirmText = 'ยืนยัน',
     String cancelText = 'ยกเลิก',
-  }) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          title,
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message, style: GoogleFonts.prompt()),
-            if (detail != null) ...[
-              const SizedBox(height: 8),
+  }) =>
+      AppDialogs.confirm(
+        context,
+        title: title,
+        message: _join(message, detail),
+        confirmLabel: confirmText,
+        cancelLabel: cancelText,
+      );
+}
+
+class _LegacyDialog extends StatelessWidget {
+  const _LegacyDialog({
+    required this.title,
+    required this.message,
+    required this.tone,
+    required this.mood,
+    required this.buttonText,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String message;
+  final Tone tone;
+  final MascotMood mood;
+  final String buttonText;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FarmerMascot(size: 104, mood: mood),
+              const SizedBox(height: Space.lg),
+              Text(title, style: context.text.headlineSmall, textAlign: TextAlign.center),
+              const SizedBox(height: Space.sm),
               Text(
-                detail,
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                message,
+                textAlign: TextAlign.center,
+                style: context.text.bodyMedium?.copyWith(color: p.inkMuted),
+              ),
+              const SizedBox(height: Space.xxl),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(onPressed: onPressed, child: Text(buttonText)),
               ),
             ],
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(cancelText, style: GoogleFonts.prompt()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text(
-              confirmText,
-              style: GoogleFonts.prompt(color: Colors.white),
-            ),
-          ),
-        ],
       ),
     );
   }

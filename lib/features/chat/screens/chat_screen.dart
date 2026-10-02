@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/chat_service.dart';
@@ -40,22 +39,22 @@ class _ChatScreenState extends State<ChatScreen> {
   // Sample question suggestions
   final List<Map<String, dynamic>> _suggestions = [
     {
-      'icon': HeroIcons.scale,
+      'icon': PhosphorIconsRegular.scales,
       'text': 'กระท่อมปลูกได้กี่ต้น?',
       'color': Colors.blue,
     },
     {
-      'icon': HeroIcons.documentCheck,
+      'icon': PhosphorIconsRegular.fileText,
       'text': 'ขั้นตอนขอ GAP มีอะไรบ้าง?',
       'color': Colors.green,
     },
     {
-      'icon': HeroIcons.beaker,
+      'icon': PhosphorIconsRegular.flask,
       'text': 'ใช้ปุ๋ยอะไรดีสำหรับกระท่อม?',
       'color': Colors.orange,
     },
     {
-      'icon': HeroIcons.bugAnt,
+      'icon': PhosphorIconsRegular.bug,
       'text': 'โรคใบไหม้กระท่อม รักษายังไง?',
       'color': Colors.red,
     },
@@ -253,15 +252,15 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.refresh, color: Colors.red, size: 20),
+              child: const Icon(PhosphorIconsRegular.arrowsClockwise, color: Colors.red, size: 20),
             ),
             const SizedBox(width: 12),
             Text(
               'เริ่มบทสนทนาใหม่?',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -270,14 +269,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         content: Text(
           'ข้อความทั้งหมดจะถูกลบ',
-          style: GoogleFonts.prompt(color: Colors.grey[600]),
+          style: TextStyle(color: Colors.grey[600]),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
+              style: TextStyle(color: Colors.grey),
             ),
           ),
           ElevatedButton(
@@ -297,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Text(
               'ล้างแชท',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -324,9 +323,9 @@ class _ChatScreenState extends State<ChatScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withOpacity(0.75),
-                Colors.black.withOpacity(0.80),
-                Colors.black.withOpacity(0.75),
+                Colors.black.withValues(alpha: 0.75),
+                Colors.black.withValues(alpha: 0.80),
+                Colors.black.withValues(alpha: 0.75),
               ],
             ),
           ),
@@ -397,19 +396,17 @@ class _ChatScreenState extends State<ChatScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
+                  color: AppColors.primary.withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: const Center(
-              child: HeroIcon(
-                HeroIcons.sparkles,
-                style: HeroIconStyle.solid,
+              child: Icon(
+                PhosphorIconsFill.sparkle,
                 color: Colors.white,
-                size: 36,
-              ),
+                size: 36),
             ),
           ),
           const SizedBox(height: 24),
@@ -417,7 +414,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Welcome Text
           Text(
             'AI ผู้ช่วยเกษตรกร',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -427,7 +424,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 8),
           Text(
             'พร้อมตอบทุกคำถามเกี่ยวกับ\nกฎหมาย การเกษตร และมาตรฐาน GAP',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 14,
               color: Colors.white70,
               height: 1.5,
@@ -442,7 +439,7 @@ class _ChatScreenState extends State<ChatScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               'ลองถามคำถามเหล่านี้:',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.white70,
                 fontWeight: FontWeight.w500,
@@ -455,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ..._suggestions
               .map(
                 (s) => _buildSuggestionChip(
-                  icon: s['icon'] as HeroIcons,
+                  icon: s['icon'] as IconData,
                   text: s['text'] as String,
                   color: s['color'] as Color,
                 ),
@@ -467,7 +464,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildSuggestionChip({
-    required HeroIcons icon,
+    required IconData icon,
     required String text,
     required Color color,
   }) {
@@ -478,12 +475,12 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.75),
+          color: Colors.black.withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -494,23 +491,23 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.25),
+                color: color.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: HeroIcon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 text,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 14,
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            HeroIcon(HeroIcons.chevronRight, color: Colors.white70, size: 18),
+            Icon(PhosphorIconsRegular.caretRight, color: Colors.white70, size: 18),
           ],
         ),
       ),
@@ -524,9 +521,9 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
           ),
           child: Row(
@@ -537,15 +534,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const HeroIcon(
-                    HeroIcons.chevronLeft,
-                    style: HeroIconStyle.outline,
+                  child: const Icon(
+                    PhosphorIconsRegular.caretLeft,
                     color: Colors.white,
-                    size: 20,
-                  ),
+                    size: 20),
                 ),
               ),
               const SizedBox(width: 12),
@@ -563,19 +558,17 @@ class _ChatScreenState extends State<ChatScreen> {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: const Center(
-                  child: HeroIcon(
-                    HeroIcons.sparkles,
-                    style: HeroIconStyle.solid,
+                  child: Icon(
+                    PhosphorIconsFill.sparkle,
                     color: Colors.white,
-                    size: 20,
-                  ),
+                    size: 20),
                 ),
               ),
               const SizedBox(width: 12),
@@ -587,7 +580,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       'AI ผู้ช่วย',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -595,7 +588,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     Text(
                       'กฎหมาย • เกษตร • วิเคราะห์ภาพ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 11,
                         color: Colors.white70,
                       ),
@@ -614,15 +607,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const HeroIcon(
-                    HeroIcons.arrowPath,
-                    style: HeroIconStyle.outline,
+                  child: const Icon(
+                    PhosphorIconsRegular.arrowsClockwise,
                     color: Colors.white,
-                    size: 20,
-                  ),
+                    size: 20),
                 ),
               ),
             ],
@@ -641,17 +632,17 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isEmpty
-            ? Colors.red.withOpacity(0.25)
+            ? Colors.red.withValues(alpha: 0.25)
             : isLow
-                ? Colors.orange.withOpacity(0.2)
-                : Colors.white.withOpacity(0.12),
+                ? Colors.orange.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isEmpty
-              ? Colors.red.withOpacity(0.4)
+              ? Colors.red.withValues(alpha: 0.4)
               : isLow
-                  ? Colors.orange.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.1),
+                  ? Colors.orange.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -660,10 +651,10 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Icon(
             isEmpty
-                ? Icons.block
+                ? PhosphorIconsRegular.prohibit
                 : isLow
-                    ? Icons.warning_amber_rounded
-                    : Icons.bolt,
+                    ? PhosphorIconsRegular.warning
+                    : PhosphorIconsRegular.lightning,
             color: isEmpty
                 ? Colors.red[300]
                 : isLow
@@ -674,7 +665,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 4),
           Text(
             '$_dailyUsageRemaining/$_dailyUsageLimit',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: isEmpty
@@ -695,17 +686,17 @@ class _ChatScreenState extends State<ChatScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.15),
+        color: Colors.amber.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.amber.withOpacity(0.3),
+          color: Colors.amber.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
         children: [
           Icon(
-            Icons.info_outline,
+            PhosphorIconsRegular.info,
             color: Colors.amber[300],
             size: 18,
           ),
@@ -713,7 +704,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Text(
               'บทสนทนายาวขึ้น แนะนำกด ↻ เริ่มใหม่เพื่อคุณภาพคำตอบที่ดีขึ้น',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 11,
                 color: Colors.amber[200],
               ),
@@ -722,7 +713,7 @@ class _ChatScreenState extends State<ChatScreen> {
           GestureDetector(
             onTap: () => setState(() {}), // Dismiss by rebuilding
             child: Icon(
-              Icons.close,
+              PhosphorIconsRegular.x,
               color: Colors.amber[300],
               size: 16,
             ),
@@ -774,18 +765,16 @@ class _GlassMessageBubble extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: HeroIcon(
-                        HeroIcons.sparkles,
-                        style: HeroIconStyle.solid,
+                      child: Icon(
+                        PhosphorIconsFill.sparkle,
                         color: Colors.white,
-                        size: 16,
-                      ),
+                        size: 16),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -841,7 +830,7 @@ class _GlassMessageBubble extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
+                              color: Colors.black.withValues(alpha: 0.25),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -849,7 +838,7 @@ class _GlassMessageBubble extends StatelessWidget {
                         ),
                         child: Text(
                           message.content,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 15,
                             color: message.isUser
                                 ? Colors.white
@@ -874,7 +863,7 @@ class _GlassMessageBubble extends StatelessWidget {
               ),
               child: Text(
                 _formatTime(message.timestamp),
-                style: GoogleFonts.prompt(fontSize: 10, color: Colors.white60),
+                style: TextStyle(fontSize: 10, color: Colors.white60),
               ),
             ),
           ],
@@ -902,12 +891,10 @@ class _GlassMessageBubble extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: HeroIcon(
-                  HeroIcons.sparkles,
-                  style: HeroIconStyle.solid,
+                child: Icon(
+                  PhosphorIconsFill.sparkle,
                   color: Colors.white,
-                  size: 16,
-                ),
+                  size: 16),
               ),
             ),
             const SizedBox(width: 8),
@@ -921,7 +908,7 @@ class _GlassMessageBubble extends StatelessWidget {
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Row(
@@ -999,7 +986,7 @@ class _TypingDotState extends State<_TypingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
+            color: AppColors.primary.withValues(alpha: 
               0.3 + (0.7 * _animation.value),
             ),
             shape: BoxShape.circle,

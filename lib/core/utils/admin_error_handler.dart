@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
 /// Utility class for handling admin errors with consistent UI
@@ -94,7 +93,7 @@ class AdminErrorHandler {
                 children: [
                   Text(
                     message,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -102,14 +101,14 @@ class AdminErrorHandler {
                   const SizedBox(height: 4),
                   Text(
                     detail,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 12,
                       color: Colors.white70,
                     ),
                   ),
                 ],
               )
-            : Text(message, style: GoogleFonts.prompt(color: Colors.white)),
+            : Text(message, style: TextStyle(color: Colors.white)),
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 3),
       ),
@@ -128,16 +127,16 @@ class AdminErrorHandler {
       builder: (context) => AlertDialog(
         title: Text(
           title,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: AppColors.error,
           ),
         ),
-        content: Text(message, style: GoogleFonts.prompt()),
+        content: Text(message, style: const TextStyle()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('ปิด', style: GoogleFonts.prompt()),
+            child: Text('ปิด', style: const TextStyle()),
           ),
           if (onRetry != null)
             ElevatedButton(
@@ -150,7 +149,7 @@ class AdminErrorHandler {
               ),
               child: Text(
                 'ลองใหม่',
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
         ],

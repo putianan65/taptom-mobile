@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -118,7 +117,7 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.primary.withOpacity(0.1), Colors.white],
+                colors: [AppColors.primary.withValues(alpha: 0.1), Colors.white],
               ),
             ),
           ),
@@ -136,16 +135,15 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: HeroIcon(
-                          HeroIcons.arrowLeft,
-                          color: Colors.grey[800],
-                        ),
+                        icon: Icon(
+                          PhosphorIconsRegular.arrowLeft,
+                          color: Colors.grey[800]),
                         onPressed: () => Navigator.pop(context),
                       ),
                       Expanded(
                         child: Text(
                           title,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
@@ -177,7 +175,7 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                               decoration: InputDecoration(
                                 hintText: 'ค้นหาชื่อแปลง, พืช...',
                                 prefixIcon: const Icon(
-                                  Icons.search,
+                                  PhosphorIconsRegular.magnifyingGlass,
                                   color: Colors.grey,
                                 ),
                                 filled: true,
@@ -274,9 +272,9 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
           _filterPlots();
         });
       },
-      selectedColor: displayColor.withOpacity(0.2),
+      selectedColor: displayColor.withValues(alpha: 0.2),
       checkmarkColor: displayColor,
-      labelStyle: GoogleFonts.prompt(
+      labelStyle: TextStyle(
         color: isSelected ? displayColor : Colors.grey[700],
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
@@ -299,12 +297,12 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
               color: Colors.grey[50],
               shape: BoxShape.circle,
             ),
-            child: const HeroIcon(HeroIcons.map, size: 48, color: Colors.grey),
+            child: const Icon(PhosphorIconsRegular.mapTrifold, size: 48, color: Colors.grey),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่พบข้อมูลแปลงเกษตร',
-            style: GoogleFonts.prompt(fontSize: 16, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -335,7 +333,7 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -370,11 +368,11 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: HeroIcon(HeroIcons.map, color: statusColor),
+                    child: Icon(PhosphorIconsRegular.mapTrifold, color: statusColor),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -384,7 +382,7 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                     children: [
                       Text(
                         plot['name'] ?? 'ไม่ระบุชื่อ',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -397,11 +395,11 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.grass, size: 14, color: Colors.grey[600]),
+                              Icon(PhosphorIconsRegular.plant, size: 14, color: Colors.grey[600]),
                               const SizedBox(width: 4),
                               Text(
                                 plot['species'] ?? '-',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
                                 ),
@@ -411,11 +409,11 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.straighten, size: 14, color: Colors.grey[600]),
+                              Icon(PhosphorIconsRegular.ruler, size: 14, color: Colors.grey[600]),
                               const SizedBox(width: 4),
                               Text(
                                 '${(double.tryParse(plot['areaRai']?.toString() ?? '0') ?? 0).toStringAsFixed(2)} ไร่',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
                                 ),
@@ -433,12 +431,12 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     statusText,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 10,
                       color: statusColor,
                       fontWeight: FontWeight.w600,
@@ -449,11 +447,10 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                 const SizedBox(width: 8),
                 // Gallery Button
                 IconButton(
-                  icon: const HeroIcon(
-                    HeroIcons.photo,
+                  icon: const Icon(
+                    PhosphorIconsRegular.image,
                     color: AppColors.primary,
-                    size: 24,
-                  ),
+                    size: 24),
                   tooltip: 'ดูรูปแปลง',
                   onPressed: () {
                     Navigator.push(
@@ -471,11 +468,10 @@ class _AdminPlotListScreenState extends State<AdminPlotListScreen> {
                 // Edit Button - ซ่อนถ้าแปลง APPROVED แล้ว
                 if (status != 'APPROVED')
                   IconButton(
-                    icon: const HeroIcon(
-                      HeroIcons.pencilSquare,
+                    icon: const Icon(
+                      PhosphorIconsRegular.notePencil,
                       color: AppColors.primary,
-                      size: 24,
-                    ),
+                      size: 24),
                     tooltip: 'แก้ไขพิกัดแปลง',
                     onPressed: () {
                       // Convert Map to PlotModel

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/nature_background.dart';
@@ -62,12 +61,12 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
         appBar: AppBar(
           title: Text(
             'ประวัติการยื่นขอ',
-            style: GoogleFonts.prompt(color: Colors.white),
+            style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: () {
               if (mounted) Navigator.pop(context);
             },
@@ -101,16 +100,15 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                           color: Colors.red.shade50,
                           shape: BoxShape.circle,
                         ),
-                        child: const HeroIcon(
-                          HeroIcons.exclamationTriangle,
+                        child: const Icon(
+                          PhosphorIconsRegular.warning,
                           size: 48,
-                          color: Colors.red,
-                        ),
+                          color: Colors.red),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'เกิดข้อผิดพลาด',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[700],
@@ -122,7 +120,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                         child: Text(
                           'ไม่สามารถโหลดข้อมูลได้',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
                           ),
@@ -131,8 +129,8 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: _refreshPlots,
-                        icon: const HeroIcon(HeroIcons.arrowPath, size: 20),
-                        label: Text('ลองอีกครั้ง', style: GoogleFonts.prompt()),
+                        icon: const Icon(PhosphorIconsRegular.arrowsClockwise, size: 20),
+                        label: Text('ลองอีกครั้ง', style: const TextStyle()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -172,16 +170,15 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                           color: Colors.grey.shade100,
                           shape: BoxShape.circle,
                         ),
-                        child: const HeroIcon(
-                          HeroIcons.clipboardDocumentList,
+                        child: const Icon(
+                          PhosphorIconsRegular.clipboardText,
                           size: 48,
-                          color: Colors.grey,
-                        ),
+                          color: Colors.grey),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'ไม่มีประวัติการยื่นขอ',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[700],
@@ -193,7 +190,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                         child: Text(
                           'เมื่อคุณส่งแบบฟอร์ม GAP\nรายการจะปรากฏที่นี่',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
                           ),
@@ -227,24 +224,24 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
   Widget _buildHistoryCard(PlotModel plot) {
     final Color statusColor;
     final String statusText;
-    final HeroIcons statusIcon;
+    final IconData statusIcon;
 
     switch (plot.status) {
       case 'APPROVED':
         statusColor = const Color(0xFF00D9A5);
         statusText = 'อนุมัติแล้ว';
-        statusIcon = HeroIcons.checkBadge;
+        statusIcon = PhosphorIconsRegular.sealCheck;
         break;
       case 'REJECTED':
         statusColor = const Color(0xFFFF6B6B);
         statusText = 'ไม่อนุมัติ';
-        statusIcon = HeroIcons.xCircle;
+        statusIcon = PhosphorIconsRegular.xCircle;
         break;
       case 'PENDING':
       default:
         statusColor = const Color(0xFFFF9F43);
         statusText = 'รอตรวจสอบ';
-        statusIcon = HeroIcons.clock;
+        statusIcon = PhosphorIconsRegular.clock;
         break;
     }
 
@@ -258,7 +255,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -272,14 +269,13 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const HeroIcon(
-                  HeroIcons.documentText,
+                child: const Icon(
+                  PhosphorIconsRegular.fileText,
                   color: AppColors.primary,
-                  size: 24,
-                ),
+                  size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -288,14 +284,14 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                   children: [
                     Text(
                       'ยื่นขอรับรอง GAP',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
                       'แปลง: ${plot.name}',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
@@ -311,18 +307,18 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: statusColor),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    HeroIcon(statusIcon, size: 14, color: statusColor),
+                    Icon(statusIcon, size: 14, color: statusColor),
                     const SizedBox(width: 4),
                     Text(
                       statusText,
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: statusColor,
@@ -342,7 +338,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
               Flexible(
                 child: Text(
                   'ส่งเมื่อ: ${_formatDate(displayDate)}',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
                   ),
@@ -364,7 +360,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                 },
                 child: Text(
                   'ดูรายละเอียด >',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 13,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,

@@ -1,19 +1,32 @@
-import 'package:flutter/material.dart';
-import '../../core/services/auth_service.dart';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
+import '../../core/network/api_exception.dart';
 import '../../core/security/secure_storage.dart';
+import '../../core/services/auth_service.dart';
 import '../../data/models/user_model.dart';
 
+/// Session state: tokens, the signed-in user and the in-between PIN step for
+/// staff accounts.
 class AuthProvider extends ChangeNotifier {
+  AuthProvider(this._authService, {this.onSignedOut});
+
   final AuthService _authService;
-  final SecureStorage _secureStorage = SecureStorage();
-  
+  final SecureStorage _storage = SecureStorage();
+
+  /// Called after sign-out, e.g. to stop notification polling.
+  final VoidCallback? onSignedOut;
+
   UserModel? _currentUser;
   String? _tempToken;
+  UserRole? _pendingRole;
+  bool _pendingNeedsSetup = false;
   String? _accessToken;
   String? _refreshToken;
   bool _isLoading = false;
-
-  AuthProvider(this._authService);
+  bool _restored = false;
+  bool _offline = false;
 
   UserModel? get currentUser => _currentUser;
   UserModel? get user => _currentUser;
@@ -23,61 +36,93 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
 
-  /// Load tokens and user on startup
-  Future<void> loadTokensFromStorage() async {
-    // ✅ Use centralized SecureStorage to ensure consistency (AndroidOptions)
-    _accessToken = await _secureStorage.getAccessToken();
-    _refreshToken = await _secureStorage.getRefreshToken();
-    
-    if (_accessToken != null && _currentUser == null) {
+  /// True once [restoreSession] has finished.
+  bool get isRestored => _restored;
+
+  /// True when the session was restored from cache because the network was
+  /// unreachable.
+  bool get isOffline => _offline;
+
+  /// Role of the account waiting on the PIN step.
+  UserRole? get pendingRole => _pendingRole;
+
+  /// Whether the waiting account must create a PIN rather than enter one.
+  bool get pendingNeedsSetup => _pendingNeedsSetup;
+
+  /// Restores a saved session. Uses the cached profile when the server is
+  /// unreachable so farmers can open the app without signal.
+  Future<void> restoreSession() async {
+    _accessToken = await _storage.getAccessToken();
+    _refreshToken = await _storage.getRefreshToken();
+
+    if (_accessToken != null && _accessToken!.isNotEmpty && _currentUser == null) {
       try {
         _currentUser = await _authService.getCurrentUser();
-      } catch (e) {
-        // If getting user fails, we might need to clear tokens, but let api interceptor handle 401
-        print('Error loading user profile: $e');
+        _offline = false;
+        if (_currentUser == null) {
+          _accessToken = null;
+          _refreshToken = null;
+        }
+      } on ApiException catch (e) {
+        if (e.isNetwork) {
+          _currentUser = await _cachedUser();
+          _offline = _currentUser != null;
+        }
+      } catch (error) {
+        debugPrint('Session restore failed: $error');
       }
     }
+    _restored = true;
     notifyListeners();
   }
 
-  Future<bool> loadUser() async {
-    _setLoading(true);
+  /// Backwards-compatible alias.
+  Future<void> loadTokensFromStorage() => restoreSession();
+
+  Future<UserModel?> _cachedUser() async {
+    final raw = await _storage.readUserJson();
+    if (raw == null) return null;
     try {
-      final user = await _authService.getCurrentUser();
-      if (user != null) {
-        _currentUser = user;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    } finally {
-      _setLoading(false);
+      return UserModel.fromJson(Map<String, dynamic>.from(jsonDecode(raw)));
+    } catch (_) {
+      return null;
     }
   }
 
-  Future<void> signIn(String phone, String birthdate) async {
+  Future<bool> loadUser() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      if (user == null) return false;
+      _currentUser = user;
+      _offline = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> signIn(String phone, String birthday) async {
     _setLoading(true);
     try {
-      final response = await _authService.signIn(phone, birthdate);
-      
-      // If we get here without exception, it's a direct login (no PIN needed)
-      _currentUser = response;
+      final user = await _authService.signIn(phone, birthday);
+      _accessToken = await _storage.getAccessToken();
+      _refreshToken = await _storage.getRefreshToken();
       _tempToken = null;
-      
-      // 🔄 RELOAD TOKENS: AuthService saved them, but we need to update our memory cache
-      await loadTokensFromStorage();
-      
-      notifyListeners();
-
+      _pendingRole = null;
+      _currentUser = user;
+      _offline = false;
     } on PinRequiredException catch (e) {
       _tempToken = e.tempToken;
-      notifyListeners();
+      _pendingNeedsSetup = false;
+      _pendingRole = e.userRole?.toUpperCase() == 'SUPER_ADMIN'
+          ? UserRole.superAdmin
+          : UserRole.admin;
       rethrow;
     } on PinNotSetException catch (e) {
       _tempToken = e.tempToken;
-      notifyListeners();
+      _pendingNeedsSetup = true;
+      _pendingRole = e.user?.role ?? UserRole.admin;
       rethrow;
     } finally {
       _setLoading(false);
@@ -85,99 +130,101 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> verifyPin(String pin) async {
-    if (_tempToken == null) throw Exception('Token not found');
-    
+    final temp = _tempToken;
+    if (temp == null) throw AuthException('กรุณาเข้าสู่ระบบอีกครั้ง');
+
     _setLoading(true);
     try {
-      final response = await _authService.verifyPin(pin, _tempToken!);
-      
-      if (response['accessToken'] != null) {
-        _accessToken = response['accessToken'];
-        _refreshToken = response['refreshToken'];
-        await _saveTokens();
+      final response = await _authService.verifyPin(pin, temp);
+      final access = response['accessToken'] as String?;
+      if (access == null) throw AuthException('ยืนยัน PIN ไม่สำเร็จ');
+      _accessToken = access;
+      _refreshToken = response['refreshToken'] as String?;
+      await _saveTokens();
+
+      _currentUser = response['user'] is Map
+          ? UserModel.fromJson(Map<String, dynamic>.from(response['user']))
+          : await _authService.getCurrentUser();
+      if (_currentUser != null) {
+        await _storage.saveUserJson(jsonEncode(_currentUser!.toJson()));
       }
-      
-      // Load user profile after PIN verification
-      _currentUser = await _authService.getCurrentUser();
       _tempToken = null;
-      notifyListeners();
-      
+      _pendingRole = null;
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> setPin(String pin) async {
-    if (_tempToken == null) throw Exception('Token not found');
+    final temp = _tempToken;
+    if (temp == null) throw AuthException('กรุณาเข้าสู่ระบบอีกครั้ง');
 
     _setLoading(true);
     try {
-      final response = await _authService.setPin(pin, _tempToken!);
-      
-      final accessToken = response['accessToken'] as String?;
-      final refreshToken = response['refreshToken'] as String?;
-      final user = response['user'] as UserModel?;
-
-      if (accessToken != null) {
-        _accessToken = accessToken;
-        _refreshToken = refreshToken;
+      final response = await _authService.setPin(pin, temp);
+      final access = response['accessToken'] as String?;
+      if (access != null) {
+        _accessToken = access;
+        _refreshToken = response['refreshToken'] as String?;
         await _saveTokens();
       }
-
-      if (user != null) {
-        _currentUser = user;
-      }
-
+      _currentUser =
+          response['user'] as UserModel? ?? await _authService.getCurrentUser();
       _tempToken = null;
-      notifyListeners();
+      _pendingRole = null;
+      _pendingNeedsSetup = false;
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// Abandons a half-finished staff sign-in.
+  void cancelPinStep() {
+    _tempToken = null;
+    _pendingRole = null;
+    _pendingNeedsSetup = false;
+    _storage.clearTokens();
+    notifyListeners();
   }
 
   Future<void> _saveTokens() async {
-    if (_accessToken != null && _refreshToken != null) {
-      await _secureStorage.saveTokens(
-        accessToken: _accessToken!, 
-        refreshToken: _refreshToken!
-      );
-    }
+    final access = _accessToken;
+    if (access == null) return;
+    await _storage.saveTokens(
+      accessToken: access,
+      refreshToken: _refreshToken ?? '',
+    );
   }
 
   Future<void> signOut() async {
-    _setLoading(true);
     try {
       await _authService.signOut();
+    } finally {
       _currentUser = null;
       _accessToken = null;
       _refreshToken = null;
-      // ✅ Use correct method from SecureStorage wrapper
-      await _secureStorage.clearTokens();
+      _tempToken = null;
+      _pendingRole = null;
+      _offline = false;
+      onSignedOut?.call();
       notifyListeners();
-    } finally {
-      _setLoading(false);
     }
   }
 
   Future<void> refreshAccessToken() async {
-    if (_refreshToken == null) {
-      throw Exception('No refresh token');
+    final refresh = _refreshToken;
+    if (refresh == null || refresh.isEmpty) {
+      await signOut();
+      throw AuthException('ไม่พบข้อมูลการเข้าสู่ระบบ');
     }
     try {
-      final response = await _authService.refreshToken(_refreshToken!);
-      if (response['accessToken'] != null) {
-        _accessToken = response['accessToken'];
-        // Update both tokens if refresh token is rotated, otherwise just access token
-        // But SecureStorage requires both arguments. Assuming refresh token stays same unless returned.
-        final newRefreshToken = response['refreshToken'] ?? _refreshToken!;
-        
-        await _secureStorage.saveTokens(
-          accessToken: _accessToken!, 
-          refreshToken: newRefreshToken
-        );
-        notifyListeners();
-      }
-    } catch (e) {
+      final response = await _authService.refreshToken(refresh);
+      final access = response['accessToken'] as String?;
+      if (access == null) throw AuthException('ต่ออายุการเข้าใช้งานไม่สำเร็จ');
+      _accessToken = access;
+      _refreshToken = response['refreshToken'] as String? ?? refresh;
+      await _saveTokens();
+    } catch (error) {
       await signOut();
       rethrow;
     }
@@ -187,20 +234,16 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = value;
     notifyListeners();
   }
-  
-  // Helper for setting user directly
+
   void setUser(UserModel user) {
-     _currentUser = user;
-     notifyListeners();
+    _currentUser = user;
+    notifyListeners();
   }
 
-  /// Update user profile
   Future<void> updateProfile(UserModel updatedUser) async {
     _setLoading(true);
     try {
-      final user = await _authService.updateProfile(updatedUser);
-      _currentUser = user;
-      notifyListeners();
+      _currentUser = await _authService.updateProfile(updatedUser);
     } finally {
       _setLoading(false);
     }

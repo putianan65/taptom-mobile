@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/user_model.dart';
 
@@ -65,26 +64,26 @@ class UserListItem extends StatelessWidget {
                     height: 50,
                       decoration: BoxDecoration(
                         color: isLuxury 
-                            ? _getAvatarColor().withOpacity(0.1) 
+                            ? _getAvatarColor().withValues(alpha: 0.1) 
                             : _getAvatarColor(),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: isLuxury
                             ? [
                                 BoxShadow(
-                                  color: _getAvatarColor().withOpacity(0.2),
+                                  color: _getAvatarColor().withValues(alpha: 0.2),
                                   blurRadius: 8,
                                   offset: const Offset(0, 0),
                                 )
                               ]
                             : [
                                 BoxShadow(
-                                  color: _getAvatarColor().withOpacity(0.4),
+                                  color: _getAvatarColor().withValues(alpha: 0.4),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                         border: isLuxury 
-                            ? Border.all(color: _getAvatarColor().withOpacity(0.3)) 
+                            ? Border.all(color: _getAvatarColor().withValues(alpha: 0.3)) 
                             : null,
                       ),
                     alignment: Alignment.center,
@@ -93,12 +92,12 @@ class UserListItem extends StatelessWidget {
                             ? user.firstName[0].toUpperCase()
                             : '?',
                         style: isLuxury 
-                            ? GoogleFonts.outfit(
+                            ? TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: _getAvatarColor(),
                               )
-                            : GoogleFonts.prompt(
+                            : TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textLight,
@@ -118,13 +117,13 @@ class UserListItem extends StatelessWidget {
                                 child: Text(
                                   user.fullName,
                                   style: isLuxury
-                                      ? GoogleFonts.outfit(
+                                      ? TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                           color: Colors.white,
                                           height: 1.2,
                                         )
-                                      : GoogleFonts.prompt(
+                                      : TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                           color: AppColors.textPrimary,
@@ -144,25 +143,24 @@ class UserListItem extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withOpacity(0.1),
+                                color: AppColors.success.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: HeroIcon(
-                                HeroIcons.phone,
+                              child: Icon(
+                                PhosphorIconsRegular.phone,
                                 size: 12,
-                                color: AppColors.success,
-                              ),
+                                color: AppColors.success),
                             ),
                             const SizedBox(width: 8),
                               Text(
                                 user.phone,
                                 style: isLuxury
-                                    ? GoogleFonts.outfit(
+                                    ? TextStyle(
                                         fontSize: 13,
                                         color: LuxuryTheme.textSecondary,
                                         fontWeight: FontWeight.w500,
                                       )
-                                    : GoogleFonts.prompt(
+                                    : TextStyle(
                                         fontSize: 13,
                                         color: AppColors.textSecondary,
                                         fontWeight: FontWeight.w500,
@@ -204,22 +202,21 @@ class UserListItem extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            HeroIcon(
-                              HeroIcons.mapPin,
+                            Icon(
+                              PhosphorIconsRegular.mapPin,
                               size: 14,
-                              color: AppColors.success,
-                            ),
+                              color: AppColors.success),
                             const SizedBox(width: 8),
                             Expanded(
                                 child: Text(
                                   user.locationDisplay,
                                   style: isLuxury
-                                      ? GoogleFonts.outfit(
+                                      ? TextStyle(
                                           fontSize: 12,
                                           color: LuxuryTheme.textSecondary,
                                           fontWeight: FontWeight.w500,
                                         )
-                                      : GoogleFonts.prompt(
+                                      : TextStyle(
                                           fontSize: 12,
                                           color: AppColors.textSecondary,
                                           fontWeight: FontWeight.w500,
@@ -251,21 +248,20 @@ class UserListItem extends StatelessWidget {
                         Expanded(
                           child: TextButton.icon(
                             onPressed: onReject,
-                            icon: HeroIcon(
-                              HeroIcons.xMark,
+                            icon: Icon(
+                              PhosphorIconsRegular.x,
                               size: 18,
-                              color: AppColors.error,
-                            ),
+                              color: AppColors.error),
                             label: Text(
                               'ปฏิเสธ',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 color: AppColors.error,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              backgroundColor: AppColors.error.withOpacity(0.1),
+                              backgroundColor: AppColors.error.withValues(alpha: 0.1),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -279,14 +275,13 @@ class UserListItem extends StatelessWidget {
                         flex: isDeleted ? 1 : 2,
                         child: ElevatedButton.icon(
                           onPressed: onApprove,
-                          icon: HeroIcon(
-                            isDeleted ? HeroIcons.arrowPath : HeroIcons.check,
+                          icon: Icon(
+                            isDeleted ? PhosphorIconsRegular.arrowsClockwise : PhosphorIconsRegular.check,
                             size: 18,
-                            color: AppColors.textLight,
-                          ),
+                            color: AppColors.textLight),
                           label: Text(
                             isDeleted ? 'กู้คืน' : 'อนุมัติสมาชิก',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               color: AppColors.textLight,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -295,7 +290,7 @@ class UserListItem extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isDeleted ? AppColors.superAdminPrimary : AppColors.success,
                             elevation: 4,
-                            shadowColor: (isDeleted ? AppColors.superAdminPrimary : AppColors.success).withOpacity(0.4),
+                            shadowColor: (isDeleted ? AppColors.superAdminPrimary : AppColors.success).withValues(alpha: 0.4),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -345,25 +340,25 @@ class UserListItem extends StatelessWidget {
         bgColor = const Color(0xFFFFF3E0); // Orange 50
         textColor = const Color(0xFFEF6C00); // Orange 800
         text = 'รออนุมัติ';
-        icon = Icons.access_time_filled;
+        icon = PhosphorIconsRegular.clock;
         break;
       case MembershipStatus.approved:
         bgColor = const Color(0xFFE8F5E9); // Green 50
         textColor = const Color(0xFF2E7D32); // Green 800
         text = 'สถานะปกติ';
-        icon = Icons.check_circle;
+        icon = PhosphorIconsFill.checkCircle;
         break;
       case MembershipStatus.rejected:
-        bgColor = isLuxury ? const Color(0xFFFFEBEE).withOpacity(0.1) : const Color(0xFFFFEBEE); // Red 50
+        bgColor = isLuxury ? const Color(0xFFFFEBEE).withValues(alpha: 0.1) : const Color(0xFFFFEBEE); // Red 50
         textColor = isLuxury ? const Color(0xFFFF5252) : const Color(0xFFC62828); // Red 800
         text = 'ถูกปฏิเสธ';
-        icon = Icons.cancel;
+        icon = PhosphorIconsRegular.xCircle;
         break;
       case MembershipStatus.none:
         bgColor = Colors.grey[100]!;
         textColor = Colors.grey[700]!;
         text = 'ไม่ระบุ';
-        icon = Icons.help;
+        icon = PhosphorIconsRegular.question;
         break;
         break;
     }
@@ -371,10 +366,10 @@ class UserListItem extends StatelessWidget {
     if (isLuxury) {
       // Adjust standard colors for dark theme if not explicitly overridden
       if (textColor == const Color(0xFF2E7D32)) textColor = LuxuryTheme.emeraldNeon; // Green 800 -> Neon Green
-      if (bgColor == const Color(0xFFE8F5E9)) bgColor = LuxuryTheme.emeraldNeon.withOpacity(0.1);
+      if (bgColor == const Color(0xFFE8F5E9)) bgColor = LuxuryTheme.emeraldNeon.withValues(alpha: 0.1);
       
       if (textColor == const Color(0xFFEF6C00)) textColor = LuxuryTheme.goldNeon; // Orange 800 -> Neon Gold
-      if (bgColor == const Color(0xFFFFF3E0)) bgColor = LuxuryTheme.goldNeon.withOpacity(0.1);
+      if (bgColor == const Color(0xFFFFF3E0)) bgColor = LuxuryTheme.goldNeon.withValues(alpha: 0.1);
     }
 
     return Container(
@@ -382,7 +377,7 @@ class UserListItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: textColor.withOpacity(0.3)),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -392,12 +387,12 @@ class UserListItem extends StatelessWidget {
           Text(
             text,
             style: isLuxury
-                ? GoogleFonts.outfit(
+                ? TextStyle(
                     fontSize: 12, // Increased size
                     color: textColor,
                     fontWeight: FontWeight.normal,
                   )
-                : GoogleFonts.prompt(
+                : TextStyle(
                     fontSize: 12, // Increased size
                     color: textColor,
                     fontWeight: FontWeight.bold, // Bold
@@ -416,12 +411,12 @@ class UserListItem extends StatelessWidget {
       case UserRole.superAdmin:
         text = 'Super Admin';
         color = isLuxury ? LuxuryTheme.purpleNeon : AppColors.superAdminPrimary;
-        bgColor = isLuxury ? LuxuryTheme.purpleNeon.withOpacity(0.1) : AppColors.superAdminPrimary.withOpacity(0.1);
+        bgColor = isLuxury ? LuxuryTheme.purpleNeon.withValues(alpha: 0.1) : AppColors.superAdminPrimary.withValues(alpha: 0.1);
         break;
       case UserRole.admin:
         text = 'Admin';
         color = isLuxury ? LuxuryTheme.cyanNeon : AppColors.adminPrimary;
-        bgColor = isLuxury ? LuxuryTheme.cyanNeon.withOpacity(0.1) : AppColors.adminPrimary.withOpacity(0.1);
+        bgColor = isLuxury ? LuxuryTheme.cyanNeon.withValues(alpha: 0.1) : AppColors.adminPrimary.withValues(alpha: 0.1);
         break;
       case UserRole.farmer:
       default:
@@ -432,7 +427,7 @@ class UserListItem extends StatelessWidget {
         // So let's show 'Farmer' too.
         text = 'Farmer';
         color = isLuxury ? LuxuryTheme.emeraldNeon : AppColors.primary;
-        bgColor = isLuxury ? LuxuryTheme.emeraldNeon.withOpacity(0.1) : AppColors.primary.withOpacity(0.1);
+        bgColor = isLuxury ? LuxuryTheme.emeraldNeon.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1);
         break;
     }
 
@@ -441,17 +436,17 @@ class UserListItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
         style: isLuxury
-            ? GoogleFonts.outfit(
+            ? TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: color,
               )
-            : GoogleFonts.prompt(
+            : TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: color,

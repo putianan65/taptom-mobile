@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/nature_background.dart';
 
@@ -63,20 +62,20 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
         appBar: AppBar(
           title: Text(
             widget.title,
-            style: GoogleFonts.prompt(fontSize: 16),
+            style: TextStyle(fontSize: 16),
             overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(3),
             child: LinearProgressIndicator(
               value: _scrollProgress,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
@@ -105,20 +104,19 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const HeroIcon(
-                              HeroIcons.documentText,
+                            child: const Icon(
+                              PhosphorIconsRegular.fileText,
                               color: AppColors.primary,
-                              size: 24,
-                            ),
+                              size: 24),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               widget.title,
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -143,15 +141,14 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const HeroIcon(
-                              HeroIcons.clock,
+                            const Icon(
+                              PhosphorIconsRegular.clock,
                               size: 14,
-                              color: Colors.grey,
-                            ),
+                              color: Colors.grey),
                             const SizedBox(width: 6),
                             Text(
                               'อ่านประมาณ ${_estimateReadingTime()} นาที',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey[700],
                               ),
@@ -181,7 +178,7 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                       // Content
                       SelectableText(
                         widget.content,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                           height: 1.8,
@@ -195,25 +192,24 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.info.withOpacity(0.08),
+                          color: AppColors.info.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.info.withOpacity(0.2),
+                            color: AppColors.info.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const HeroIcon(
-                              HeroIcons.informationCircle,
+                            const Icon(
+                              PhosphorIconsRegular.info,
                               color: AppColors.info,
-                              size: 20,
-                            ),
+                              size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'เนื้อหานี้เป็นข้อมูลอย่างเป็นทางการของ TAPTOM',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.info,
                                 ),
@@ -236,7 +232,7 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                   color: Theme.of(context).scaffoldBackgroundColor,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -2),
                     ),
@@ -263,15 +259,14 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const HeroIcon(
-                                HeroIcons.xMark,
+                              const Icon(
+                                PhosphorIconsRegular.x,
                                 size: 18,
-                                color: Colors.grey,
-                              ),
+                                color: Colors.grey),
                               const SizedBox(width: 8),
                               Text(
                                 'ปิด',
-                                style: GoogleFonts.prompt(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey[700],
@@ -287,7 +282,7 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                       // Scroll to Top Button
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -298,11 +293,10 @@ class _ContentDisplayScreenState extends State<ContentDisplayScreen> {
                               curve: Curves.easeInOut,
                             );
                           },
-                          icon: const HeroIcon(
-                            HeroIcons.arrowUp,
+                          icon: const Icon(
+                            PhosphorIconsRegular.arrowUp,
                             color: AppColors.primary,
-                            size: 20,
-                          ),
+                            size: 20),
                           tooltip: 'เลื่อนขึ้นด้านบน',
                         ),
                       ),

@@ -10,15 +10,18 @@
     <!-- Microphone -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     
-    <!-- Storage (for older Android versions) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- Storage (Android 12 and below only) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+
+    <!-- Notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
     <!-- Photos (for Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 
     <application
-        android:label="taptom"
+        android:label="TAPTOM"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

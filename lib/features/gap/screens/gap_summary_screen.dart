@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/gap_service.dart';
 import '../../../core/utils/gap_summary_builder.dart';
@@ -40,43 +39,43 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
     {
       'key': 'general',
       'title': '1. ข้อมูลทั่วไป',
-      'icon': HeroIcons.informationCircle,
+      'icon': PhosphorIconsRegular.info,
       'color': AppColors.gapGeneral,
     },
     {
       'key': 'inputs',
       'title': '2. ปัจจัยการผลิต',
-      'icon': HeroIcons.beaker,
+      'icon': PhosphorIconsRegular.flask,
       'color': AppColors.gapInputs,
     },
     {
       'key': 'management',
       'title': '3. การจัดการแปลง',
-      'icon': HeroIcons.wrenchScrewdriver,
+      'icon': PhosphorIconsRegular.wrench,
       'color': AppColors.gapManagement,
     },
     {
       'key': 'harvest',
       'title': '4. การเก็บเกี่ยว',
-      'icon': HeroIcons.archiveBox,
+      'icon': PhosphorIconsRegular.archive,
       'color': AppColors.gapHarvest,
     },
     {
       'key': 'postHarvest',
       'title': '5. หลังเก็บเกี่ยว',
-      'icon': HeroIcons.cube,
+      'icon': PhosphorIconsRegular.cube,
       'color': AppColors.gapPostHarvest,
     },
     {
       'key': 'safety',
       'title': '6. ความปลอดภัย',
-      'icon': HeroIcons.shieldCheck,
+      'icon': PhosphorIconsRegular.shieldCheck,
       'color': AppColors.gapSafety,
     },
     {
       'key': 'traceability',
       'title': '7. ตรวจติดตาม',
-      'icon': HeroIcons.magnifyingGlass,
+      'icon': PhosphorIconsRegular.magnifyingGlass,
       'color': AppColors.gapTraceability,
     },
   ];
@@ -181,7 +180,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         SnackBar(
           content: Text(
             'เกิดข้อผิดพลาดในการโหลดข้อมูล',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.red,
         ),
@@ -246,7 +245,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                 SnackBar(
                   content: Text(
                     'กรุณาบันทึกการเก็บเกี่ยวก่อน',
-                    style: GoogleFonts.prompt(),
+                    style: const TextStyle(),
                   ),
                   backgroundColor: Colors.orange,
                 ),
@@ -298,7 +297,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         SnackBar(
           content: Text(
             'เกิดข้อผิดพลาดในการเปิดฟอร์ม',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.red,
         ),
@@ -312,7 +311,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'ยืนยันการล้างข้อมูล?',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -320,28 +319,27 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
           children: [
             Text(
               'คุณต้องการลบข้อมูล GAP ทั้งหมด (หมวด 1.1-1.6)\nของแปลงนี้ใช่หรือไม่?',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const HeroIcon(
-                    HeroIcons.exclamationTriangle,
+                  const Icon(
+                    PhosphorIconsRegular.warning,
                     color: Colors.orange,
-                    size: 24,
-                  ),
+                    size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'การกระทำนี้ไม่สามารถย้อนกลับได้',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange.shade800,
                       ),
@@ -355,7 +353,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -364,7 +362,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
             ),
             child: Text(
               'ลบข้อมูล',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -386,7 +384,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         SnackBar(
           content: Text(
             'ล้างข้อมูลสำเร็จ',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.success,
         ),
@@ -399,7 +397,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         SnackBar(
           content: Text(
             e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -413,16 +411,16 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'ลบข้อมูล $title?',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'ข้อมูลทั้งหมดในหมวดนี้จะถูกลบ\nคุณต้องการดำเนินการต่อหรือไม่?',
-          style: GoogleFonts.prompt(),
+          style: const TextStyle(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -431,7 +429,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
             ),
             child: Text(
               'ลบข้อมูล',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -493,7 +491,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         _loadSummary(); // Reload
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('ลบข้อมูลเรียบร้อย', style: GoogleFonts.prompt()),
+            content: Text('ลบข้อมูลเรียบร้อย', style: const TextStyle()),
             backgroundColor: AppColors.success,
           ),
         );
@@ -506,7 +504,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
         SnackBar(
           content: Text(
             'เกิดข้อผิดพลาดในการลบข้อมูล',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -527,10 +525,9 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const HeroIcon(
-                      HeroIcons.arrowLeft,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(
+                      PhosphorIconsRegular.arrowLeft,
+                      color: Colors.white),
                     onPressed: () {
                       if (mounted) Navigator.of(context).pop();
                     },
@@ -541,7 +538,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                       children: [
                         Text(
                           'ประวัติการบันทึก GAP',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -549,7 +546,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                         ),
                         Text(
                           widget.plotName,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 12,
                             color: Colors.white70,
                           ),
@@ -565,12 +562,12 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '$_completedCount/7',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -588,14 +585,13 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: TextButton.icon(
                   onPressed: _confirmReset,
-                  icon: const HeroIcon(
-                    HeroIcons.trash,
+                  icon: const Icon(
+                    PhosphorIconsRegular.trash,
                     color: Colors.white,
-                    size: 20,
-                  ),
+                    size: 20),
                   label: Text(
                     'ล้างข้อมูล GAP ทั้งหมด',
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -660,10 +656,10 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: isCompleted ? color.withOpacity(0.05) : Colors.grey.shade50,
+          color: isCompleted ? color.withValues(alpha: 0.05) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isCompleted ? color.withOpacity(0.3) : Colors.grey.shade200,
+            color: isCompleted ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
             width: 1.5,
           ),
         ),
@@ -674,14 +670,13 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(isCompleted ? 0.15 : 0.08),
+                  color: color.withValues(alpha: isCompleted ? 0.15 : 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: HeroIcon(
-                  category['icon'] as HeroIcons,
+                child: Icon(
+                  category['icon'] as IconData,
                   color: isCompleted ? color : Colors.grey,
-                  size: 24,
-                ),
+                  size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -693,7 +688,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                         Flexible(
                           child: Text(
                             category['title'] as String,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: isCompleted ? Colors.black87 : Colors.grey,
@@ -710,12 +705,12 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               '✓ บันทึกแล้ว',
-                              style: GoogleFonts.prompt(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.primary,
@@ -729,7 +724,7 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                       isCompleted
                           ? (data['summary'] ?? 'มีข้อมูล')
                           : 'ยังไม่ได้บันทึก',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 12,
                         color: isCompleted
                             ? Colors.grey.shade700
@@ -748,19 +743,18 @@ class _GapSummaryScreenState extends State<GapSummaryScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const HeroIcon(
-                       HeroIcons.trash,
+                    child: const Icon(
+                       PhosphorIconsRegular.trash,
                        color: Colors.red,
-                       size: 20,
-                    ),
+                       size: 20),
                   ),
                 )
               else
                 Icon(
-                  Icons.radio_button_unchecked,
+                  PhosphorIconsRegular.circle,
                   color: Colors.grey.shade300,
                   size: 24,
                 ),

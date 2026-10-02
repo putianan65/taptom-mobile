@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Centralized error handling utilities
 class ErrorUtils {
@@ -47,7 +48,7 @@ class ErrorUtils {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            const Icon(PhosphorIconsRegular.warningCircle, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -83,7 +84,7 @@ class ErrorUtils {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const Icon(PhosphorIconsRegular.checkCircle, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -112,7 +113,7 @@ class ErrorUtils {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.warning_amber_outlined, color: Colors.white),
+            const Icon(PhosphorIconsRegular.warning, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+
+import '../widgets/widgets.dart';
 
 /// Centralized permission handling utilities
 class PermissionUtils {
@@ -92,125 +93,39 @@ class PermissionUtils {
   }
 
   /// Show snackbar for denied permission
-  static void _showPermissionDeniedSnackbar(
-    BuildContext context,
-    String permissionName,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'จำเป็นต้องอนุญาตการเข้าถึง$permissionName เพื่อใช้งานฟีเจอร์นี้',
-          style: GoogleFonts.prompt(),
-        ),
-        backgroundColor: Colors.orange,
-        action: SnackBarAction(
-          label: 'ลองใหม่',
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
-      ),
+  static void _showPermissionDeniedSnackbar(BuildContext context, String name) {
+    AppToast.show(
+      context,
+      'ต้องอนุญาตการเข้าถึง$nameเพื่อใช้ฟังก์ชันนี้',
+      tone: Tone.warning,
     );
   }
 
-  /// Show dialog for permanently denied permission
-  static void _showPermissionPermanentlyDeniedDialog(
+  static Future<void> _showPermissionPermanentlyDeniedDialog(
     BuildContext context,
-    String permissionName,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'ต้องอนุญาตการเข้าถึง$permissionName',
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'คุณได้ปฏิเสธการอนุญาตถาวร กรุณาไปที่ตั้งค่าแอปเพื่อเปิดใช้งาน',
-          style: GoogleFonts.prompt(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              openAppSettings();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00B894),
-              foregroundColor: Colors.white,
-            ),
-            child: Text('ไปตั้งค่า', style: GoogleFonts.prompt()),
-          ),
-        ],
-      ),
+    String name,
+  ) async {
+    final open = await AppDialogs.confirm(
+      context,
+      title: 'ต้องการสิทธิ์เข้าถึง$name',
+      message: 'สิทธิ์นี้ถูกปิดไว้ เปิดได้ที่การตั้งค่าของอุปกรณ์ แล้วกลับมาใช้งานอีกครั้ง',
+      confirmLabel: 'เปิดการตั้งค่า',
+      icon: AppIcons.settings,
     );
+    if (open) await openAppSettings();
   }
 
-  /// Show dialog when service (GPS) is disabled
-  static void _showServiceDisabledDialog(
+  static Future<void> _showServiceDisabledDialog(
     BuildContext context,
-    String serviceName,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.location_off, color: Colors.red, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '$serviceName ถูกปิดอยู่',
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'กรุณาเปิด $serviceName ในการตั้งค่าอุปกรณ์เพื่อใช้งานแผนที่',
-          style: GoogleFonts.prompt(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Geolocator.openLocationSettings();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00B894),
-              foregroundColor: Colors.white,
-            ),
-            child: Text('เปิดตั้งค่า', style: GoogleFonts.prompt()),
-          ),
-        ],
-      ),
+    String service,
+  ) async {
+    final open = await AppDialogs.confirm(
+      context,
+      title: 'กรุณาเปิด $service',
+      message: 'เปิดบริการตำแหน่งของอุปกรณ์เพื่อแสดงตำแหน่งปัจจุบันบนแผนที่',
+      confirmLabel: 'เปิดการตั้งค่า',
+      icon: AppIcons.locate,
     );
+    if (open) await Geolocator.openLocationSettings();
   }
 }

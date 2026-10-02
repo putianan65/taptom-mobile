@@ -54,9 +54,9 @@ class AdminService {
         data: data,
       );
       return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'สร้าง Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'สร้าง Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -72,9 +72,9 @@ class AdminService {
           : (response.data['data'] ?? []);
 
       return data;
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ดึงข้อมูล Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ดึงข้อมูล Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -103,7 +103,7 @@ class AdminService {
       }).toList();
 
     } catch (e) {
-      print('Could not fetch Super Admins: $e');
+      debugPrint('Could not fetch Super Admins: $e');
       return [];
     }
   }
@@ -112,12 +112,12 @@ class AdminService {
   Future<void> deleteAdmin(String adminId) async {
     try {
       await _apiClient.delete(ApiEndpoints.adminDelete(adminId));
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
         throw Exception('ไม่สามารถลบบัญชีของตัวเองได้');
       }
       throw Exception(
-        'ลบ Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ลบ Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -132,9 +132,9 @@ class AdminService {
         ApiEndpoints.adminReassign(userId),
         data: {'newAdminId': newAdminId},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ย้าย User ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ย้าย User ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -196,10 +196,10 @@ class AdminService {
         ApiEndpoints.plots,
         data: data,
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
        // Fallback: If 404, maybe use generic plots endpoint? 
        // But generic endpoint usually ignores user ID.
-       throw Exception('สร้างแปลงให้เกษตรกรไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}');
+       throw Exception('สร้างแปลงให้เกษตรกรไม่สำเร็จ: ${e.serverMessage ?? e.message}');
     }
   }
 
@@ -215,7 +215,7 @@ class AdminService {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       // Return empty map to allow fallback to initial data
-      print('⚠️ Could not fetch plot detail: $e');
+      debugPrint('Could not fetch plot detail: $e');
       return {};
     }
   }
@@ -232,8 +232,8 @@ class AdminService {
           }
         },
       );
-    } on DioException catch (e) {
-       throw Exception('แก้ไขพิกัดไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}');
+    } on ApiException catch (e) {
+       throw Exception('แก้ไขพิกัดไม่สำเร็จ: ${e.serverMessage ?? e.message}');
     }
   }
 
@@ -247,9 +247,9 @@ class AdminService {
   }) async {
     try {
       await _apiClient.post(ApiEndpoints.adminApprove(plotId));
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'อนุมัติไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'อนุมัติไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
 
@@ -278,9 +278,9 @@ class AdminService {
         ApiEndpoints.adminReject(plotId),
         data: {'reason': reason},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ปฏิเสธไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ปฏิเสธไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
 
@@ -298,25 +298,36 @@ class AdminService {
 
   // ==================== User Management ====================
 
-  /// Get all users in admin's territory
+  /// All users in the admin's territory. The endpoint pages at 20 by
+  /// default, so pages are fetched until the reported total is reached.
   Future<List<UserModel>> getUsers({String? status, String? province}) async {
+    const pageSize = 100;
+    const maxPages = 20;
+    final users = <UserModel>[];
     try {
-      final queryParams = <String, dynamic>{};
-      if (status != null) queryParams['status'] = status;
-      if (province != null) queryParams['province'] = province;
-
-      final response = await _apiClient.get(
-        ApiEndpoints.adminUsers,
-        queryParameters: queryParams.isNotEmpty ? queryParams : null,
-      );
-
-      final data = response.data is List
-          ? response.data
-          : (response.data['data'] ?? []);
-
-      return (data as List).map((json) => UserModel.fromJson(json)).toList();
+      for (var page = 1; page <= maxPages; page++) {
+        final response = await _apiClient.get(
+          ApiEndpoints.adminUsers,
+          queryParameters: {
+            'page': page,
+            'limit': pageSize,
+            if (status != null) 'status': status,
+            if (province != null) 'province': province,
+          },
+        );
+        final body = response.data;
+        final list = body is List ? body : (body['data'] as List? ?? const []);
+        users.addAll(list.map((j) => UserModel.fromJson(Map<String, dynamic>.from(j))));
+        final total = body is Map
+            ? (body['total'] ?? body['meta']?['total']) as num?
+            : null;
+        if (list.length < pageSize || total == null || users.length >= total) break;
+      }
+      return users;
+    } on ApiException {
+      rethrow;
     } catch (e) {
-      throw Exception('ไม่สามารถดึงข้อมูลสมาชิกได้: ${e.toString()}');
+      throw Exception('ไม่สามารถดึงข้อมูลสมาชิกได้: $e');
     }
   }
 
@@ -327,9 +338,9 @@ class AdminService {
         '${ApiEndpoints.adminUsers}/$userId',
       );
       return UserModel.fromJson(response.data);
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ไม่สามารถดึงข้อมูลผู้ใช้ได้: ${e.response?.data['message'] ?? e.message}',
+        'ไม่สามารถดึงข้อมูลผู้ใช้ได้: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -338,9 +349,9 @@ class AdminService {
   Future<void> approveUserMembership(String userId, {String? adminId}) async {
     try {
       await _apiClient.post('${ApiEndpoints.adminUsers}/$userId/approve');
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'อนุมัติไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'อนุมัติไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
 
@@ -367,16 +378,12 @@ class AdminService {
         data: data,
       );
       return UserModel.fromJson(response.data); // Return updated user
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
-        final message = e.response?.data['message'];
-        if (message is List) {
-          throw Exception(message.join(', '));
-        }
-        throw Exception(message?.toString() ?? 'ข้อมูลไม่ถูกต้อง');
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
+        throw Exception(e.serverMessage ?? 'ข้อมูลไม่ถูกต้อง');
       }
       throw Exception(
-        'แก้ไขข้อมูลไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'แก้ไขข้อมูลไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -388,9 +395,9 @@ class AdminService {
         '${ApiEndpoints.adminUsers}/$userId/reject',
         data: {'reason': reason},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ปฏิเสธไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ปฏิเสธไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
 
@@ -417,9 +424,9 @@ class AdminService {
         '/admin/$adminId/assign-users',
         data: {'userIds': userIds},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'มอบหมายไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'มอบหมายไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -444,9 +451,9 @@ class AdminService {
         resourceId: plotId,
         details: 'หมวด $categoryKey: $message',
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ส่ง Feedback ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ส่ง Feedback ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -459,9 +466,9 @@ class AdminService {
         ApiEndpoints.user(userId),
       );
       return UserModel.fromJson(response.data);
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ดึงข้อมูลผู้ใช้ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ดึงข้อมูลผู้ใช้ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -485,9 +492,9 @@ class AdminService {
         resourceId: plotId,
         details: 'Admin Override Geometry',
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'แก้ไขแปลงไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'แก้ไขแปลงไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -508,9 +515,9 @@ class AdminService {
         resourceId: id,
         details: 'แก้ไขข้อมูลการตรวจสอบย้อนกลับ',
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'แก้ไข Traceability ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'แก้ไข Traceability ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -527,9 +534,9 @@ class AdminService {
         resourceId: id,
         details: 'ลบข้อมูลการตรวจสอบย้อนกลับ',
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ลบ Traceability ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ลบ Traceability ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -558,7 +565,7 @@ class AdminService {
 
       // Backend returns { "url": "...", "filename": "..." }
       return response.data['url'];
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception('อัพโหลดไฟล์ไม่สำเร็จ: ${e.message}');
     }
   }
@@ -642,8 +649,8 @@ class AdminService {
           'message': message,
         },
       );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 403) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 403) {
         throw Exception('คุณสามารถส่งข้อความได้เฉพาะ Admin ในพื้นที่เดียวกันเท่านั้น');
       }
       throw Exception('ส่งข้อความไม่สำเร็จ: ${e.message}');
@@ -660,9 +667,9 @@ class AdminService {
         ApiEndpoints.adminMessageReply(messageId),
         data: {'message': message},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ตอบกลับไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ตอบกลับไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -703,7 +710,7 @@ class AdminService {
       );
     } catch (e) {
       // Ignore error for optimistic UI updates, or log it
-      print('Mark as read failed: $e');
+      debugPrint('Mark as read failed: $e');
     }
   }
   /// Get PDPA Logs

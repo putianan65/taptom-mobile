@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/nature_background.dart';
 
@@ -39,11 +38,11 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text('ช่วยเหลือ & แจ้งปัญหา', style: GoogleFonts.prompt()),
+          title: Text('ช่วยเหลือ & แจ้งปัญหา', style: const TextStyle()),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: HeroIcon(HeroIcons.arrowLeft, color: AppColors.textLight),
+            icon: Icon(PhosphorIconsRegular.arrowLeft, color: AppColors.textLight),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -64,8 +63,8 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _showCreateTicketDialog,
           backgroundColor: AppColors.primary,
-          icon: const Icon(Icons.add),
-          label: Text('สร้างคำร้อง', style: GoogleFonts.prompt()),
+          icon: const Icon(PhosphorIconsRegular.plus),
+          label: Text('สร้างคำร้อง', style: const TextStyle()),
         ),
       ),
     );
@@ -82,16 +81,15 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               color: AppColors.surfaceVariant,
               shape: BoxShape.circle,
             ),
-            child: HeroIcon(
-              HeroIcons.lifebuoy,
+            child: Icon(
+              PhosphorIconsRegular.lifebuoy,
               size: 48,
-              color: AppColors.textSecondary,
-            ),
+              color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่มีรายการคำร้อง',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
             ),
@@ -99,7 +97,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
           const SizedBox(height: 8),
           Text(
             'กดปุ่มด้านล่างเพื่อแจ้งปัญหาหรือขอความช่วยเหลือ',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 14,
               color: AppColors.textTertiary,
             ),
@@ -139,12 +137,12 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '#${ticket['id']} • $type',
-                  style: GoogleFonts.robotoMono(
+                  style: TextStyle(fontFamily: 'IBMPlexMono', 
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -153,7 +151,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               ),
               Text(
                 status,
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: isClosed ? AppColors.textSecondary : AppColors.success,
@@ -164,7 +162,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
           const SizedBox(height: 8),
           Text(
             ticket['title'],
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -172,7 +170,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
           const SizedBox(height: 4),
           Text(
             ticket['description'],
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
             ),
@@ -191,7 +189,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'สร้างคำร้องใหม่',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -242,7 +240,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -252,7 +250,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 SnackBar(
                   content: Text(
                     'ส่งคำร้องเรียบร้อยแล้ว (Demo)',
-                    style: GoogleFonts.prompt(),
+                    style: const TextStyle(),
                   ),
                 ),
               );
@@ -265,7 +263,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
             ),
             child: Text(
               'ส่งข้อมูล',
-              style: GoogleFonts.prompt(color: AppColors.textLight),
+              style: TextStyle(color: AppColors.textLight),
             ),
           ),
         ],

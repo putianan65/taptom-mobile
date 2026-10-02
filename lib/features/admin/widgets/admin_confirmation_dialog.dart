@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/user_model.dart';
 
@@ -15,7 +14,7 @@ class AdminConfirmationDialog {
       builder: (context) => AlertDialog(
         title: Text(
           'ยืนยันการอนุมัติ',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -23,7 +22,7 @@ class AdminConfirmationDialog {
           children: [
             Text(
               'คุณต้องการอนุมัติสมาชิก?',
-              style: GoogleFonts.prompt(fontSize: 14),
+              style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 12),
             Container(
@@ -37,18 +36,18 @@ class AdminConfirmationDialog {
                 children: [
                   Text(
                     'ชื่อ: ${user.fullName}',
-                    style: GoogleFonts.prompt(fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'โทรศัพท์: ${user.phone}',
-                    style: GoogleFonts.prompt(fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                   if (user.province != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       'จังหวัด: ${user.province}',
-                      style: GoogleFonts.prompt(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ],
                 ],
@@ -59,14 +58,14 @@ class AdminConfirmationDialog {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
             child: Text(
               'อนุมัติ',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -86,7 +85,7 @@ class AdminConfirmationDialog {
       builder: (context) => AlertDialog(
         title: Text(
           'ปฏิเสธสมาชิก',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -94,12 +93,12 @@ class AdminConfirmationDialog {
           children: [
             Text(
               'ชื่อ: ${user.fullName}',
-              style: GoogleFonts.prompt(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 16),
             Text(
               'กรุณาระบุเหตุผลในการปฏิเสธ:',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -110,12 +109,12 @@ class AdminConfirmationDialog {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'เช่น ข้อมูลไม่ครบถ้วน',
-                hintStyle: GoogleFonts.prompt(fontSize: 12),
+                hintStyle: TextStyle(fontSize: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              style: GoogleFonts.prompt(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ],
         ),
@@ -125,7 +124,7 @@ class AdminConfirmationDialog {
               reasonController.dispose();
               Navigator.pop(context, null);
             },
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -138,7 +137,7 @@ class AdminConfirmationDialog {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
             child: Text(
               'ปฏิเสธ',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -156,13 +155,13 @@ class AdminConfirmationDialog {
       builder: (context) => AlertDialog(
         title: Text(
           'ลบสมาชิก',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ยืนยันการลบสมาชิก?', style: GoogleFonts.prompt(fontSize: 14)),
+            Text('ยืนยันการลบสมาชิก?', style: TextStyle(fontSize: 14)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -175,12 +174,12 @@ class AdminConfirmationDialog {
                 children: [
                   Text(
                     'ชื่อ: ${user.fullName}',
-                    style: GoogleFonts.prompt(fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'โทรศัพท์: ${user.phone}',
-                    style: GoogleFonts.prompt(fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                 ],
               ),
@@ -188,7 +187,7 @@ class AdminConfirmationDialog {
             const SizedBox(height: 12),
             Text(
               'การกระทำนี้ไม่สามารถยกเลิกได้',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 12,
                 color: AppColors.error,
                 fontWeight: FontWeight.bold,
@@ -199,12 +198,12 @@ class AdminConfirmationDialog {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text('ลบ', style: GoogleFonts.prompt(color: Colors.white)),
+            child: Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -224,7 +223,7 @@ class AdminConfirmationDialog {
       builder: (context) => AlertDialog(
         title: Text(
           'แก้ไขข้อมูลสมาชิก',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -233,24 +232,24 @@ class AdminConfirmationDialog {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'ชื่อ-นามสกุล',
-                labelStyle: GoogleFonts.prompt(),
+                labelStyle: const TextStyle(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: phoneController,
               decoration: InputDecoration(
                 labelText: 'เบอร์โทรศัพท์',
-                labelStyle: GoogleFonts.prompt(),
+                labelStyle: const TextStyle(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
           ],
         ),
@@ -261,7 +260,7 @@ class AdminConfirmationDialog {
               phoneController.dispose();
               Navigator.pop(context, null);
             },
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -276,7 +275,7 @@ class AdminConfirmationDialog {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: Text(
               'บันทึก',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],

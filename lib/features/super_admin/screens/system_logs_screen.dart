@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/super_admin_service.dart';
@@ -103,7 +102,7 @@ class _SystemLogsScreenState extends State<SystemLogsScreen> {
       appBar: AppBar(
         title: Text(
           'บันทึกการใช้งาน (Audit Logs)',
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -112,7 +111,7 @@ class _SystemLogsScreenState extends State<SystemLogsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
+          icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -123,12 +122,12 @@ class _SystemLogsScreenState extends State<SystemLogsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      HeroIcon(HeroIcons.clipboardDocumentList,
+                      Icon(PhosphorIconsRegular.clipboardText,
                           size: 64, color: Colors.grey[300]),
                       const SizedBox(height: 16),
                       Text(
                         'ไม่พบรายการบันทึก',
-                        style: GoogleFonts.prompt(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -154,30 +153,29 @@ class _SystemLogsScreenState extends State<SystemLogsScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
                         ],
                         border: Border.all(
-                            color: AppColors.superAdminPrimary.withOpacity(0.1)),
+                            color: AppColors.superAdminPrimary.withValues(alpha: 0.1)),
                       ),
                       child: ListTile(
                         leading: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.superAdminPrimary.withOpacity(0.1),
+                            color: AppColors.superAdminPrimary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const HeroIcon(
-                            HeroIcons.clipboardDocumentList,
+                          child: const Icon(
+                            PhosphorIconsRegular.clipboardText,
                             color: AppColors.superAdminPrimary,
-                            size: 24,
-                          ),
+                            size: 24),
                         ),
                         title: Text(
                           log.action,
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -188,23 +186,23 @@ class _SystemLogsScreenState extends State<SystemLogsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               log.details,
-                              style: GoogleFonts.prompt(fontSize: 13, color: Colors.black54),
+                              style: TextStyle(fontSize: 13, color: Colors.black54),
                             ),
                             const SizedBox(height: 4),
                              Row(
                                children: [
-                                 Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
+                                 Icon(PhosphorIconsRegular.user, size: 14, color: Colors.grey[600]),
                                  const SizedBox(width: 4),
                                  Text(
                                     log.userId ?? "System",
-                                    style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey[600]),
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                  ),
                                  const SizedBox(width: 12),
-                                 Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                                 Icon(PhosphorIconsRegular.clock, size: 14, color: Colors.grey[600]),
                                  const SizedBox(width: 4),
                                  Text(
                                     log.timestamp,
-                                    style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey[600]),
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                  ),
                                ],
                              )

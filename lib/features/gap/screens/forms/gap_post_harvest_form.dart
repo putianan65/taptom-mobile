@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
@@ -248,9 +247,9 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.cloud_done, color: Colors.white),
+            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
             const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: GoogleFonts.prompt()),
+            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
           ],
         ),
         backgroundColor: Colors.orange,
@@ -285,7 +284,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'กรุณาเลือกข้อมูลการเก็บเกี่ยวก่อน',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -299,7 +298,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'กรุณาเลือกวันที่ดำเนินการ',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -313,7 +312,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'วันที่ดำเนินการไม่สามารถเป็นวันในอนาคต',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
         ),
         backgroundColor: Colors.orange,
       ),
@@ -328,7 +327,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
       SnackBar(
         content: Text(
           'กรุณากรอกประเภทการดำเนินการ (อย่างน้อย 3 ตัวอักษร)',
-          style: GoogleFonts.prompt(),
+          style: const TextStyle(),
         ),
         backgroundColor: Colors.orange,
       ),
@@ -345,7 +344,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'อุณหภูมิต้องเป็นตัวเลข',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -357,7 +356,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'อุณหภูมิต้องอยู่ระหว่าง -50 ถึง 100 °C',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -375,7 +374,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'ความชื้นต้องเป็นตัวเลข',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -387,7 +386,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
         SnackBar(
           content: Text(
             'ความชื้นต้องอยู่ระหว่าง 0 ถึง 100 %',
-            style: GoogleFonts.prompt(),
+            style: const TextStyle(),
           ),
           backgroundColor: Colors.orange,
         ),
@@ -460,7 +459,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
             SnackBar(
               content: Text(
                 ErrorUtils.getReadableError(e),
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
               backgroundColor: Colors.red,
             ),
@@ -501,7 +500,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
     return GapFormWrapper(
       title: '5. การจัดการหลังเก็บเกี่ยว',
       subtitle: 'คัดแยก บรรจุ และเก็บรักษา',
-      headerIcon: HeroIcons.cube,
+      headerIcon: PhosphorIconsRegular.cube,
       headerColor: Colors.purple,
       onSave: _saveToApi,
       onSaveDraft: _saveDraft,
@@ -513,7 +512,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           const FormInfoCard(
             message:
                 'การจัดการหลังเก็บเกี่ยวสำคัญต่อคุณภาพใบกระท่อม บันทึกวิธีการแปรรูปและเก็บรักษา',
-            icon: HeroIcons.lightBulb,
+            icon: PhosphorIconsRegular.lightbulb,
             color: Colors.purple,
           ),
 
@@ -521,7 +520,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           FormSectionCard(
             title: 'วันที่ดำเนินการ *',
             example: 'ตัวอย่าง: 16 มกราคม 2569',
-            icon: HeroIcons.calendarDays,
+            icon: PhosphorIconsRegular.calendarDots,
             iconColor: Colors.purple,
             child: GestureDetector(
               onTap: _pickDate,
@@ -533,26 +532,24 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                 ),
                 child: Row(
                   children: [
-                    const HeroIcon(
-                      HeroIcons.calendarDays,
+                    const Icon(
+                      PhosphorIconsRegular.calendarDots,
                       color: Colors.grey,
-                      size: 20,
-                    ),
+                      size: 20),
                     const SizedBox(width: 10),
                     Text(
                       _formatDate(_processDate),
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: _processDate != null
                             ? Colors.black
                             : Colors.grey,
                       ),
                     ),
                     const Spacer(),
-                    const HeroIcon(
-                      HeroIcons.chevronRight,
+                    const Icon(
+                      PhosphorIconsRegular.caretRight,
                       color: Colors.grey,
-                      size: 16,
-                    ),
+                      size: 16),
                   ],
                 ),
               ),
@@ -563,13 +560,13 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           FormSectionCard(
             title: 'การคัดแยกและทำความสะอาด',
             example: 'เลือกขั้นตอนที่ทำ (ถ้ามี)',
-            icon: HeroIcons.sparkles,
+            icon: PhosphorIconsRegular.sparkle,
             iconColor: Colors.blue,
             child: Column(
               children: [
                 CheckboxOptionCard(
                   label: 'มีการคัดแยกเกรด/ขนาด (Sorting)',
-                  icon: HeroIcons.funnel,
+                  icon: PhosphorIconsRegular.funnelSimple,
                   isSelected: _sortingDone,
                   onTap: () => setState(() {
                      _sortingDone = !_sortingDone;
@@ -579,7 +576,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                 const SizedBox(height: 10),
                 CheckboxOptionCard(
                   label: 'มีการล้างทำความสะอาด (Washing)',
-                  icon: HeroIcons.beaker,
+                  icon: PhosphorIconsRegular.flask,
                   isSelected: _washingDone,
                   onTap: () => setState(() {
                     _washingDone = !_washingDone;
@@ -594,7 +591,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           FormSectionCard(
             title: 'วิธีการแปรรูป/จัดการ *',
             example: 'เลือกวิธีการแปรรูป',
-            icon: HeroIcons.cog,
+            icon: PhosphorIconsRegular.gear,
             iconColor: Colors.orange,
             child: FormDropdownWithOther(
               label: 'วิธีการ',
@@ -603,7 +600,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
               value: _processTypeController.text,
               onChanged: (val) =>
                   setState(() => _processTypeController.text = val),
-              icon: HeroIcons.wrenchScrewdriver,
+              icon: PhosphorIconsRegular.wrench,
             ),
           ),
 
@@ -611,7 +608,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           FormSectionCard(
             title: 'บรรจุภัณฑ์',
             example: 'เลือกชนิดบรรจุภัณฑ์',
-            icon: HeroIcons.gift,
+            icon: PhosphorIconsRegular.gift,
             iconColor: Colors.green,
             child: FormDropdownWithOther(
               label: 'บรรจุภัณฑ์',
@@ -620,7 +617,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
               value: _packagingController.text,
               onChanged: (val) =>
                   setState(() => _packagingController.text = val),
-              icon: HeroIcons.archiveBox,
+              icon: PhosphorIconsRegular.archive,
             ),
           ),
 
@@ -628,7 +625,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
           FormSectionCard(
             title: 'การเก็บรักษา',
             example: 'ระบุสถานที่เก็บรักษา',
-            icon: HeroIcons.buildingStorefront,
+            icon: PhosphorIconsRegular.storefront,
             iconColor: Colors.brown,
             child: Column(
               children: [
@@ -639,7 +636,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                   value: _storageLocationController.text,
                   onChanged: (val) =>
                       setState(() => _storageLocationController.text = val),
-                  icon: HeroIcons.home,
+                  icon: PhosphorIconsRegular.house,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -654,9 +651,9 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                         maxLength: 6,
                         decoration: InputDecoration(
                           hintText: 'อุณหภูมิ (°C)',
-                          hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                          hintStyle: TextStyle(color: Colors.grey),
                           labelText: 'อุณหภูมิ (-50 ถึง 100 °C)',
-                          labelStyle: GoogleFonts.prompt(
+                          labelStyle: TextStyle(
                             color: Colors.grey[700],
                             fontSize: 12,
                           ),
@@ -668,7 +665,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                           ),
                           counterText: '',
                         ),
-                        style: GoogleFonts.prompt(),
+                        style: const TextStyle(),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -681,9 +678,9 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                         maxLength: 5,
                         decoration: InputDecoration(
                           hintText: 'ความชื้น (%)',
-                          hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                          hintStyle: TextStyle(color: Colors.grey),
                           labelText: 'ความชื้น (0-100 %)',
-                          labelStyle: GoogleFonts.prompt(
+                          labelStyle: TextStyle(
                             color: Colors.grey[700],
                             fontSize: 12,
                           ),
@@ -695,7 +692,7 @@ class _GapPostHarvestFormState extends State<GapPostHarvestForm> {
                           ),
                           counterText: '',
                         ),
-                        style: GoogleFonts.prompt(),
+                        style: const TextStyle(),
                       ),
                     ),
                   ],

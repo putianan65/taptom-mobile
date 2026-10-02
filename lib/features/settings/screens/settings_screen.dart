@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
@@ -40,20 +39,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const HeroIcon(
-                HeroIcons.exclamationTriangle,
+              child: const Icon(
+                PhosphorIconsRegular.warning,
                 color: AppColors.warning,
-                size: 22,
-              ),
+                size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'ล้างแคช',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -67,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(
               'คุณต้องการล้างข้อมูลแคชของแอปหรือไม่?',
-              style: GoogleFonts.prompt(fontSize: 14),
+              style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 12),
             Container(
@@ -78,16 +76,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: Row(
                 children: [
-                  const HeroIcon(
-                    HeroIcons.informationCircle,
+                  const Icon(
+                    PhosphorIconsRegular.info,
                     color: AppColors.info,
-                    size: 18,
-                  ),
+                    size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'การล้างแคชจะไม่ลบข้อมูลสำคัญของคุณ',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[700],
                       ),
@@ -105,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : () => Navigator.of(dialogContext).pop(),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -143,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   )
                 : Text(
                     'ล้างแคช',
-                    style: GoogleFonts.prompt(color: Colors.white),
+                    style: TextStyle(color: Colors.white),
                   ),
           ),
         ],
@@ -164,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(
               'ให้คะแนนแอป',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             content: Column(
@@ -176,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     return IconButton(
                       onPressed: () => setState(() => selectedRating = index + 1),
                       icon: Icon(
-                        index < selectedRating ? Icons.star : Icons.star_border,
+                        index < selectedRating ? PhosphorIconsFill.star : PhosphorIconsRegular.star,
                         color: AppColors.warning,
                         size: 32,
                       ),
@@ -190,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   controller: feedbackController,
                   decoration: InputDecoration(
                     hintText: 'ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)',
-                    hintStyle: GoogleFonts.prompt(fontSize: 14),
+                    hintStyle: TextStyle(fontSize: 14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -200,14 +197,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   maxLines: 3,
-                  style: GoogleFonts.prompt(fontSize: 14),
+                  style: TextStyle(fontSize: 14),
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+                child: Text('ยกเลิก', style: const TextStyle()),
               ),
               ElevatedButton(
                 onPressed: isSubmitting
@@ -247,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : Text('ส่ง', style: GoogleFonts.prompt(color: Colors.white)),
+                    : Text('ส่ง', style: TextStyle(color: Colors.white)),
               ),
             ],
           );
@@ -277,16 +274,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Row(
           children: [
-            const HeroIcon(
-              HeroIcons.checkCircle,
+            const Icon(
+              PhosphorIconsRegular.checkCircle,
               color: Colors.white,
-              size: 20,
-            ),
+              size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -304,16 +300,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Row(
           children: [
-            const HeroIcon(
-              HeroIcons.exclamationCircle,
+            const Icon(
+              PhosphorIconsRegular.warningCircle,
               color: Colors.white,
-              size: 20,
-            ),
+              size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -351,11 +346,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       return Container(
                         color: AppColors.primary,
                         child: const Center(
-                          child: HeroIcon(
-                            HeroIcons.photo,
+                          child: Icon(
+                            PhosphorIconsRegular.image,
                             color: Colors.white,
-                            size: 48,
-                          ),
+                            size: 48),
                         ),
                       );
                     },
@@ -366,8 +360,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.textPrimary.withOpacity(0.3),
-                          AppColors.textPrimary.withOpacity(0.6),
+                          AppColors.textPrimary.withValues(alpha: 0.3),
+                          AppColors.textPrimary.withValues(alpha: 0.6),
                         ],
                       ),
                     ),
@@ -380,19 +374,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.textLight.withOpacity(0.2),
+                            color: AppColors.textLight.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const HeroIcon(
-                            HeroIcons.cog6Tooth,
+                          child: const Icon(
+                            PhosphorIconsRegular.gear,
                             color: AppColors.textLight,
-                            size: 32,
-                          ),
+                            size: 32),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'ตั้งค่า',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textLight,
@@ -420,11 +413,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     child: const Center(
-                      child: HeroIcon(
-                        HeroIcons.arrowLeft,
+                      child: Icon(
+                        PhosphorIconsRegular.arrowLeft,
                         color: AppColors.textPrimary,
-                        size: 20,
-                      ),
+                        size: 20),
                     ),
                   ),
                 ),
@@ -453,12 +445,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ========== การตั้งค่าทั่วไป ==========
                       _buildSectionHeader(
                         'การตั้งค่าทั่วไป',
-                        HeroIcons.cog6Tooth,
+                        PhosphorIconsRegular.gear,
                       ),
                       const SizedBox(height: 12),
 
                       _buildSwitchCard(
-                        icon: HeroIcons.bell,
+                        icon: PhosphorIconsRegular.bell,
                         iconColor: AppColors.warning,
                         title: 'การแจ้งเตือน',
                         subtitle: 'รับข่าวสารและอัปเดตสถานะ',
@@ -474,7 +466,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       _buildActionCard(
-                        icon: HeroIcons.trash,
+                        icon: PhosphorIconsRegular.trash,
                         iconColor: AppColors.error,
                         title: 'ล้างแคช',
                         subtitle: 'ลบข้อมูลชั่วคราวของแอป',
@@ -486,12 +478,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ========== ข้อมูลและกฎหมาย ==========
                       _buildSectionHeader(
                         'ข้อมูลและกฎหมาย',
-                        HeroIcons.documentText,
+                        PhosphorIconsRegular.fileText,
                       ),
                       const SizedBox(height: 12),
 
                       _buildActionCard(
-                        icon: HeroIcons.documentText,
+                        icon: PhosphorIconsRegular.fileText,
                         iconColor: AppColors.info,
                         title: 'ข้อกำหนดและเงื่อนไข',
                         subtitle: 'อ่านข้อกำหนดการใช้งาน',
@@ -527,7 +519,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       _buildActionCard(
-                        icon: HeroIcons.shieldCheck,
+                        icon: PhosphorIconsRegular.shieldCheck,
                         iconColor: AppColors.primary,
                         title: 'นโยบายคุ้มครองข้อมูล (PDPA)',
                         subtitle: 'อ่านนโยบายความเป็นส่วนตัว',
@@ -550,19 +542,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // ========== เกี่ยวกับแอป ==========
                       _buildSectionHeader(
                         'เกี่ยวกับแอป',
-                        HeroIcons.informationCircle,
+                        PhosphorIconsRegular.info,
                       ),
                       const SizedBox(height: 12),
 
                       _buildInfoCard(
-                        icon: HeroIcons.devicePhoneMobile,
+                        icon: PhosphorIconsRegular.deviceMobile,
                         iconColor: AppColors.primary,
                         title: 'TAPTOM',
                         subtitle: 'แอปบันทึกข้อมูล GAP กระท่อม',
                       ),
 
                       _buildInfoCard(
-                        icon: HeroIcons.codeBracket,
+                        icon: PhosphorIconsRegular.code,
                         iconColor: AppColors.superAdminPrimary,
                         title: 'เวอร์ชัน',
                         subtitle: settings.version.isEmpty
@@ -571,7 +563,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       _buildActionCard(
-                        icon: HeroIcons.star,
+                        icon: PhosphorIconsRegular.star,
                         iconColor: AppColors.warning,
                         title: 'ให้คะแนนแอป',
                         subtitle: 'ช่วยเราปรับปรุงแอปให้ดีขึ้น',
@@ -597,14 +589,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ==================== WIDGETS ====================
 
-  Widget _buildSectionHeader(String title, HeroIcons icon) {
+  Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        HeroIcon(icon, color: AppColors.primary, size: 18),
+        Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
@@ -615,7 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSwitchCard({
-    required HeroIcons icon,
+    required IconData icon,
     required Color iconColor,
     required String title,
     required String subtitle,
@@ -642,10 +634,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: HeroIcon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -654,14 +646,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary,
                     ),
@@ -681,7 +673,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildActionCard({
-    required HeroIcons icon,
+    required IconData icon,
     required Color iconColor,
     required String title,
     required String subtitle,
@@ -704,10 +696,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: HeroIcon(icon, color: iconColor, size: 22),
+                  child: Icon(icon, color: iconColor, size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -716,14 +708,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
                       ),
                       Text(
                         subtitle,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
@@ -731,11 +723,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                const HeroIcon(
-                  HeroIcons.chevronRight,
+                const Icon(
+                  PhosphorIconsRegular.caretRight,
                   color: AppColors.textSecondary,
-                  size: 18,
-                ),
+                  size: 18),
               ],
             ),
           ),
@@ -745,7 +736,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildInfoCard({
-    required HeroIcons icon,
+    required IconData icon,
     required Color iconColor,
     required String title,
     required String subtitle,
@@ -770,10 +761,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: HeroIcon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -782,14 +773,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary,
                     ),
@@ -819,11 +810,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Center(
-                  child: HeroIcon(
-                    HeroIcons.photo,
+                  child: Icon(
+                    PhosphorIconsRegular.image,
                     color: Colors.grey,
-                    size: 24,
-                  ),
+                    size: 24),
                 ),
               );
             },
@@ -831,14 +821,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           Text(
             'พัฒนาโดย GISTNU',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
             ),
           ),
           Text(
             'มหาวิทยาลัยนเรศวร',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 11,
               color: AppColors.textTertiary,
             ),

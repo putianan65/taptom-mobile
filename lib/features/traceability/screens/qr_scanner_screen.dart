@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -76,7 +76,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     if (lotNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('กรุณากรอกรหัสล็อต', style: GoogleFonts.prompt()),
+          content: Text('กรุณากรอกรหัสล็อต', style: const TextStyle()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -124,7 +124,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   Widget _buildOverlay(Size size, double scanAreaSize) {
     return ColorFiltered(
       colorFilter: ColorFilter.mode(
-        Colors.black.withOpacity(0.6),
+        Colors.black.withValues(alpha: 0.6),
         BlendMode.srcOut,
       ),
       child: Stack(
@@ -168,15 +168,15 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  AppColors.success.withOpacity(0.8),
+                  AppColors.success.withValues(alpha: 0.8),
                   AppColors.success,
-                  AppColors.success.withOpacity(0.8),
+                  AppColors.success.withValues(alpha: 0.8),
                   Colors.transparent,
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.success.withOpacity(0.5),
+                  color: AppColors.success.withValues(alpha: 0.5),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),
@@ -197,7 +197,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           children: [
             // Back button
             _buildCircleButton(
-              icon: Icons.arrow_back_ios_new,
+              icon: PhosphorIconsRegular.arrowLeft,
               onTap: () => Navigator.of(context).pop(),
             ),
             // Title
@@ -206,7 +206,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               children: [
                 Text(
                   'สแกน QR Code',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -214,7 +214,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                 ),
                 Text(
                   'ตรวจสอบย้อนกลับผลิตภัณฑ์',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.white70,
                   ),
@@ -227,8 +227,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               builder: (context, state, child) {
                 return _buildCircleButton(
                   icon: state.torchState == TorchState.on
-                      ? Icons.flash_on
-                      : Icons.flash_off,
+                      ? PhosphorIconsRegular.lightning
+                      : PhosphorIconsRegular.lightningSlash,
                   onTap: () => _scannerController.toggleTorch(),
                   isActive: state.torchState == TorchState.on,
                 );
@@ -252,8 +252,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         height: 44,
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.success.withOpacity(0.3)
-              : Colors.black.withOpacity(0.4),
+              ? AppColors.success.withValues(alpha: 0.3)
+              : Colors.black.withValues(alpha: 0.4),
           shape: BoxShape.circle,
           border: Border.all(
             color: isActive ? AppColors.success : Colors.white30,
@@ -283,8 +283,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              Colors.black.withOpacity(0.7),
-              Colors.black.withOpacity(0.9),
+              Colors.black.withValues(alpha: 0.7),
+              Colors.black.withValues(alpha: 0.9),
             ],
           ),
         ),
@@ -293,7 +293,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           children: [
             Text(
               'วาง QR Code ไว้ในกรอบเพื่อสแกน',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.white70,
               ),
@@ -304,10 +304,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => setState(() => _showManualInput = !_showManualInput),
-                icon: const Icon(Icons.edit_note, color: Colors.white),
+                icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
                 label: Text(
                   'กรอกรหัสล็อตด้วยตัวเอง',
-                  style: GoogleFonts.prompt(color: Colors.white),
+                  style: TextStyle(color: Colors.white),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.white38),
@@ -358,7 +358,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
             const SizedBox(height: 16),
             Text(
               'กรอกรหัสล็อต',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -367,7 +367,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
             const SizedBox(height: 4),
             Text(
               'กรอกหมายเลขล็อตจากบรรจุภัณฑ์',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),
@@ -376,11 +376,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
             TextField(
               controller: _manualController,
               autofocus: true,
-              style: GoogleFonts.prompt(fontSize: 16),
+              style: TextStyle(fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'เช่น L20260224-1234',
-                hintStyle: GoogleFonts.prompt(color: AppColors.textTertiary),
-                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                hintStyle: TextStyle(color: AppColors.textTertiary),
+                prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.primary),
                 filled: true,
                 fillColor: AppColors.surfaceVariant,
                 border: OutlineInputBorder(
@@ -406,7 +406,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+                    child: Text('ยกเลิก', style: const TextStyle()),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -414,10 +414,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                   flex: 2,
                   child: ElevatedButton.icon(
                     onPressed: _navigateManual,
-                    icon: const Icon(Icons.search, color: Colors.white, size: 20),
+                    icon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: Colors.white, size: 20),
                     label: Text(
                       'ค้นหา',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),

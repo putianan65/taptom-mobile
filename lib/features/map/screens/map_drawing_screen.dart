@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/config/env.dart';
@@ -184,7 +183,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
     _showSnackBar(
       _isDrawingMode ? 'แตะบนแผนที่เพื่อวาดขอบเขตแปลง' : 'ปิดโหมดวาดแปลง',
       _isDrawingMode ? AppColors.primary : Colors.grey[700]!,
-      _isDrawingMode ? HeroIcons.pencil : HeroIcons.xCircle,
+      _isDrawingMode ? PhosphorIconsRegular.pencilSimple : PhosphorIconsRegular.xCircle,
     );
   }
 
@@ -333,7 +332,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
       _showSnackBar(
         'กรุณาวาดแปลงให้สมบูรณ์ (อย่างน้อย 3 จุด)',
         Colors.red,
-        HeroIcons.exclamationCircle,
+        PhosphorIconsRegular.warningCircle,
       );
       return;
     }
@@ -360,19 +359,18 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const HeroIcon(
-                    HeroIcons.mapPin,
+                  child: const Icon(
+                    PhosphorIconsRegular.mapPin,
                     color: AppColors.primary,
-                    size: 24,
-                  ),
+                    size: 24),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'บันทึกแปลง',
-                  style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -387,32 +385,31 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    prefixIcon: const Icon(Icons.edit_outlined),
+                    prefixIcon: const Icon(PhosphorIconsRegular.pencilSimple),
                   ),
-                  style: GoogleFonts.prompt(),
+                  style: const TextStyle(),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const HeroIcon(
-                        HeroIcons.mapPin,
+                      const Icon(
+                        PhosphorIconsRegular.mapPin,
                         color: AppColors.primary,
-                        size: 20,
-                      ),
+                        size: 20),
                       const SizedBox(width: 8),
                       Builder(
                         builder: (context) {
                           final area = _calculateThaiArea();
                           return Text(
                             'พื้นที่: ${area['rai']} ไร่ ${area['ngan']} งาน ${area['wah']} ตร.ว.',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               fontWeight: FontWeight.w500,
                               color: AppColors.primary,
                             ),
@@ -439,7 +436,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                       },
                 child: Text(
                   'ยกเลิก',
-                  style: GoogleFonts.prompt(color: Colors.grey),
+                  style: TextStyle(color: Colors.grey),
                 ),
               ),
               ElevatedButton(
@@ -471,7 +468,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                               _showSnackBar(
                                 'อัปเดตพิกัดแปลงเรียบร้อย (Admin Override)',
                                 AppColors.success,
-                                HeroIcons.checkCircle,
+                                PhosphorIconsRegular.checkCircle,
                               );
                               Navigator.of(rootContext).pop();
                             }
@@ -533,7 +530,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                           _showSnackBar(
                             'เกิดข้อผิดพลาด: ${e.toString().replaceAll("Exception: ", "")}',
                             AppColors.error,
-                            HeroIcons.exclamationTriangle,
+                            PhosphorIconsRegular.warning,
                           );
                         }
                       },
@@ -545,7 +542,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                 ),
                 child: Text(
                   'บันทึก',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -580,20 +577,18 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const HeroIcon(
-                  HeroIcons.checkCircle,
-                  style: HeroIconStyle.solid,
+                child: const Icon(
+                  PhosphorIconsFill.checkCircle,
                   color: AppColors.success,
-                  size: 60,
-                ),
+                  size: 60),
               ),
               const SizedBox(height: 20),
               Text(
                 'บันทึกแปลงสำเร็จ!',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.success,
@@ -602,7 +597,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
               const SizedBox(height: 8),
               Text(
                 '"$plotName"',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -615,21 +610,20 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const HeroIcon(
-                      HeroIcons.mapPin,
+                    const Icon(
+                      PhosphorIconsRegular.mapPin,
                       color: AppColors.primary,
-                      size: 18,
-                    ),
+                      size: 18),
                     const SizedBox(width: 8),
                     Text(
                       '${area['rai']} ไร่ ${area['ngan']} งาน ${area['wah']} ตร.ว.',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -640,7 +634,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
               const SizedBox(height: 8),
               Text(
                 'แปลงของคุณพร้อมใช้งานแล้ว',
-                style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -669,7 +663,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                 ),
                 child: Text(
                   'เสร็จสิ้น',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -684,19 +678,19 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
   // ==================== UI HELPERS ====================
 
-  void _showSnackBar(String message, Color backgroundColor, HeroIcons icon) {
+  void _showSnackBar(String message, Color backgroundColor, IconData icon) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            HeroIcon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.prompt(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -746,7 +740,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                 children: [
                   if (Navigator.of(context).canPop())
                     _buildCircleButton(
-                      icon: HeroIcons.arrowLeft,
+                      icon: PhosphorIconsRegular.arrowLeft,
                       onTap: () => Navigator.of(context).pop(),
                     ),
                   if (Navigator.of(context).canPop()) const SizedBox(width: 12),
@@ -758,7 +752,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
 
                   // Layer Toggle
                   _buildCircleButton(
-                    icon: _isSatelliteView ? HeroIcons.globeAlt : HeroIcons.map,
+                    icon: _isSatelliteView ? PhosphorIconsRegular.globe : PhosphorIconsRegular.mapTrifold,
                     onTap: _toggleMapStyle,
                   ),
                 ],
@@ -777,21 +771,21 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             child: Column(
               children: [
                 _buildCircleButton(
-                  icon: HeroIcons.plus,
+                  icon: PhosphorIconsRegular.plus,
                   onTap: _zoomIn,
                   bgColor: Colors.white,
                   iconColor: AppColors.textPrimary,
                 ),
                 const SizedBox(height: 8),
                 _buildCircleButton(
-                  icon: HeroIcons.minus,
+                  icon: PhosphorIconsRegular.minus,
                   onTap: _zoomOut,
                   bgColor: Colors.white,
                   iconColor: AppColors.textPrimary,
                 ),
                 const SizedBox(height: 16),
                 _buildCircleButton(
-                  icon: HeroIcons.viewfinderCircle,
+                  icon: PhosphorIconsRegular.scan,
                   onTap: _goToCurrentLocation,
                   bgColor: Colors.white,
                 ),
@@ -814,7 +808,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
   // ==================== WIDGET BUILDERS ====================
 
   Widget _buildCircleButton({
-    required HeroIcons icon,
+    required IconData icon,
     required VoidCallback onTap,
     Color bgColor = Colors.white,
     Color iconColor = AppColors.textPrimary,
@@ -831,13 +825,13 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: HeroIcon(icon, color: iconColor, size: 22),
+          child: Icon(icon, color: iconColor, size: 22),
         ),
       ),
     );
@@ -850,7 +844,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10),
         ],
       ),
       child: Row(
@@ -862,11 +856,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
               color: _isGpsHigh ? AppColors.primary : Colors.orange,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const HeroIcon(
-              HeroIcons.signal,
+            child: const Icon(
+              PhosphorIconsRegular.wifiHigh,
               color: Colors.white,
-              size: 16,
-            ),
+              size: 16),
           ),
           const SizedBox(width: 10),
           Flexible(
@@ -876,14 +869,14 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
               children: [
                 Text(
                   'ความแม่นยำ GPS',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 10,
                     color: Colors.grey[600],
                   ),
                 ),
                 Text(
                   _gpsStatus,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: _isGpsHigh ? AppColors.primary : Colors.orange,
@@ -905,7 +898,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -922,7 +915,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
           const SizedBox(width: 8),
           Text(
             'จุดเริ่ม',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -942,7 +935,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -975,20 +968,19 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const HeroIcon(
-                        HeroIcons.mapPin,
+                      child: const Icon(
+                        PhosphorIconsRegular.mapPin,
                         size: 14,
-                        color: AppColors.primary,
-                      ),
+                        color: AppColors.primary),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         'แปลง #${_plotCounter.toString().padLeft(3, '0')}',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -1020,7 +1012,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     gradient: LinearGradient(
                       colors: [
                         AppColors.primary,
-                        AppColors.primary.withOpacity(0.8),
+                        AppColors.primary.withValues(alpha: 0.8),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1028,7 +1020,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -1042,15 +1034,14 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const HeroIcon(
-                          HeroIcons.pencil,
+                        const Icon(
+                          PhosphorIconsRegular.pencilSimple,
                           size: 22,
-                          color: Colors.white,
-                        ),
+                          color: Colors.white),
                         const SizedBox(height: 4),
                         Text(
                           'เริ่มวาด',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -1085,7 +1076,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
           children: [
             Expanded(
               child: _buildActionButton(
-                icon: HeroIcons.arrowUturnLeft,
+                icon: PhosphorIconsRegular.arrowUUpLeft,
                 label: 'ย้อน',
                 onTap: _polygonPoints.isNotEmpty ? _undoLastPoint : null,
                 color: Colors.grey[700]!,
@@ -1094,7 +1085,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: _buildActionButton(
-                icon: HeroIcons.trash,
+                icon: PhosphorIconsRegular.trash,
                 label: 'ลบทั้งหมด',
                 onTap: _polygonPoints.isNotEmpty ? _clearDrawing : null,
                 color: Colors.red[600]!,
@@ -1103,7 +1094,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: _buildActionButton(
-                icon: HeroIcons.xCircle,
+                icon: PhosphorIconsRegular.xCircle,
                 label: 'ยกเลิก',
                 onTap: _toggleDrawingMode,
                 color: Colors.orange[600]!,
@@ -1112,7 +1103,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: _buildActionButton(
-                icon: HeroIcons.checkCircle,
+                icon: PhosphorIconsRegular.checkCircle,
                 label: 'ยืนยัน',
                 onTap: _polygonPoints.length >= 3 ? _confirmPolygon : null,
                 color: AppColors.primary,
@@ -1129,10 +1120,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
           width: 1.5,
         ),
       ),
@@ -1158,7 +1149,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         Flexible(
           child: Text(
             value,
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppColors.primary,
@@ -1171,10 +1162,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         const SizedBox(width: 3),
         Text(
           unit,
-          style: GoogleFonts.prompt(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: AppColors.primary.withOpacity(0.7),
+            color: AppColors.primary.withValues(alpha: 0.7),
             height: 1.0,
           ),
           overflow: TextOverflow.visible,
@@ -1190,7 +1181,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
         width: 1,
         height: 14,
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.25),
+          color: AppColors.primary.withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(0.5),
         ),
       ),
@@ -1198,7 +1189,7 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
   }
 
   Widget _buildActionButton({
-    required HeroIcons icon,
+    required IconData icon,
     required String label,
     required VoidCallback? onTap,
     required Color color,
@@ -1216,10 +1207,10 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
           decoration: BoxDecoration(
             color: isPrimary && !isDisabled
                 ? effectiveColor
-                : effectiveColor.withOpacity(0.1),
+                : effectiveColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: effectiveColor.withOpacity(0.3),
+              color: effectiveColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -1228,17 +1219,16 @@ class _MapDrawingScreenState extends State<MapDrawingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                HeroIcon(
+                Icon(
                   icon,
                   size: 22,
                   color: isPrimary && !isDisabled
                       ? Colors.white
-                      : effectiveColor,
-                ),
+                      : effectiveColor),
                 const SizedBox(height: 4),
                 Text(
                   label,
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isPrimary && !isDisabled

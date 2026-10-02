@@ -1,10 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/user_model.dart';
+
+import '../../../app/routes.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../auth/auth_provider.dart';
 
+/// Animated splash. Restores the saved session in parallel with a short
+/// intro (a living field at dawn, the mark, then Lung Tom), and hands over to
+/// the right home screen as soon as both are done.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -13,72 +20,76 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  static const _minimumIntro = Duration(milliseconds: 1900);
+
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
-  Future<void> _checkAuth() async {
-    // Simulate splash delay
-    await Future.delayed(const Duration(seconds: 1));
-
+  Future<void> _start() async {
+    final auth = context.read<AuthProvider>();
+    final reduce = MediaQuery.of(context).disableAnimations;
+    await Future.wait([
+      if (!auth.isRestored) auth.restoreSession(),
+      Future.delayed(reduce ? const Duration(milliseconds: 400) : _minimumIntro),
+    ]);
     if (!mounted) return;
-
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final isAuthenticated = await authProvider.loadUser();
-
-      if (mounted) {
-        if (isAuthenticated) {
-          // Redirect based on role
-          // Redirect based on role
-          final user = authProvider.user;
-          if (user != null) {
-            if (user.role == UserRole.superAdmin) {
-              context.go('/super-admin/dashboard');
-            } else if (user.role == UserRole.admin) {
-              context.go('/admin/dashboard');
-            } else {
-              context.go('/dashboard');
-            }
-          }
-        } else {
-          context.go('/login');
-        }
-      }
-    } catch (e) {
-      if (mounted) context.go('/login');
-    }
+    final user = auth.currentUser;
+    context.go(user == null ? Routes.login : Routes.homeFor(user.role));
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final size = MediaQuery.sizeOf(context);
+    final mascotSize = (size.shortestSide * 0.42).clamp(140.0, 220.0);
+
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 140, // Increased size slightly since padding is gone
-              height: 140,
-              fit: BoxFit.contain,
+      backgroundColor: p.background,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const FieldBackdrop(horizon: 0.5),
+          SafeArea(
+            child: Column(
+              children: [
+                SizedBox(height: size.height * 0.12),
+                const LogoMark(size: 76)
+                    .animate()
+                    .fadeIn(duration: Motion.slow)
+                    .scaleXY(begin: 0.85, end: 1, curve: Motion.emphasized, duration: Motion.slower),
+                const SizedBox(height: Space.xl),
+                Text(
+                  'TAPTOM',
+                  style: context.text.displayMedium?.copyWith(letterSpacing: 4),
+                )
+                    .animate(delay: 180.ms)
+                    .fadeIn(duration: Motion.slow)
+                    .moveY(begin: 10, end: 0, curve: Motion.emphasized),
+                const SizedBox(height: Space.xs),
+                Text(
+                  'สมุดบันทึกแปลงดิจิทัล\nมาตรฐาน GAP และการตรวจสอบย้อนกลับ',
+                  textAlign: TextAlign.center,
+                  style: context.text.bodyLarge?.copyWith(color: p.inkMuted),
+                ).animate(delay: 320.ms).fadeIn(duration: Motion.slow),
+                const Spacer(),
+              ],
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Taptom GAP',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Center(
+              child: FarmerMascot(size: mascotSize, mood: MascotMood.wave)
+                  .animate(delay: 420.ms)
+                  .fadeIn(duration: Motion.slow)
+                  .moveY(begin: 60, end: 0, curve: Motion.emphasized, duration: 700.ms),
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(color: Colors.white),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

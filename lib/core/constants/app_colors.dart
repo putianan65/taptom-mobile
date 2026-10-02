@@ -1,291 +1,132 @@
 import 'package:flutter/material.dart';
 
-/// Production-ready Color System
-/// Design Philosophy: Clean, Professional, Sustainable
-class AppColors {
-  // ═══════════════════════════════════════════════════════════
-  // PRIMARY BRAND COLORS - Green Palette
-  // ═══════════════════════════════════════════════════════════
+import '../design/palette.dart';
 
-  /// Main brand green - Professional, deep forest green (Production-ready)
-  /// Darker than before for better contrast and premium feel
-  static const Color primary = Color(0xFF1B5E3F); // Deep professional green
-
-  /// Light variant for hover states and backgrounds
-  static const Color primaryLight = Color(0xFF2E7D52);
-
-  /// Lighter tint for subtle backgrounds
-  static const Color primaryLighter = Color(0xFF4A9D6F);
-
-  /// Dark variant for depth and contrast - nearly black-green
-  static const Color primaryDark = Color(0xFF0D3D28);
-
-  // ═══════════════════════════════════════════════════════════
-  // GRADIENTS - Soft, Sophisticated
-  // ═══════════════════════════════════════════════════════════
+/// Static colour aliases kept for screens that cannot reach a [BuildContext].
+///
+/// They mirror the light palette in [AppPalette]. Widgets should prefer
+/// `context.palette`, which also follows dark mode.
+abstract final class AppColors {
+  static const Color primary = Swatch.green700;
+  static const Color primaryLight = Swatch.green600;
+  static const Color primaryLighter = Swatch.green500;
+  static const Color primaryDark = Swatch.green800;
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF4A9D6F), // Mint green
-      Color(0xFF2D7A4F), // Forest green
-    ],
+    colors: [Swatch.green700, Swatch.green800],
   );
 
-  static const LinearGradient subtleGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFFF8FAF9), // Nearly white with green tint
-      Color(0xFFFFFFFF), // Pure white
-    ],
-  );
+  static const Color background = Swatch.paper0;
+  static const Color surface = Swatch.paper0;
+  static const Color surfaceVariant = Swatch.paper100;
 
-  // ═══════════════════════════════════════════════════════════
-  // NEUTRAL PALETTE - Warm Grays
-  // ═══════════════════════════════════════════════════════════
-
-  /// Main background - off-white with warmth
-  static const Color background = Color(0xFFF8F9FA);
-
-  /// Card and elevated surface color
-  static const Color surface = Color(0xFFFFFFFF);
-
-  /// Subtle surface variant (for inputs, etc)
-  static const Color surfaceVariant = Color(0xFFF4F5F7);
-
-  // ═══════════════════════════════════════════════════════════
-  // TEXT COLORS - High Contrast, Readable
-  // ═══════════════════════════════════════════════════════════
-
-  /// Primary text - dark gray, not black
-  static const Color textPrimary = Color(0xFF1F2937);
-
-  /// Secondary text - medium gray
-  static const Color textSecondary = Color(0xFF6B7280);
-
-  /// Tertiary text - light gray (placeholders, disabled)
-  static const Color textTertiary = Color(0xFF9CA3AF);
-
-  /// Text on dark backgrounds
-  static const Color textLight = Color(0xFFFFFFFF);
-
-  /// Main text alias for compatibility
+  static const Color textPrimary = Swatch.ink900;
+  static const Color textSecondary = Swatch.ink600;
+  static const Color textTertiary = Swatch.ink500;
+  static const Color textLight = Swatch.paper0;
   static const Color textMain = textPrimary;
 
-  // ═══════════════════════════════════════════════════════════
-  // SEMANTIC COLORS - Status Communication
-  // ═══════════════════════════════════════════════════════════
+  /// Secondary accents collapse into the brand family to keep colour use
+  /// restrained; status colours below carry meaning.
+  static const Color secondary = Swatch.slate700;
+  static const Color success = Swatch.green600;
+  static const Color warning = Swatch.gold700;
+  static const Color error = Swatch.clay700;
+  static const Color info = Swatch.slate700;
 
-  /// Secondary accent (kept minimal, use sparingly)
-  static const Color secondary = Color(0xFF3B82F6);
+  static const Color border = Swatch.paper200;
+  static const Color borderLight = Swatch.paper100;
+  static const Color divider = Swatch.paper200;
 
-  /// Success state
-  static const Color success = Color(0xFF10B981);
+  static const Color shadowLight = Color(0x0F13321D);
+  static const Color shadowMedium = Color(0x1A13321D);
+  static const Color shadowStrong = Color(0x2913321D);
 
-  /// Warning state
-  static const Color warning = Color(0xFFF59E0B);
+  static const Color darkBackground = Swatch.night950;
+  static const Color darkSurface = Swatch.night900;
+  static const Color darkSurfaceVariant = Swatch.night800;
 
-  /// Error state
-  static const Color error = Color(0xFFEF4444);
+  static const Color gradientStart = Swatch.green700;
+  static const Color gradientEnd = Swatch.green600;
+  static const Color gradientSurface = Swatch.green50;
 
-  /// Info state
-  static const Color info = Color(0xFF3B82F6);
-
-  // ═══════════════════════════════════════════════════════════
-  // BORDER & DIVIDER COLORS
-  // ═══════════════════════════════════════════════════════════
-
-  /// Default border color
-  static const Color border = Color(0xFFE5E7EB);
-
-  /// Subtle border
-  static const Color borderLight = Color(0xFFF3F4F6);
-
-  /// Divider color
-  static const Color divider = Color(0xFFE5E7EB);
-
-  // ═══════════════════════════════════════════════════════════
-  // SHADOW COLORS
-  // ═══════════════════════════════════════════════════════════
-
-  /// Subtle shadow for cards
-  static Color shadowLight = const Color(0xFF000000).withOpacity(0.04);
-
-  /// Medium shadow for elevated elements
-  static Color shadowMedium = const Color(0xFF000000).withOpacity(0.08);
-
-  /// Strong shadow for floating elements
-  static Color shadowStrong = const Color(0xFF000000).withOpacity(0.12);
-
-  // ═══════════════════════════════════════════════════════════
-  // DARK MODE PALETTE (Future-proof)
-  // ═══════════════════════════════════════════════════════════
-
-  static const Color darkBackground = Color(0xFF111827);
-  static const Color darkSurface = Color(0xFF1F2937);
-  static const Color darkSurfaceVariant = Color(0xFF374151);
-
-  // ═══════════════════════════════════════════════════════════
-  // LEGACY COMPATIBILITY (Do not remove)
-  // ═══════════════════════════════════════════════════════════
-
-  // Missing Gradient Colors
-  static const Color gradientStart = Color(0xFF2E7D32); // Deep Green
-  static const Color gradientEnd = Color(0xFF43A047); // Lighter Green
-  static const Color gradientSurface = Color(0xFFE8F5E9);
-
-  // ═══════════════════════════════════════════════════════════
-  // ROLE-BASED COLORS - Admin & Super Admin Identity
-  // ═══════════════════════════════════════════════════════════
-
-  /// Admin role accent - Green (Matching User App)
-  static const Color adminPrimary = primary; // Was Orange
-  static const Color adminLight = primaryLight;   // Was Orange
-  static const Color adminLighter = primaryLighter; // Was Light Orange
-  static const Color adminDark = primaryDark;    // Was Dark Orange
-
-  /// Admin gradient - Green
-  static const LinearGradient adminGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF2E7D32), // Dark Green
-      Color(0xFF66BB6A), // Light Green
-    ],
-  );
-
-  /// Super Admin role accent - Royal Blue & Black (The King of System)
-  static const Color superAdminPrimary = Color(0xFF1565C0); // Royal Blue
-  static const Color superAdminLight = Color(0xFF42A5F5);   // Lighter Blue
-  static const Color superAdminLighter = Color(0xFF90CAF9); // Pale Blue
-  static const Color superAdminDark = Color(0xFF0D47A1);    // Deep Blue
-  
-  /// Super Admin gradients - Royal Blue to Black
+  // Roles share the brand palette; role is shown with a label, not a colour.
+  static const Color adminPrimary = Swatch.green700;
+  static const Color adminLight = Swatch.green600;
+  static const Color adminLighter = Swatch.green500;
+  static const Color adminDark = Swatch.green800;
+  static const LinearGradient adminGradient = primaryGradient;
+  static const Color superAdminPrimary = Swatch.green800;
+  static const Color superAdminLight = Swatch.green600;
+  static const Color superAdminLighter = Swatch.green300;
+  static const Color superAdminDark = Swatch.green900;
   static const LinearGradient superAdminGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF000000), // Black
-      Color(0xFF1565C0), // Royal Blue
-    ],
+    colors: [Swatch.green900, Swatch.green800],
   );
 
-  static const Color neutralGray = Color(0xFF757575);
-
-  // Missing Semantic Status Colors
-  static const Color pendingStatus = Color(0xFFFFAB40);
+  static const Color neutralGray = Swatch.ink500;
+  static const Color pendingStatus = Swatch.gold700;
   static const Color approvedStatus = success;
   static const Color rejectedStatus = error;
-  static const Color noneStatus = Color(0xFF9E9E9E);
+  static const Color noneStatus = Swatch.ink500;
 
-  // Missing Surface Colors
-  static const Color surfaceLight = Color(0xFFFAFAFA);
-  static const Color surfaceCard = Colors.white;
-  static const Color surfaceDimmed = Color(0xFFF5F5F5);
+  static const Color surfaceLight = Swatch.paper50;
+  static const Color surfaceCard = Swatch.paper0;
+  static const Color surfaceDimmed = Swatch.paper100;
+  static const Color textHint = Swatch.ink400;
+  static const Color textOnDark = Swatch.paper0;
 
-  // Missing Text Colors
-  static const Color textHint = Color(0xFFBDBDBD);
-  static const Color textOnDark = Colors.white;
+  // GAP categories are distinguished by number and icon, not colour.
+  static const Color gapGeneral = primary;
+  static const Color gapInputs = primary;
+  static const Color gapManagement = primary;
+  static const Color gapHarvest = primary;
+  static const Color gapPostHarvest = primary;
+  static const Color gapSafety = primary;
+  static const Color gapTraceability = primary;
 
-  // ═══════════════════════════════════════════════════════════
-  // GAP CATEGORY COLORS
-  // ═══════════════════════════════════════════════════════════
+  static Color roleColor(String? role) => primary;
 
-  static const Color gapGeneral = Color(0xFF1B5E3F);      // Primary green
-  static const Color gapInputs = Color(0xFF2E7D52);       // Primary light
-  static const Color gapManagement = Color(0xFF4A9D6F);   // Primary lighter
-  static const Color gapHarvest = Color(0xFFFF6F00);      // Admin primary
-  static const Color gapPostHarvest = Color(0xFF3B82F6);  // Info blue
-  static const Color gapSafety = Color(0xFFEF4444);       // Error red
-  static const Color gapTraceability = Color(0xFF8B5CF6); // Purple
+  static Color statusColor(String? status) => switch (status?.toUpperCase()) {
+        'PENDING' => pendingStatus,
+        'APPROVED' => approvedStatus,
+        'REJECTED' => rejectedStatus,
+        _ => noneStatus,
+      };
 
-  // ═══════════════════════════════════════════════════════════
-  // UTILITY METHODS
-  // ═══════════════════════════════════════════════════════════
-
-  /// Get color based on user role
-  static Color roleColor(String? role) {
-    switch (role?.toUpperCase()) {
-      case 'SUPER_ADMIN':
-        return superAdminPrimary;
-      case 'ADMIN':
-        return adminPrimary;
-      default:
-        return primary;
-    }
-  }
-
-  /// Get color based on membership status
-  static Color statusColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'PENDING':
-        return pendingStatus;
-      case 'APPROVED':
-        return approvedStatus;
-      case 'REJECTED':
-        return rejectedStatus;
-      default:
-        return noneStatus;
-    }
-  }
-
-  /// Generate a lighter tint of any color
   static Color lighten(Color color, [double amount = 0.1]) {
-    assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
-    final lightness = (hsl.lightness + amount).clamp(0.0, 1.0);
-    return hsl.withLightness(lightness).toColor();
+    return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0)).toColor();
   }
 
-  /// Generate a darker shade of any color
   static Color darken(Color color, [double amount = 0.1]) {
-    assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
-    final lightness = (hsl.lightness - amount).clamp(0.0, 1.0);
-    return hsl.withLightness(lightness).toColor();
+    return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
   }
 }
 
-/// Luxury Theme for Super Admin (Midnight Blue & Neon)
-class LuxuryTheme {
-  // Backgrounds
-  static const Color midnightBlue = Color(0xFF0F172A); // Deepest Blue
-  static const Color deepSpace = Color(0xFF020617);    // Nearly Black
-  
+/// Former neon "luxury" palette for the super admin area, now folded into
+/// the shared design. Kept as aliases while screens migrate.
+abstract final class LuxuryTheme {
+  static const Color midnightBlue = Swatch.paper50;
+  static const Color deepSpace = Swatch.paper100;
   static const LinearGradient backgroundGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF0F172A), // Midnight Blue
-      Color(0xFF020617), // Deep Space
-    ],
+    colors: [Swatch.paper50, Swatch.paper50],
   );
+  static const Color glassSurface = Swatch.paper0;
+  static const Color glassBorder = Swatch.paper200;
+  static const double glassBlur = 0;
+  static const Color cyanNeon = Swatch.green700;
+  static const Color goldNeon = Swatch.gold700;
+  static const Color purpleNeon = Swatch.slate700;
+  static const Color emeraldNeon = Swatch.green600;
+  static const Color textPrimary = Swatch.ink900;
+  static const Color textSecondary = Swatch.ink600;
+  static const Color textDisabled = Swatch.ink400;
 
-  // Glassmorphism
-  static Color glassSurface = const Color(0xFFFFFFFF).withOpacity(0.03); // Very transparent white
-  static Color glassBorder = const Color(0xFFFFFFFF).withOpacity(0.15);  // Subtle white border
-  static const double glassBlur = 10.0;
-
-  // Accents (Neon)
-  static const Color cyanNeon = Color(0xFF00E5FF);     // Bright Cyan
-  static const Color goldNeon = Color(0xFFFFD700);     // Bright Gold
-  static const Color purpleNeon = Color(0xFFD500F9);   // Bright Purple
-  static const Color emeraldNeon = Color(0xFF00E676);  // Bright Green
-
-  // Text
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Colors.white70;
-  static const Color textDisabled = Colors.white30;
-
-  // Shadows
-  static List<BoxShadow> neonShadow(Color color) => [
-    BoxShadow(
-      color: color.withOpacity(0.15),
-      blurRadius: 8,
-      spreadRadius: 0,
-      offset: const Offset(0, 2),
-    ),
-  ];
+  static List<BoxShadow> neonShadow(Color color) => const [];
 }

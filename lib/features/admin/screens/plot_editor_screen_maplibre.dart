@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -94,9 +93,9 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                const Icon(PhosphorIconsFill.checkCircle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('บันทึกสำเร็จ', style: GoogleFonts.prompt()),
+                Text('บันทึกสำเร็จ', style: const TextStyle()),
               ],
             ),
             backgroundColor: Colors.green,
@@ -121,7 +120,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.prompt()),
+        content: Text(message, style: const TextStyle()),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -229,12 +228,12 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'แตะบนแผนที่เพื่อเพิ่มจุด',
-                  style: GoogleFonts.prompt(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                   ),
@@ -253,11 +252,11 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -266,7 +265,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const HeroIcon(HeroIcons.arrowLeft, color: AppColors.primary),
+                      icon: const Icon(PhosphorIconsRegular.arrowLeft, color: AppColors.primary),
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
@@ -277,14 +276,14 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                         children: [
                           Text(
                             'แก้ไขแปลง',
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,
                             ),
                           ),
                           Text(
                             widget.plot.name,
-                            style: GoogleFonts.prompt(
+                            style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -319,33 +318,33 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildToolButton(
-                  icon: HeroIcons.arrowUturnLeft,
+                  icon: PhosphorIconsRegular.arrowUUpLeft,
                   onTap: polygonPoints.isEmpty ? null : _undoLastPoint,
                   tooltip: 'ย้อนกลับ',
                 ),
                 const SizedBox(height: 12),
                 _buildToolButton(
-                  icon: HeroIcons.trash,
+                  icon: PhosphorIconsRegular.trash,
                   onTap: polygonPoints.isEmpty ? null : _clearAll,
                   color: Colors.red,
                   tooltip: 'ล้างจุด',
                 ),
                 const SizedBox(height: 12),
                 _buildToolButton(
-                  icon: HeroIcons.informationCircle,
+                  icon: PhosphorIconsRegular.info,
                   onTap: () {
                     showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: Text('วิธีใช้งาน', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
+                        title: Text('วิธีใช้งาน', style: TextStyle(fontWeight: FontWeight.bold)),
                         content: Text(
                           '1. แตะบนแผนที่เพื่อปักหมุดมุมแปลง\n2. ปักหมุดให้ครบ 3 จุดขึ้นไป\n3. กดปุ่มบันทึกด้านล่าง',
-                          style: GoogleFonts.prompt(),
+                          style: const TextStyle(),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: Text('ตกลง', style: GoogleFonts.prompt()),
+                            child: Text('ตกลง', style: const TextStyle()),
                           ),
                         ],
                       ),
@@ -370,7 +369,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -393,7 +392,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                         ),
                         child: Text(
                           'ยกเลิก',
-                          style: GoogleFonts.prompt(color: Colors.grey.shade700),
+                          style: TextStyle(color: Colors.grey.shade700),
                         ),
                       ),
                     ),
@@ -413,7 +412,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
                         ),
                         child: Text(
                           'บันทึกพิกัดแปลง',
-                          style: GoogleFonts.prompt(
+                          style: TextStyle(
                             color: polygonPoints.length >= 3 ? Colors.white : Colors.grey,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -432,7 +431,7 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
   }
 
   Widget _buildToolButton({
-    required HeroIcons icon,
+    required IconData icon,
     VoidCallback? onTap,
     Color color = AppColors.primary,
     required String tooltip,
@@ -450,18 +449,17 @@ class _PlotEditorScreenMapLibreState extends State<PlotEditorScreenMapLibre> {
             boxShadow: isEnabled
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ]
                 : [],
           ),
-          child: HeroIcon(
+          child: Icon(
             icon,
             color: isEnabled ? color : Colors.grey.shade400,
-            size: 24,
-          ),
+            size: 24),
         ),
       ),
     );

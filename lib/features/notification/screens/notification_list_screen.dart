@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/admin_service.dart';
@@ -44,7 +43,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           SnackBar(
             content: Text(
               'ไม่สามารถโหลดการแจ้งเตือนได้',
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: AppColors.error,
           ),
@@ -86,7 +85,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('อ่านทั้งหมดแล้ว', style: GoogleFonts.prompt()),
+          content: Text('อ่านทั้งหมดแล้ว', style: const TextStyle()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -95,7 +94,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ไม่สามารถอ่านได้', style: GoogleFonts.prompt()),
+          content: Text('ไม่สามารถอ่านได้', style: const TextStyle()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -109,21 +108,21 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'ลบการแจ้งเตือน',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'คุณต้องการลบการแจ้งเตือนนี้?',
-          style: GoogleFonts.prompt(),
+          style: const TextStyle(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
+            child: Text('ยกเลิก', style: const TextStyle()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text('ลบ', style: GoogleFonts.prompt(color: Colors.white)),
+            child: Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -142,7 +141,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ลบสำเร็จ', style: GoogleFonts.prompt()),
+          content: Text('ลบสำเร็จ', style: const TextStyle()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -151,7 +150,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ไม่สามารถลบได้', style: GoogleFonts.prompt()),
+          content: Text('ไม่สามารถลบได้', style: const TextStyle()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -168,7 +167,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.black87),
+          icon: const Icon(PhosphorIconsRegular.arrowLeft, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -176,7 +175,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           children: [
             Text(
               'การแจ้งเตือน',
-              style: GoogleFonts.prompt(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
@@ -185,7 +184,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
             if (unreadCount > 0)
               Text(
                 '$unreadCount ยังไม่ได้อ่าน',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 12,
                   color: AppColors.primary,
                 ),
@@ -196,14 +195,13 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           if (unreadCount > 0)
             TextButton.icon(
               onPressed: _markAllAsRead,
-              icon: const HeroIcon(
-                HeroIcons.checkCircle,
+              icon: const Icon(
+                PhosphorIconsRegular.checkCircle,
                 size: 18,
-                color: AppColors.primary,
-              ),
+                color: AppColors.primary),
               label: Text(
                 'อ่านทั้งหมด',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontSize: 12,
                   color: AppColors.primary,
                 ),
@@ -242,12 +240,12 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
               color: Colors.grey[100],
               shape: BoxShape.circle,
             ),
-            child: const HeroIcon(HeroIcons.bell, size: 48, color: Colors.grey),
+            child: const Icon(PhosphorIconsRegular.bell, size: 48, color: Colors.grey),
           ),
           const SizedBox(height: 16),
           Text(
             'ไม่มีการแจ้งเตือน',
-            style: GoogleFonts.prompt(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Colors.grey[600],
@@ -257,7 +255,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           Text(
             'คุณจะได้รับการแจ้งเตือนเมื่อมี\nข้อมูลสำคัญ',
             textAlign: TextAlign.center,
-            style: GoogleFonts.prompt(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -279,18 +277,18 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(PhosphorIconsRegular.trash, color: Colors.white),
       ),
       onDismissed: (_) => _deleteNotification(notification.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: notification.isRead ? Colors.white : color.withOpacity(0.05),
+          color: notification.isRead ? Colors.white : color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: notification.isRead
                 ? Colors.grey[200]!
-                : color.withOpacity(0.3),
+                : color.withValues(alpha: 0.3),
           ),
         ),
         child: InkWell(
@@ -311,10 +309,10 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(child: HeroIcon(icon, color: color)),
+                  child: Center(child: Icon(icon, color: color)),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -323,7 +321,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                     children: [
                       Text(
                         notification.title,
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: notification.isRead
                               ? FontWeight.normal
@@ -334,7 +332,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                       const SizedBox(height: 4),
                       Text(
                         notification.message ?? '',
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
@@ -342,7 +340,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                       const SizedBox(height: 8),
                       Text(
                         _formatTime(notification.createdAt),
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[500],
                         ),
@@ -367,22 +365,22 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     );
   }
 
-  HeroIcons _getNotificationIcon(NotificationType type) {
+  IconData _getNotificationIcon(NotificationType type) {
     switch (type) {
       case NotificationType.plotApproved:
       case NotificationType.userApproved:
-        return HeroIcons.checkCircle;
+        return PhosphorIconsRegular.checkCircle;
       case NotificationType.plotRejected:
       case NotificationType.userRejected:
-        return HeroIcons.xCircle;
+        return PhosphorIconsRegular.xCircle;
       case NotificationType.gapApproved:
-        return HeroIcons.documentCheck;
+        return PhosphorIconsRegular.fileText;
       case NotificationType.gapRejected:
-        return HeroIcons.documentMinus;
+        return PhosphorIconsRegular.fileMinus;
       case NotificationType.system:
-        return HeroIcons.informationCircle;
+        return PhosphorIconsRegular.info;
       default:
-        return HeroIcons.bell;
+        return PhosphorIconsRegular.bell;
     }
   }
 
@@ -470,7 +468,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ไม่สามารถโหลดข้อมูลผู้ใช้ได้: $e', style: GoogleFonts.prompt()),
+          content: Text('ไม่สามารถโหลดข้อมูลผู้ใช้ได้: $e', style: const TextStyle()),
           backgroundColor: AppColors.error,
         ),
       );

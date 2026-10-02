@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../constants/app_colors.dart';
 
@@ -152,20 +151,19 @@ class PermissionService {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const HeroIcon(
-                HeroIcons.exclamationTriangle,
+              child: const Icon(
+                PhosphorIconsRegular.warning,
                 color: Colors.orange,
-                size: 22,
-              ),
+                size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'ต้องการสิทธิ์การเข้าถึง',
-                style: GoogleFonts.prompt(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -179,27 +177,26 @@ class PermissionService {
           children: [
             Text(
               'แอปต้องการสิทธิ์เข้าถึง$permissionNameเพื่อ$reason',
-              style: GoogleFonts.prompt(fontSize: 14),
+              style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const HeroIcon(
-                    HeroIcons.informationCircle,
+                  const Icon(
+                    PhosphorIconsRegular.info,
                     color: Colors.blue,
-                    size: 18,
-                  ),
+                    size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'กรุณาเปิดสิทธิ์ในการตั้งค่าเครื่อง',
-                      style: GoogleFonts.prompt(
+                      style: TextStyle(
                         color: Colors.blue[700],
                         fontSize: 12,
                       ),
@@ -215,7 +212,7 @@ class PermissionService {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
+              style: TextStyle(color: Colors.grey),
             ),
           ),
           ElevatedButton.icon(
@@ -223,14 +220,13 @@ class PermissionService {
               Navigator.pop(context);
               openAppSettings();
             },
-            icon: const HeroIcon(
-              HeroIcons.cog6Tooth,
+            icon: const Icon(
+              PhosphorIconsRegular.gear,
               size: 18,
-              color: Colors.white,
-            ),
+              color: Colors.white),
             label: Text(
               'เปิดการตั้งค่า',
-              style: GoogleFonts.prompt(color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/database_helper.dart';
 import '../../../../core/services/gap_service.dart';
@@ -107,9 +106,9 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.cloud_sync, color: Colors.white, size: 16),
+                const Icon(PhosphorIconsRegular.cloudArrowUp, color: Colors.white, size: 16),
                 const SizedBox(width: 8),
-                Text('บันทึกร่างอัตโนมัติ', style: GoogleFonts.prompt(fontSize: 12)),
+                Text('บันทึกร่างอัตโนมัติ', style: TextStyle(fontSize: 12)),
               ],
             ),
             backgroundColor: Colors.grey.shade700,
@@ -228,9 +227,9 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.cloud_done, color: Colors.white),
+            const Icon(PhosphorIconsRegular.cloudCheck, color: Colors.white),
             const SizedBox(width: 8),
-            Text('บันทึกร่างเรียบร้อย', style: GoogleFonts.prompt()),
+            Text('บันทึกร่างเรียบร้อย', style: const TextStyle()),
           ],
         ),
         backgroundColor: Colors.orange,
@@ -297,7 +296,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
     if (validationError != null) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(validationError, style: GoogleFonts.prompt()),
+          content: Text(validationError, style: const TextStyle()),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -339,7 +338,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
           SnackBar(
             content: Text(
               ErrorUtils.getReadableError(e),
-              style: GoogleFonts.prompt(),
+              style: const TextStyle(),
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
@@ -407,7 +406,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
     return GapFormWrapper(
       title: '1. ข้อมูลทั่วไป',
       subtitle: 'ข้อมูลพื้นฐานของแปลงและเกษตรกร',
-      headerIcon: HeroIcons.informationCircle,
+      headerIcon: PhosphorIconsRegular.info,
       headerColor: AppColors.primary,
       onSave: _saveToApi,
       onSaveDraft: _saveDraft,
@@ -421,21 +420,21 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
             const FormInfoCard(
               message:
                   'กรอกข้อมูลพื้นฐานเพื่อใช้ในการขอใบรับรอง GAP พืชอาหารและสมุนไพร',
-              icon: HeroIcons.lightBulb,
+              icon: PhosphorIconsRegular.lightbulb,
               color: Colors.amber,
             ),
 
             FormSectionCard(
               title: 'ชื่อเกษตรกร *',
               example: 'ตัวอย่าง: นายสมชาย ใจดี',
-              icon: HeroIcons.user,
+              icon: PhosphorIconsRegular.user,
               iconColor: Colors.blue,
               child: TextField(
                 controller: _farmerNameController,
                 maxLength: 100,
                 decoration: InputDecoration(
                   hintText: 'กรอกชื่อ-นามสกุล',
-                  hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                  hintStyle: TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
@@ -444,14 +443,14 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                   ),
                   counterText: '',
                 ),
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
             ),
 
             FormSectionCard(
               title: 'วันเริ่มการเพาะปลูก *',
               example: 'ตัวอย่าง: 1 มกราคม 2569',
-              icon: HeroIcons.calendarDays,
+              icon: PhosphorIconsRegular.calendarDots,
               iconColor: Colors.purple,
               child: GestureDetector(
                 onTap: _pickDate,
@@ -464,26 +463,24 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                   ),
                   child: Row(
                     children: [
-                      const HeroIcon(
-                        HeroIcons.calendarDays,
+                      const Icon(
+                        PhosphorIconsRegular.calendarDots,
                         color: Colors.grey,
-                        size: 20,
-                      ),
+                        size: 20),
                       const SizedBox(width: 10),
                       Text(
                         _formatDate(_startDate),
-                        style: GoogleFonts.prompt(
+                        style: TextStyle(
                           color: _startDate != null
                               ? Colors.black
                               : Colors.grey,
                         ),
                       ),
                       const Spacer(),
-                      const HeroIcon(
-                        HeroIcons.chevronRight,
+                      const Icon(
+                        PhosphorIconsRegular.caretRight,
                         color: Colors.grey,
-                        size: 16,
-                      ),
+                        size: 16),
                     ],
                   ),
                 ),
@@ -493,14 +490,14 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
             FormSectionCard(
               title: 'ฤดูกาล / รุ่นการผลิต',
               example: 'ตัวอย่าง: 1/2569, ฤดูฝน',
-              icon: HeroIcons.clock,
+              icon: PhosphorIconsRegular.clock,
               iconColor: Colors.orange,
               child: TextField(
                 controller: _seasonController,
                 maxLength: 50,
                 decoration: InputDecoration(
                   hintText: 'กรอกรุ่นการผลิต',
-                  hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                  hintStyle: TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
@@ -509,21 +506,21 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                   ),
                   counterText: '',
                 ),
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
             ),
 
             FormSectionCard(
               title: 'สายพันธุ์ที่ปลูก',
               example: 'ตัวอย่าง: ก้านแดง, หางกระรอก',
-              icon: HeroIcons.tag,
+              icon: PhosphorIconsRegular.tag,
               iconColor: Colors.green,
               child: TextField(
                 controller: _cropVarietyController,
                 maxLength: 100,
                 decoration: InputDecoration(
                   hintText: 'ระบุสายพันธุ์',
-                  hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                  hintStyle: TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
@@ -532,14 +529,14 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                   ),
                   counterText: '',
                 ),
-                style: GoogleFonts.prompt(),
+                style: const TextStyle(),
               ),
             ),
 
             FormSectionCard(
               title: 'ระบบการผลิต',
               example: 'เลือกรูปแบบการผลิตของคุณ',
-              icon: HeroIcons.cog,
+              icon: PhosphorIconsRegular.gear,
               iconColor: Colors.teal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -571,7 +568,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
             FormSectionCard(
               title: 'แหล่งน้ำและระบบน้ำ',
               example: 'ระบุแหล่งน้ำและวิธีการให้น้ำ',
-              icon: HeroIcons.beaker,
+              icon: PhosphorIconsRegular.flask,
               iconColor: Colors.cyan,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -587,7 +584,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                         setState(() => _waterSourceController.text = val);
                       }
                     },
-                    icon: HeroIcons.beaker,
+                    icon: PhosphorIconsRegular.flask,
                   ),
                   const SizedBox(height: 12),
                   FormDropdownWithOther(
@@ -601,7 +598,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                         setState(() => _irrigationSystemController.text = val);
                       }
                     },
-                    icon: HeroIcons.adjustmentsHorizontal,
+                    icon: PhosphorIconsRegular.slidersHorizontal,
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -610,7 +607,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                     maxLines: 2,
                     decoration: InputDecoration(
                       hintText: 'หมายเหตุคุณภาพน้ำ (ถ้ามี)',
-                      hintStyle: GoogleFonts.prompt(color: Colors.grey),
+                      hintStyle: TextStyle(color: Colors.grey),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                       border: OutlineInputBorder(
@@ -619,7 +616,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                       ),
                       counterText: '',
                     ),
-                    style: GoogleFonts.prompt(),
+                    style: const TextStyle(),
                   ),
                 ],
               ),
@@ -652,7 +649,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade50,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade200,
@@ -664,18 +661,17 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: HeroIcon(
+              child: Icon(
                 value == 'ORGANIC'
-                    ? HeroIcons.sparkles
+                    ? PhosphorIconsRegular.sparkle
                     : (value == 'TRANSITION'
-                          ? HeroIcons.arrowPath
-                          : HeroIcons.beaker),
+                          ? PhosphorIconsRegular.arrowsClockwise
+                          : PhosphorIconsRegular.flask),
                 color: color,
-                size: 20,
-              ),
+                size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -685,14 +681,14 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.prompt(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.prompt(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -700,7 +696,7 @@ class _GapGeneralFormState extends State<GapGeneralForm> {
               ),
             ),
             Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              isSelected ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
               color: isSelected ? color : Colors.grey,
               size: 20,
             ),
