@@ -21,8 +21,8 @@ class ShellDestination {
 }
 
 /// Role home shell. A bottom bar on phones and a navigation rail from tablet
-/// width up. Pages are kept alive in an [IndexedStack] and cross-fade when
-/// switching; tickers on hidden pages are paused.
+/// width up. Pages are built on first visit, then kept alive and
+/// cross-faded when switching; tickers on hidden pages are paused.
 class AppShell extends StatefulWidget {
   const AppShell({
     super.key,
@@ -48,12 +48,19 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   late int _index = widget.initialIndex;
 
+  // Pages are built on first visit, so a hidden tab (a map in particular)
+  // never lays out before it has been shown.
+  late final Set<int> _visited = {widget.initialIndex};
+
   int get index => _index;
 
   void select(int i) {
     if (i == _index) return;
     HapticFeedback.selectionClick();
-    setState(() => _index = i);
+    setState(() {
+      _index = i;
+      _visited.add(i);
+    });
   }
 
   @override
@@ -66,7 +73,7 @@ class AppShellState extends State<AppShell> {
         for (var i = 0; i < widget.destinations.length; i++)
           _FadeIndexed(
             active: i == _index,
-            child: widget.destinations[i].page,
+            child: _visited.contains(i) ? widget.destinations[i].page : const SizedBox.shrink(),
           ),
         if (widget.overlay != null) widget.overlay!,
       ],
@@ -114,16 +121,15 @@ class _FadeIndexed extends StatelessWidget {
   Widget build(BuildContext context) {
     return IgnorePointer(
       ignoring: !active,
-      child: TickerMode(
-        enabled: active,
-        child: AnimatedOpacity(
-          opacity: active ? 1 : 0,
-          duration: context.reduceMotion ? Duration.zero : Motion.base,
-          curve: Motion.standard,
-          child: Offstage(
-            offstage: false,
-            child: ExcludeSemantics(excluding: !active, child: child),
-          ),
+      // The fade sits outside TickerMode: muting it would freeze the page
+      // that is leaving at full opacity on top of the one arriving.
+      child: AnimatedOpacity(
+        opacity: active ? 1 : 0,
+        duration: context.reduceMotion ? Duration.zero : Motion.base,
+        curve: Motion.standard,
+        child: TickerMode(
+          enabled: active,
+          child: ExcludeSemantics(excluding: !active, child: child),
         ),
       ),
     );

@@ -52,4 +52,31 @@ void main() {
     );
     expect(find.byType(FarmerMascot), findsOneWidget);
   });
+
+  testWidgets('AppShell builds tabs on first visit and hides the one left behind', (tester) async {
+    final shell = GlobalKey<AppShellState>();
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: AppShell(
+        key: shell,
+        destinations: const [
+          ShellDestination(label: 'หน้าแรก', icon: Icons.home, activeIcon: Icons.home, page: Text('page one')),
+          ShellDestination(label: 'สมาชิก', icon: Icons.people, activeIcon: Icons.people, page: Text('page two')),
+        ],
+      ),
+    ));
+    expect(find.text('page two'), findsNothing);
+
+    shell.currentState!.select(1);
+    await tester.pumpAndSettle();
+    shell.currentState!.select(0);
+    await tester.pumpAndSettle();
+
+    double opacityOf(String text) => tester
+        .widget<FadeTransition>(find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)).first)
+        .opacity
+        .value;
+    expect(opacityOf('page one'), 1);
+    expect(opacityOf('page two'), 0);
+  });
 }

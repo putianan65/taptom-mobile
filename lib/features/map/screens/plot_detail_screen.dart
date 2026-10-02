@@ -70,21 +70,27 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
 
   Future<void> _openGap() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => GapMainScreen(plotId: _id, plotName: _plot.name)),
+      MaterialPageRoute(
+        builder: (_) => GapMainScreen(plotId: _id, plotName: _plot.name),
+      ),
     );
     _loadProgress(force: true);
   }
 
   void _openLots() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => GapTraceabilityForm(plotId: _id, isReadOnly: _approved)),
+      MaterialPageRoute(
+        builder: (_) => GapTraceabilityForm(plotId: _id, isReadOnly: _approved),
+      ),
     );
   }
 
   void _openCertificate() {
     final owner = _plot.ownerName ?? context.read<AuthProvider>().currentUser?.fullName ?? 'เกษตรกร';
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => CertificateViewerScreen(plot: _plot, ownerName: owner)),
+      MaterialPageRoute(
+        builder: (_) => CertificateViewerScreen(plot: _plot, ownerName: owner),
+      ),
     );
   }
 
@@ -117,9 +123,9 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
   }
 
   Future<void> _redraw() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MapDrawingScreen(plotToEdit: _plot)),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => MapDrawingScreen(plotToEdit: _plot)));
     if (!mounted) return;
     if (result is PlotModel) {
       setState(() {
@@ -201,7 +207,12 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
               ),
               SliverToBoxAdapter(
                 child: ContentWidth(
-                  padding: EdgeInsets.fromLTRB(gutter, Space.xl, gutter, Space.x5 + MediaQuery.paddingOf(context).bottom),
+                  padding: EdgeInsets.fromLTRB(
+                    gutter,
+                    Space.xl,
+                    gutter,
+                    Space.x5 + MediaQuery.paddingOf(context).bottom,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -223,28 +234,39 @@ class _PlotDetailScreenState extends State<PlotDetailScreen> {
                         style: context.text.bodyMedium?.copyWith(color: p.inkMuted),
                       ),
                       const SizedBox(height: Space.xl),
-                      Row(
-                        children: [
-                          Expanded(child: StatTile(value: area, decimals: area % 1 == 0 ? 0 : 1, label: 'พื้นที่ (ไร่)', icon: AppIcons.area, dense: true)),
-                          const SizedBox(width: Space.sm),
-                          Expanded(
-                            child: StatTile(
-                              value: _plot.ageInDays,
-                              label: 'ลงทะเบียนมา (วัน)',
-                              icon: AppIcons.calendar,
-                              dense: true,
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: StatTile(
+                                value: area,
+                                decimals: area % 1 == 0 ? 0 : 1,
+                                label: 'พื้นที่ (ไร่)',
+                                icon: AppIcons.area,
+                                dense: true,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: Space.sm),
-                          Expanded(
-                            child: StatTile(
-                              value: _plot.treeCount ?? 0,
-                              label: 'จำนวนต้น',
-                              icon: AppIcons.tree,
-                              dense: true,
+                            const SizedBox(width: Space.sm),
+                            Expanded(
+                              child: StatTile(
+                                value: _plot.ageInDays,
+                                label: 'วันในระบบ',
+                                icon: AppIcons.calendar,
+                                dense: true,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: Space.sm),
+                            Expanded(
+                              child: StatTile(
+                                value: _plot.treeCount ?? 0,
+                                label: 'จำนวนต้น',
+                                icon: AppIcons.tree,
+                                dense: true,
+                              ),
+                            ),
+                          ],
+                        ),
                       ).entrance(context),
                       const SizedBox(height: Space.xxl),
                       if (_approved)
@@ -360,7 +382,16 @@ class _MapHeaderState extends State<_MapHeader> {
     final c = _controller;
     if (c == null) return;
     try {
-      await c.addFill(FillOptions(geometry: [[...ring, ring.first]], fillColor: MapStyles.plotFill, fillOutlineColor: MapStyles.plotFill, fillOpacity: 0.35));
+      await c.addFill(
+        FillOptions(
+          geometry: [
+            [...ring, ring.first],
+          ],
+          fillColor: MapStyles.plotFill,
+          fillOutlineColor: MapStyles.plotFill,
+          fillOpacity: 0.35,
+        ),
+      );
       await c.addLine(LineOptions(geometry: [...ring, ring.first], lineColor: '#FFFFFF', lineWidth: 2.5));
       var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
       for (final p in ring) {
@@ -419,9 +450,7 @@ class _GapCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      next == null
-                          ? 'รอเจ้าหน้าที่ตรวจประเมิน'
-                          : 'ถัดไป: ${next.code} ${next.title}',
+                      next == null ? 'รอเจ้าหน้าที่ตรวจประเมิน' : 'ถัดไป: ${next.code} ${next.title}',
                       style: context.text.bodySmall,
                     ),
                     if (g.lastUpdated != null)
@@ -495,10 +524,7 @@ class _CertificateCard extends StatelessWidget {
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: BoxDecoration(
-                    color: p.heroInk.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: p.heroInk.withValues(alpha: 0.12), shape: BoxShape.circle),
                   child: Icon(AppIcons.certificate, color: p.heroInk, size: 28),
                 ),
                 const SizedBox(width: Space.lg),
@@ -548,16 +574,18 @@ class _Activities extends StatelessWidget {
     return ListGroup(
       children: [
         for (final (i, item) in recent.indexed)
-          Builder(builder: (context) {
-            final e = GapLabels.entry(GapCategory.management, item, i);
-            return ListRow(
-              icon: AppIcons.fieldWork,
-              title: e.title,
-              subtitle: e.subtitle,
-              showChevron: false,
-              dense: true,
-            );
-          }),
+          Builder(
+            builder: (context) {
+              final e = GapLabels.entry(GapCategory.management, item, i);
+              return ListRow(
+                icon: AppIcons.fieldWork,
+                title: e.title,
+                subtitle: e.subtitle,
+                showChevron: false,
+                dense: true,
+              );
+            },
+          ),
       ],
     );
   }
@@ -606,9 +634,9 @@ class _InfoFormState extends State<_InfoForm> {
             onPressed: _name.text.trim().isEmpty
                 ? null
                 : () => Navigator.of(context).pop({
-                      'name': _name.text.trim(),
-                      if (_species.text.trim().isNotEmpty) 'species': _species.text.trim(),
-                    }),
+                    'name': _name.text.trim(),
+                    if (_species.text.trim().isNotEmpty) 'species': _species.text.trim(),
+                  }),
           ),
         ],
       ),
