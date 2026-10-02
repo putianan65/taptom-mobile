@@ -543,6 +543,21 @@ class _CertificateCard extends StatelessWidget {
               ],
             ),
           ),
+          // The bodies behind the certificate, as printed on it.
+          const Padding(
+            padding: EdgeInsets.fromLTRB(Space.lg, Space.lg, Space.lg, 0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Space.xl,
+              runSpacing: Space.sm,
+              children: [
+                LogoPlate(asset: 'assets/images/partners/gap-mark.png', label: 'เครื่องหมายรับรอง GAP', height: 52),
+                LogoPlate(asset: 'assets/images/partners/oncb-seal.png', label: 'สำนักงาน ป.ป.ส.', height: 44),
+                LogoPlate(asset: Gistnu.asset, label: 'GISTNU', height: 28),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(Space.lg),
             child: Row(

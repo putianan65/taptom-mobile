@@ -4,6 +4,7 @@ library;
 export '../design/design.dart';
 export '../effects/farmer_mascot.dart';
 export '../effects/logo_mark.dart';
+export '../effects/partner_logos.dart';
 export '../effects/shader_backdrop.dart';
 export 'app_shell.dart';
 export 'buttons.dart';

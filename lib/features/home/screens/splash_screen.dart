@@ -74,6 +74,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   textAlign: TextAlign.center,
                   style: context.text.bodyLarge?.copyWith(color: p.inkMuted),
                 ).animate(delay: 320.ms).fadeIn(duration: Motion.slow),
+                const SizedBox(height: Space.xxl),
+                const DevelopedBy(logoHeight: 26, showName: false).animate(delay: 480.ms).fadeIn(duration: Motion.slow),
                 const Spacer(),
               ],
             ),

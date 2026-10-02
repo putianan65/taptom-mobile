@@ -80,7 +80,9 @@ class _ContactScreenState extends State<ContactScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('GISTNU มหาวิทยาลัยนเรศวร', style: context.text.titleSmall),
+                                  const LogoPlate(asset: Gistnu.asset, label: 'GISTNU', height: 26),
+                                  const SizedBox(height: Space.sm),
+                                  Text('GISTNU ${Gistnu.university}', style: context.text.titleSmall),
                                   Text('ต.ท่าโพธิ์ อ.เมือง จ.พิษณุโลก 65000', style: context.text.bodySmall),
                                 ],
                               ),

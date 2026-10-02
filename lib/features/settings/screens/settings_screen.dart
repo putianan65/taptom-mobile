@@ -181,6 +181,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: context.text.bodySmall,
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: Space.xxl),
+                      const DevelopedBy(),
                     ],
                   ),
                 ),

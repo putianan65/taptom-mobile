@@ -712,6 +712,8 @@ class AdminProfileScreen extends StatelessWidget {
                   'TAPTOM ${isSuper ? 'Console' : 'Staff'}${version.isEmpty ? '' : ' v$version'}',
                   style: context.text.labelMedium,
                 ),
+                const SizedBox(height: Space.xl),
+                const DevelopedBy(),
               ],
             ),
           ),

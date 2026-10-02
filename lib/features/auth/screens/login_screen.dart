@@ -226,12 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: Space.x3),
-        Text('พัฒนาโดย', style: context.text.labelMedium),
-        const SizedBox(height: Space.sm),
-        Opacity(
-          opacity: context.isDark ? 0.85 : 1,
-          child: Image.asset('assets/images/partners/gistnu.webp', height: 28),
-        ),
+        const DevelopedBy(),
       ],
     );
   }

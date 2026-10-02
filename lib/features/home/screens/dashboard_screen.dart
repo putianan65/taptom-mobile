@@ -698,6 +698,8 @@ class FarmerAccountTab extends StatelessWidget {
                   'TAPTOM ${version.isEmpty ? '' : 'v$version'}',
                   style: context.text.labelMedium,
                 ),
+                const SizedBox(height: Space.xl),
+                const DevelopedBy(),
               ],
             ),
           ),
