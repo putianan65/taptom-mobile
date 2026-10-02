@@ -179,6 +179,7 @@ class _GapMainScreenState extends State<GapMainScreen> {
               builder: (_) => GapSummaryScreen(
                 plotId: widget.plotId,
                 plotName: widget.plotName ?? 'แปลง',
+                readOnly: widget.isReadOnly,
               ),
             ),
           ),
