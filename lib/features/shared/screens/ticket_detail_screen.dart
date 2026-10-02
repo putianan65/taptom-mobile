@@ -1,138 +1,185 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/services/support_service.dart';
-import '../../../../core/widgets/custom_popup.dart';
-import '../../../../data/models/ticket_model.dart';
-import '../../../../data/models/user_model.dart'; // For UserRole
-import '../../../../core/services/auth_service.dart';
+
+import '../../../core/services/support_service.dart';
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/ticket_model.dart';
 import '../../auth/auth_provider.dart';
 
+/// One help request as a conversation. Staff can also move it through
+/// its statuses.
 class TicketDetailScreen extends StatefulWidget {
+  const TicketDetailScreen({super.key, required this.id, this.ticket});
+
   final String id;
   final Ticket? ticket;
-
-  const TicketDetailScreen({super.key, required this.id, this.ticket});
 
   @override
   State<TicketDetailScreen> createState() => _TicketDetailScreenState();
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
-  final SupportService _supportService = SupportService();
-  final _replyController = TextEditingController();
-  bool _isSending = false;
-  Ticket? _ticket;
+  final _service = SupportService();
+  final _reply = TextEditingController();
+  late Ticket? _ticket = widget.ticket;
+  bool _sending = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _ticket = widget.ticket;
-    // Load if null logic omitted for brevity, assuming passed or updated
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _reply.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final t = await _service.getTicket(widget.id);
+      if (mounted) setState(() => _ticket = t);
+    } on Object catch (_) {
+      if (mounted && _ticket == null) setState(() => _error = 'โหลดคำร้องไม่สำเร็จ');
+    }
+  }
+
+  Future<void> _send() async {
+    final text = _reply.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      await _service.replyToTicket(ticketId: widget.id, message: text);
+      _reply.clear();
+      await _load();
+    } on Object catch (_) {
+      if (mounted) AppToast.error(context, 'ส่งข้อความไม่สำเร็จ');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _setStatus(String status) async {
+    try {
+      await _service.updateTicketStatus(widget.id, status);
+      await _load();
+      if (mounted) AppToast.success(context, 'เปลี่ยนสถานะเป็น${StatusLabels.ticket(status).$1}แล้ว');
+    } on Object catch (_) {
+      if (mounted) AppToast.error(context, 'เปลี่ยนสถานะไม่สำเร็จ');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_ticket == null) return const Scaffold(body: Center(child: Text('Error')));
-    
-    final user = context.watch<AuthProvider>().user;
-    final isAdmin = user?.role == UserRole.admin || user?.role == UserRole.superAdmin;
+    final p = context.palette;
+    final me = context.watch<AuthProvider>().currentUser;
+    final staff = me?.isStaff ?? false;
+    final t = _ticket;
+
+    if (t == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: _error == null
+            ? const Center(child: CircularProgressIndicator())
+            : ErrorState(message: _error, onRetry: _load),
+      );
+    }
+
+    final (label, tone) = StatusLabels.ticket(t.status);
+    final closed = t.status == 'CLOSED';
 
     return Scaffold(
+      backgroundColor: p.background,
       appBar: AppBar(
-        title: Text('รายละเอียดตั๋ว #${_ticket!.id.substring(0, 4)}', style: const TextStyle()),
-        leading: IconButton(
-          icon: const Icon(PhosphorIconsRegular.arrowLeft),
-          onPressed: () => context.pop(),
-        ),
+        backgroundColor: p.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(bottom: BorderSide(color: p.line)),
+        title: Text(t.subject, style: context.text.titleMedium, overflow: TextOverflow.ellipsis),
         actions: [
-          if (isAdmin)
-             PopupMenuButton<String>(
-               icon: const Icon(PhosphorIconsRegular.notePencil, color: Colors.white),
-               onSelected: _updateStatus,
-               itemBuilder: (context) => [
-                 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
-               ].map((status) => PopupMenuItem(
-                 value: status,
-                 child: Text(status, style: const TextStyle()),
-               )).toList(),
-             ),
+          if (staff)
+            PopupMenuButton<String>(
+              tooltip: 'เปลี่ยนสถานะ',
+              icon: const Icon(AppIcons.sliders),
+              onSelected: _setStatus,
+              itemBuilder: (_) => [
+                for (final s in const ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
+                  PopupMenuItem(value: s, enabled: s != t.status, child: Text(StatusLabels.ticket(s).$1)),
+              ],
+            ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Ticket Header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(Space.lg),
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        _ticket!.subject,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _ticket!.message,
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        children: [
-                          Text('โดย: ${_ticket!.user.fullName}', style: TextStyle(fontSize: 12)),
-                          const Spacer(),
-                          Text('สถานะ: ${_ticket!.status}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                      StatusBadge(label: label, tone: tone),
+                      if (t.priority == 'HIGH') ...[
+                        const SizedBox(width: Space.sm),
+                        const StatusBadge(label: 'เร่งด่วน', tone: Tone.danger, dot: false),
+                      ],
+                      const Spacer(),
+                      Text(ThaiDate.withTime(t.createdAt), style: context.text.labelSmall),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Replies
-                ..._ticket!.replies.map((reply) => _buildReplyBubble(reply, user?.id)),
-              ],
+                  const SizedBox(height: Space.lg),
+                  _Bubble(
+                    author: t.user.fullName.isEmpty ? 'ผู้แจ้ง' : t.user.fullName,
+                    text: t.message,
+                    time: t.createdAt,
+                    mine: t.user.id == me?.id,
+                  ),
+                  for (final r in t.replies)
+                    _Bubble(
+                      author: r.author.fullName.isEmpty ? 'เจ้าหน้าที่' : r.author.fullName,
+                      text: r.message,
+                      time: r.createdAt,
+                      mine: r.author.id == me?.id,
+                      staff: r.author.isStaff,
+                    ),
+                ],
+              ),
             ),
           ),
-          
-          if (_ticket!.status != 'CLOSED')
+          if (closed)
             Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.md + MediaQuery.paddingOf(context).bottom),
+              color: p.surfaceSunken,
+              child: Text('คำร้องนี้ปิดแล้ว หากยังมีปัญหา แจ้งเรื่องใหม่ได้', style: context.text.bodySmall, textAlign: TextAlign.center),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(color: p.surface, border: Border(top: BorderSide(color: p.line))),
+              padding: EdgeInsets.fromLTRB(Space.md, Space.sm, Space.sm, Space.sm + MediaQuery.paddingOf(context).bottom),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: _replyController,
-                      decoration: InputDecoration(
-                        hintText: 'ตอบกลับ...',
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      controller: _reply,
+                      minLines: 1,
+                      maxLines: 5,
+                      decoration: const InputDecoration(hintText: 'พิมพ์ข้อความ'),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _isSending ? null : _sendReply,
-                    icon: _isSending 
-                        ? const CircularProgressIndicator()
-                        : const Icon(PhosphorIconsRegular.paperPlaneTilt, color: AppColors.primary),
-                  )
+                  const SizedBox(width: Space.sm),
+                  AppIconButton(
+                    icon: AppIcons.send,
+                    tooltip: 'ส่ง',
+                    background: p.brand,
+                    foreground: p.onBrand,
+                    onPressed: _sending ? null : _send,
+                  ),
                 ],
               ),
             ),
@@ -140,82 +187,53 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildReplyBubble(TicketReply reply, String? currentUserId) {
-    final isMe = reply.author.id == currentUserId;
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.author, required this.text, required this.time, required this.mine, this.staff = false});
+
+  final String author;
+  final String text;
+  final DateTime time;
+  final bool mine;
+  final bool staff;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 12, left: isMe ? 40 : 0, right: isMe ? 0 : 40),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              reply.message,
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.8),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: Space.md),
+          child: Column(
+            crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Text(
+                  staff && !mine ? '$author · เจ้าหน้าที่' : author,
+                  style: context.text.labelSmall,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              reply.author.fullName,
-              style: TextStyle(
-                fontSize: 10,
-                color: isMe ? Colors.white70 : Colors.grey[600],
+              Container(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                decoration: BoxDecoration(
+                  color: mine ? p.brand : p.surface,
+                  border: mine ? null : Border.all(color: p.line),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(text, style: context.text.bodyMedium?.copyWith(color: mine ? p.onBrand : p.ink)),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
+                child: Text(ThaiDate.relative(time), style: context.text.labelSmall?.copyWith(color: p.inkSubtle)),
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _sendReply() async {
-    final text = _replyController.text.trim();
-    if (text.isEmpty) return;
-    setState(() => _isSending = true);
-    
-    try {
-      await _supportService.replyToTicket(ticketId: _ticket!.id, message: text);
-      // Ideally refresh ticket from API to get new reply
-      // For now just clear input
-      _replyController.clear();
-      CustomPopup.showSuccess(context, message: 'ตอบกลับสำเร็จ');
-    } catch (e) {
-      CustomPopup.showError(context, message: e.toString());
-    } finally {
-      setState(() => _isSending = false);
-    }
-  }
-
-  Future<void> _updateStatus(String newStatus) async {
-    try {
-      await _supportService.updateTicketStatus(_ticket!.id, newStatus);
-      setState(() {
-        // Optimistic update - in real app should ideally reload
-         _ticket = Ticket(
-           id: _ticket!.id, 
-           subject: _ticket!.subject, 
-           message: _ticket!.message, 
-           status: newStatus, 
-           priority: _ticket!.priority, 
-           createdAt: _ticket!.createdAt, 
-           user: _ticket!.user, 
-           replies: _ticket!.replies
-         );
-      });
-      CustomPopup.showSuccess(context, message: 'เปลี่ยนสถานะเป็น $newStatus เรียบร้อย');
-    } catch (e) {
-      CustomPopup.showError(context, message: e.toString());
-    }
-  }
-
-  Future<void> _closeTicket() async {
-    await _updateStatus('CLOSED');
   }
 }

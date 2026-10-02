@@ -716,9 +716,16 @@ class DemoBackend {
         if (q.isStaff) t['status'] = 'IN_PROGRESS';
         return (201, t);
       }),
-      r('PATCH', '/support/tickets/$id', (q) {
+      r('PATCH', '/support/tickets/$id/status', (q) {
         final t = tickets.firstWhere((t) => t['id'] == q.param(0), orElse: () => throw DemoHttpError(404, 'Not found'));
-        t.addAll(q.body);
+        t['status'] = q.body['status'] ?? t['status'];
+        t['updatedAt'] = _now();
+        return (200, t);
+      }),
+      r('PATCH', '/support/tickets/$id/close', (q) {
+        final t = tickets.firstWhere((t) => t['id'] == q.param(0), orElse: () => throw DemoHttpError(404, 'Not found'));
+        t['status'] = 'CLOSED';
+        t['updatedAt'] = _now();
         return (200, t);
       }),
 
