@@ -76,7 +76,8 @@ and the same fictional people, plots and GAP records created through the API.
 Build with `--dart-define=API_BASE_URL=http://localhost:3000/api/v1` and run
 the script with `REAL_API=1` (sign in by typing rather than the demo buttons)
 and `TRACE_LOT` set to a lot number from the database. Environment variables are listed at
-the top of `tool/screenshots/driver.js`; `OFFLINE_TILES=1` and
-`MAPLIBRE_DIST` let it run where map hosts are blocked, which is how the
-committed images were made, so their maps show the ground colour instead of
-imagery. Run it on a normal connection to get satellite imagery.
+the top of `tool/screenshots/driver.js`. `MAP_WAIT=15000` gives imagery time
+to load before map shots (the committed images used 15 to 20 seconds), and
+imagery tiles that fail are retried. Where map hosts are blocked,
+`OFFLINE_TILES=1` and `MAPLIBRE_DIST` still let the script run, with the
+maps showing only the ground colour.

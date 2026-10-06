@@ -54,7 +54,7 @@ const scenes = {
 
     await D.scroll(page, 900);
     await D.tap(page, 'สวนกระท่อมหนองปลิง', { wait: 3500 });
-    await D.shot(page, 'plot-detail', 1500);
+    await D.shot(page, 'plot-detail', 1500 + D.MAP_WAIT);
     await D.back(page);
     await D.scroll(page, -3000);
 
@@ -68,7 +68,7 @@ const scenes = {
     await D.back(page);
 
     await D.tab(page, 'แผนที่');
-    await D.shot(page, 'map', 4000);
+    await D.shot(page, 'map', 4000 + D.MAP_WAIT);
 
     await D.tab(page, 'บัญชี');
     await D.scroll(page, 3000);
@@ -86,7 +86,7 @@ const scenes = {
   async trace() {
     const { browser, page } = await D.open();
     await D.boot(page, `/#/traceability/${process.env.TRACE_LOT || 'TPT-2568-0042'}`);
-    await D.shot(page, 'traceability', 3000);
+    await D.shot(page, 'traceability', 3000 + D.MAP_WAIT);
     await browser.close();
   },
 
@@ -108,7 +108,7 @@ const scenes = {
     await D.tab(page, 'สมาชิก');
     await D.shot(page, 'admin-members', 2000);
     await D.tab(page, 'แผนที่');
-    await D.shot(page, 'admin-map', 4000);
+    await D.shot(page, 'admin-map', 4000 + D.MAP_WAIT);
     await browser.close();
   },
 

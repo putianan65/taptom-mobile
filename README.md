@@ -56,7 +56,7 @@ On wider screens the bottom bar becomes a navigation rail and content is centred
 
 ![Administrator console on desktop](docs/screenshots/desktop-super-admin.png)
 
-The screenshots show the app running against a local copy of the TAPTOM backend, seeded with fictional members, plots and GAP records through its API, and were captured by `tool/screenshots` (see [docs/demo-mode.md](docs/demo-mode.md)). Map imagery was unavailable where they were taken, so the maps show the plain ground colour under the plot shapes.
+The screenshots show the app running against a local copy of the TAPTOM backend, seeded with fictional members, plots and GAP records through its API, and were captured by `tool/screenshots` (see [docs/demo-mode.md](docs/demo-mode.md)). Maps show Esri World Imagery under the plot boundaries.
 
 ---
 

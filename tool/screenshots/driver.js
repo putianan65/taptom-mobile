@@ -8,11 +8,13 @@
 //   MAPLIBRE_DIST      optional local maplibre-gl/dist folder served instead of unpkg
 //   OFFLINE_TILES      set to answer map tile requests with empty tiles
 //   REAL_API           set when the build talks to a seeded backend: sign in by typing
+//   MAP_WAIT           extra milliseconds before shots with a map, for imagery to load
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
 
 const BASE = process.env.BASE_URL || 'http://localhost:8787';
+const MAP_WAIT = Number(process.env.MAP_WAIT || 0);
 const OUT = process.env.OUT_DIR || path.join(__dirname, '..', '..', 'docs', 'screenshots');
 
 async function open({ width = 390, height = 844, scheme = 'light', scale = 2, video = null } = {}) {
@@ -36,6 +38,20 @@ async function open({ width = 390, height = 844, scheme = 'light', scale = 2, vi
       });
     });
   }
+  if (!process.env.OFFLINE_TILES) {
+    // Imagery tiles occasionally fail behind a proxy; retry them so a
+    // screenshot never keeps a blurry placeholder tile.
+    await ctx.route(/arcgisonline\.com|api\.maptiler\.com\/tiles/, async (route) => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          return await route.fulfill({ response: await route.fetch() });
+        } catch {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+      return route.abort();
+    });
+  }
   if (process.env.OFFLINE_TILES) {
     // Sandboxes without map access: answer tile and glyph requests with an
     // empty tile so MapLibre still draws plot outlines on its ground colour.
@@ -48,6 +64,8 @@ async function open({ width = 390, height = 844, scheme = 'light', scale = 2, vi
   }
   const page = await ctx.newPage();
   page.on('pageerror', (e) => process.env.DEBUG && console.log('pageerror:', e.stack || e.message));
+  page.on('requestfailed', (r) => process.env.DEBUG && console.log('failed:', r.url().slice(0, 120), r.failure()?.errorText));
+  page.on('response', (r) => process.env.DEBUG && r.status() >= 400 && console.log('http', r.status(), r.url().slice(0, 120)));
   page.on('console', (m) => process.env.DEBUG && ['error', 'warning'].includes(m.type()) && console.log('console:', m.text().slice(0, 400)));
   return { browser, page };
 }
@@ -164,4 +182,4 @@ async function signIn(page, role) {
   }
 }
 
-module.exports = { OUT, open, boot, nodes, tap, fill, tab, back, scroll, shot, signIn };
+module.exports = { OUT, MAP_WAIT, open, boot, nodes, tap, fill, tab, back, scroll, shot, signIn };
