@@ -1,18 +1,19 @@
 import 'dart:io';
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/chat_service.dart';
-import '../../../core/services/voice_service.dart';
-import '../../../core/services/database_helper.dart';
-import '../../../core/services/permission_service.dart';
-import '../../../data/models/chat_message.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/chat_input_bar.dart';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../core/config/env.dart';
+import '../../../core/services/chat_service.dart';
+import '../../../core/services/database_helper.dart';
+import '../../../core/services/voice_service.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/chat_message.dart';
+
+/// "Ask Lung Tom": an assistant for growing, GAP and the kratom law, with
+/// voice input and photo diagnosis on phones. History stays on the device.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -21,609 +22,350 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final FocusNode _focusNode = FocusNode();
-  final ChatService _chatService = ChatService();
-  final VoiceService _voiceService = VoiceService();
-  final ImagePicker _imagePicker = ImagePicker();
-
-  List<ChatMessage> _messages = [];
-  bool _isLoading = false;
-  bool _isRecording = false;
-  File? _selectedImage;
-
-  // Daily usage tracking
-  int _dailyUsageRemaining = ChatService.dailyRequestLimit;
-  int _dailyUsageLimit = ChatService.dailyRequestLimit;
-
-  // Sample question suggestions
-  final List<Map<String, dynamic>> _suggestions = [
-    {
-      'icon': HeroIcons.scale,
-      'text': 'กระท่อมปลูกได้กี่ต้น?',
-      'color': Colors.blue,
-    },
-    {
-      'icon': HeroIcons.documentCheck,
-      'text': 'ขั้นตอนขอ GAP มีอะไรบ้าง?',
-      'color': Colors.green,
-    },
-    {
-      'icon': HeroIcons.beaker,
-      'text': 'ใช้ปุ๋ยอะไรดีสำหรับกระท่อม?',
-      'color': Colors.orange,
-    },
-    {
-      'icon': HeroIcons.bugAnt,
-      'text': 'โรคใบไหม้กระท่อม รักษายังไง?',
-      'color': Colors.red,
-    },
+  static const _suggestions = [
+    'ขั้นตอนขอ GAP มีอะไรบ้าง',
+    'ใส่ปุ๋ยอะไรให้กระท่อมดี',
+    'กระท่อมปลูกได้กี่ต้น ผิดกฎหมายไหม',
+    'ใบมีจุดสีน้ำตาล รักษายังไง',
   ];
+
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  final _chat = ChatService();
+  final _voice = VoiceService();
+  final List<ChatMessage> _messages = [];
+  XFile? _image;
+  bool _thinking = false;
+  bool _listening = false;
+  int _remaining = ChatService.dailyRequestLimit;
 
   @override
   void initState() {
     super.initState();
-    _loadHistory();
-    _loadDailyUsage();
-    _voiceService.initialize();
+    _restore();
   }
 
   @override
   void dispose() {
-    _textController.dispose();
-    _scrollController.dispose();
-    _focusNode.dispose();
+    _input.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _loadHistory() async {
-    final history = await DatabaseHelper.instance.getChatHistory();
-    setState(() {
-      _messages = history;
-    });
-    if (_messages.isNotEmpty) {
-      _scrollToBottom();
-    }
-  }
-
-  Future<void> _loadDailyUsage() async {
-    final usage = await _chatService.getDailyUsage();
-    if (mounted) {
+  Future<void> _restore() async {
+    try {
+      final history = await DatabaseHelper.instance.getChatHistory();
+      final usage = await _chat.getDailyUsage();
+      if (!mounted) return;
       setState(() {
-        _dailyUsageRemaining = usage.remaining;
-        _dailyUsageLimit = usage.limit;
+        _messages
+          ..clear()
+          ..addAll(history.where((m) => !m.isLoading));
+        _remaining = usage.remaining;
       });
-    }
+      _toBottom(jump: true);
+    } on Object catch (_) {}
   }
 
-  void _sendSuggestion(String text) {
-    _textController.text = text;
-    _sendMessage();
+  void _toBottom({bool jump = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      jump ? _scroll.jumpTo(end) : _scroll.animateTo(end, duration: Motion.slow, curve: Motion.standard);
+    });
   }
 
-  Future<void> _sendMessage() async {
-    final text = _textController.text.trim();
-    if (text.isEmpty && _selectedImage == null) return;
+  Future<void> _send([String? preset]) async {
+    final text = (preset ?? _input.text).trim();
+    final image = _image;
+    if ((text.isEmpty && image == null) || _thinking) return;
 
-    final userMessage = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text.isEmpty ? '📷 ส่งรูปภาพ' : text,
-      imagePath: _selectedImage?.path,
+    final question = ChatMessage(
+      id: '${DateTime.now().microsecondsSinceEpoch}',
+      content: text.isEmpty ? 'ช่วยดูรูปนี้ให้หน่อย' : text,
+      imagePath: image?.path,
       isUser: true,
       timestamp: DateTime.now(),
     );
-
     setState(() {
-      _messages.add(userMessage);
-      _isLoading = true;
+      _messages.add(question);
+      _thinking = true;
+      _image = null;
+      _input.clear();
     });
+    _toBottom();
+    DatabaseHelper.instance.saveMessage(question);
 
-    await DatabaseHelper.instance.saveMessage(userMessage);
-
-    _textController.clear();
-    final imageToSend = _selectedImage;
-    _selectedImage = null;
-    _scrollToBottom();
-
-    setState(() {
-      _messages.add(ChatMessage.loading());
-    });
-
+    String answer;
     try {
-      String response;
-      if (imageToSend != null) {
-        response = await _chatService.sendMessageWithImage(text, imageToSend);
-      } else {
-        response = await _chatService.sendMessage(text);
-      }
-
-      setState(() {
-        _messages.removeLast();
-        final aiMessage = ChatMessage(
-          id: 'ai_${DateTime.now().millisecondsSinceEpoch}',
-          content: response,
-          isUser: false,
-          timestamp: DateTime.now(),
-        );
-        _messages.add(aiMessage);
-        DatabaseHelper.instance.saveMessage(aiMessage);
-        _isLoading = false;
-      });
-
-      // Refresh daily usage counter
-      _loadDailyUsage();
-    } catch (e) {
-      setState(() {
-        _messages.removeLast();
-        _messages.add(
-          ChatMessage(
-            id: 'error_${DateTime.now().millisecondsSinceEpoch}',
-            content:
-                '❌ เกิดข้อผิดพลาด: ${e.toString()}\n\nกรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต',
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-        _isLoading = false;
-      });
+      answer = await _chat.ask(
+        question.content,
+        imageBytes: image == null ? null : await image.readAsBytes(),
+        imageName: image?.name,
+      );
+    } on Object catch (_) {
+      answer = 'ตอนนี้ลุงต้อมตอบไม่ได้ ลองใหม่อีกครั้งในอีกสักครู่';
     }
-
-    _scrollToBottom();
+    final reply = ChatMessage(
+      id: 'ai_${DateTime.now().microsecondsSinceEpoch}',
+      content: answer,
+      isUser: false,
+      timestamp: DateTime.now(),
+    );
+    DatabaseHelper.instance.saveMessage(reply);
+    final usage = await _chat.getDailyUsage();
+    if (!mounted) return;
+    setState(() {
+      _messages.add(reply);
+      _thinking = false;
+      _remaining = usage.remaining;
+    });
+    _toBottom();
   }
 
   Future<void> _pickImage() async {
-    // Request permission first
-    final hasPermission = await PermissionService.requestPhotosPermission(
-      context,
-    );
-    if (!hasPermission) return;
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1280, imageQuality: 85);
+    if (picked != null && mounted) setState(() => _image = picked);
+  }
 
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
-    } catch (e) {
-      // Silent failure - user will see image picker didn't work
+  Future<void> _toggleVoice() async {
+    if (_listening) {
+      await _voice.stopListening();
+      if (mounted) setState(() => _listening = false);
+      return;
     }
-  }
-
-  void _startVoiceInput() async {
-    // Request permission first
-    final hasPermission = await PermissionService.requestMicrophonePermission(
-      context,
-    );
-    if (!hasPermission) return;
-
-    setState(() => _isRecording = true);
-
-    _voiceService.startListening(
+    final ok = await _voice.initialize();
+    if (!mounted) return;
+    if (!ok) {
+      AppToast.error(context, 'อุปกรณ์นี้ยังใช้การพูดแทนพิมพ์ไม่ได้');
+      return;
+    }
+    await _voice.startListening(
+      onListeningStarted: () => setState(() => _listening = true),
+      onListeningStopped: () => setState(() => _listening = false),
       onResult: (text) {
-        setState(() {
-          _textController.value = TextEditingValue(
-            text: text,
-            selection: TextSelection.collapsed(offset: text.length),
-          );
-          _isRecording = false;
-        });
-      },
-      onListeningStopped: () {
-        setState(() => _isRecording = false);
+        if (!mounted) return;
+        _input.text = text;
+        _input.selection = TextSelection.collapsed(offset: text.length);
       },
     );
   }
 
-  void _stopVoiceInput() {
-    _voiceService.stopListening();
-    setState(() => _isRecording = false);
-  }
-
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  void _clearSelectedImage() {
-    setState(() => _selectedImage = null);
-  }
-
-  void _resetChat() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.refresh, color: Colors.red, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'เริ่มบทสนทนาใหม่?',
-              style: GoogleFonts.prompt(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'ข้อความทั้งหมดจะถูกลบ',
-          style: GoogleFonts.prompt(color: Colors.grey[600]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await DatabaseHelper.instance.clearChatHistory();
-              setState(() {
-                _messages.clear();
-                _chatService.resetChat();
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'ล้างแชท',
-              style: GoogleFonts.prompt(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _clear() async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'เริ่มบทสนทนาใหม่?',
+      message: 'ประวัติการถามตอบในเครื่องนี้จะถูกลบ',
+      confirmLabel: 'เริ่มใหม่',
     );
+    if (!ok) return;
+    await DatabaseHelper.instance.clearChatHistory();
+    _chat.resetChat();
+    if (mounted) setState(_messages.clear);
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    const mobile = !kIsWeb;
+
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/Chat.png'),
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-        ),
-        child: Container(
-          // Dark overlay for readability
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.75),
-                Colors.black.withOpacity(0.80),
-                Colors.black.withOpacity(0.75),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
+      backgroundColor: p.background,
+      appBar: AppBar(
+        backgroundColor: p.background,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            FarmerMascot(size: 40, mood: _thinking ? MascotMood.think : MascotMood.happy),
+            const SizedBox(width: Space.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Custom App Bar
-                _buildAppBar(),
-
-                // Context reset hint banner
-                if (_chatService.shouldSuggestReset && _messages.isNotEmpty)
-                  _buildResetHintBanner(),
-
-                // Messages List or Welcome Screen
-                Expanded(
-                  child: _messages.isEmpty
-                      ? _buildWelcomeScreen()
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _GlassMessageBubble(
-                              message: _messages[index],
-                            );
-                          },
-                        ),
-                ),
-
-                // Input Bar
-                ChatInputBar(
-                  controller: _textController,
-                  focusNode: _focusNode,
-                  onSend: _sendMessage,
-                  onImagePick: _pickImage,
-                  onVoiceStart: _startVoiceInput,
-                  onVoiceStop: _stopVoiceInput,
-                  isRecording: _isRecording,
-                  isLoading: _isLoading,
-                  selectedImage: _selectedImage,
-                  onClearImage: _clearSelectedImage,
+                Text('ถามลุงต้อม', style: context.text.titleMedium),
+                Text(
+                  _thinking
+                      ? 'กำลังคิด'
+                      : (ChatService.offline
+                            ? (Env.demoMode
+                                  ? 'โหมดสาธิต คำตอบตัวอย่าง'
+                                  : 'คำตอบตัวอย่าง ผู้ช่วยยังไม่เปิดบนเซิร์ฟเวอร์')
+                            : 'เหลือ $_remaining คำถามวันนี้'),
+                  style: context.text.labelSmall,
                 ),
               ],
             ),
-          ),
+          ],
         ),
+        actions: [
+          if (_messages.isNotEmpty)
+            IconButton(tooltip: 'เริ่มบทสนทนาใหม่', onPressed: _clear, icon: const Icon(AppIcons.refresh)),
+        ],
       ),
-    );
-  }
-
-  Widget _buildWelcomeScreen() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+      body: Column(
         children: [
-          const SizedBox(height: 40),
-          // AI Avatar
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          Expanded(
+            child: _messages.isEmpty
+                ? _Welcome(onPick: _send)
+                : ListView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.md),
+                    itemCount: _messages.length + (_thinking ? 1 : 0),
+                    itemBuilder: (context, i) =>
+                        i == _messages.length ? const _Typing() : _Bubble(message: _messages[i]).entrance(context),
+                  ),
+          ),
+          if (_image != null)
+            Container(
+              color: p.surface,
+              padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.lg, 0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(Radii.sm),
+                    child: _localImage(_image!.path, width: 48, height: 48),
+                  ),
+                  const SizedBox(width: Space.md),
+                  Expanded(child: Text('แนบรูป 1 รูป', style: context.text.bodySmall)),
+                  IconButton(onPressed: () => setState(() => _image = null), icon: const Icon(AppIcons.close)),
+                ],
               ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              color: p.surface,
+              border: Border(top: BorderSide(color: p.line)),
+            ),
+            padding: EdgeInsets.fromLTRB(Space.sm, Space.sm, Space.sm, Space.sm + MediaQuery.paddingOf(context).bottom),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (mobile)
+                  IconButton(
+                    tooltip: 'แนบรูปพืช',
+                    onPressed: _thinking ? null : _pickImage,
+                    icon: const Icon(AppIcons.camera),
+                  ),
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(),
+                    decoration: InputDecoration(hintText: _listening ? 'กำลังฟัง พูดได้เลย' : 'พิมพ์คำถาม'),
+                  ),
+                ),
+                if (mobile)
+                  IconButton(
+                    tooltip: _listening ? 'หยุดฟัง' : 'พูดแทนพิมพ์',
+                    onPressed: _thinking ? null : _toggleVoice,
+                    icon: Icon(AppIcons.mic, color: _listening ? p.danger : null),
+                  ),
+                const SizedBox(width: Space.xs),
+                AppIconButton(
+                  icon: AppIcons.send,
+                  tooltip: 'ส่ง',
+                  background: p.brand,
+                  foreground: p.onBrand,
+                  onPressed: _thinking ? null : _send,
                 ),
               ],
             ),
-            child: const Center(
-              child: HeroIcon(
-                HeroIcons.sparkles,
-                style: HeroIconStyle.solid,
-                color: Colors.white,
-                size: 36,
-              ),
-            ),
           ),
-          const SizedBox(height: 24),
-
-          // Welcome Text
-          Text(
-            'AI ผู้ช่วยเกษตรกร',
-            style: GoogleFonts.prompt(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              shadows: [const Shadow(color: Colors.black45, blurRadius: 8)],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'พร้อมตอบทุกคำถามเกี่ยวกับ\nกฎหมาย การเกษตร และมาตรฐาน GAP',
-            style: GoogleFonts.prompt(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 40),
-
-          // Suggestion Label
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'ลองถามคำถามเหล่านี้:',
-              style: GoogleFonts.prompt(
-                fontSize: 14,
-                color: Colors.white70,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Suggestion Chips
-          ..._suggestions
-              .map(
-                (s) => _buildSuggestionChip(
-                  icon: s['icon'] as HeroIcons,
-                  text: s['text'] as String,
-                  color: s['color'] as Color,
-                ),
-              )
-              .toList(),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSuggestionChip({
-    required HeroIcons icon,
-    required String text,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: () => _sendSuggestion(text),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.75),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: HeroIcon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                text,
-                style: GoogleFonts.prompt(
-                  fontSize: 14,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            HeroIcon(HeroIcons.chevronRight, color: Colors.white70, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
+class _Welcome extends StatelessWidget {
+  const _Welcome({required this.onPick});
 
-  Widget _buildAppBar() {
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+  final ValueChanged<String> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(Space.xl),
+      children: [
+        const SizedBox(height: Space.xl),
+        const Center(child: FarmerMascot(size: 140, mood: MascotMood.wave)),
+        const SizedBox(height: Space.lg),
+        Text('สวัสดีครับ ลุงต้อมเอง', style: context.text.headlineSmall, textAlign: TextAlign.center),
+        const SizedBox(height: Space.sm),
+        Text(
+          'ถามเรื่องการปลูก ดูแล เก็บเกี่ยว มาตรฐาน GAP หรือส่งรูปใบที่ผิดปกติมาให้ดูได้',
+          style: context.text.bodyMedium?.copyWith(color: context.palette.inkMuted),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: Space.xxl),
+        for (final s in _ChatScreenState._suggestions)
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.sm),
+            child: AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+              onTap: () => onPick(s),
+              child: Row(
+                children: [
+                  Expanded(child: Text(s, style: context.text.bodyMedium)),
+                  const Icon(AppIcons.arrowUpRight, size: 18),
+                ],
+              ),
             ),
           ),
-          child: Row(
+        const SizedBox(height: Space.lg),
+        Text(
+          'คำตอบเป็นข้อมูลทั่วไป ไม่ใช่คำวินิจฉัยของเจ้าหน้าที่',
+          style: context.text.labelSmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.message});
+
+  final ChatMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final mine = message.isUser;
+    final image = message.imagePath;
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: Space.md),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          decoration: BoxDecoration(
+            color: mine ? p.brand : p.surface,
+            border: mine ? null : Border.all(color: p.line),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(mine ? 18 : 6),
+              bottomRight: Radius.circular(mine ? 6 : 18),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back Button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const HeroIcon(
-                    HeroIcons.chevronLeft,
-                    style: HeroIconStyle.outline,
-                    color: Colors.white,
-                    size: 20,
+              if (image != null && !kIsWeb && File(image).existsSync())
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(Radii.sm),
+                    child: _localImage(image, height: 160),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-
-              // AI Avatar & Title
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: HeroIcon(
-                    HeroIcons.sparkles,
-                    style: HeroIconStyle.solid,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Title
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'AI ผู้ช่วย',
-                      style: GoogleFonts.prompt(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'กฎหมาย • เกษตร • วิเคราะห์ภาพ',
-                      style: GoogleFonts.prompt(
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Daily usage badge
-              _buildUsageBadge(),
-              const SizedBox(width: 8),
-
-              // Reset Button
-              GestureDetector(
-                onTap: _resetChat,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const HeroIcon(
-                    HeroIcons.arrowPath,
-                    style: HeroIconStyle.outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
+              SelectableText(
+                message.content.replaceAll('**', ''),
+                style: context.text.bodyMedium?.copyWith(color: mine ? p.onBrand : p.ink, height: 1.6),
               ),
             ],
           ),
@@ -631,381 +373,49 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-
-  /// Daily usage indicator badge
-  Widget _buildUsageBadge() {
-    final isLow = _dailyUsageRemaining <= 10;
-    final isEmpty = _dailyUsageRemaining <= 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isEmpty
-            ? Colors.red.withOpacity(0.25)
-            : isLow
-                ? Colors.orange.withOpacity(0.2)
-                : Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isEmpty
-              ? Colors.red.withOpacity(0.4)
-              : isLow
-                  ? Colors.orange.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isEmpty
-                ? Icons.block
-                : isLow
-                    ? Icons.warning_amber_rounded
-                    : Icons.bolt,
-            color: isEmpty
-                ? Colors.red[300]
-                : isLow
-                    ? Colors.orange[300]
-                    : Colors.white70,
-            size: 14,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '$_dailyUsageRemaining/$_dailyUsageLimit',
-            style: GoogleFonts.prompt(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isEmpty
-                  ? Colors.red[300]
-                  : isLow
-                      ? Colors.orange[300]
-                      : Colors.white70,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Hint banner suggesting conversation reset when history is long
-  Widget _buildResetHintBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.amber.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.amber[300],
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'บทสนทนายาวขึ้น แนะนำกด ↻ เริ่มใหม่เพื่อคุณภาพคำตอบที่ดีขึ้น',
-              style: GoogleFonts.prompt(
-                fontSize: 11,
-                color: Colors.amber[200],
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() {}), // Dismiss by rebuilding
-            child: Icon(
-              Icons.close,
-              color: Colors.amber[300],
-              size: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// Glassmorphism Message Bubble for chat with background image
-class _GlassMessageBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const _GlassMessageBubble({required this.message});
+class _Typing extends StatelessWidget {
+  const _Typing();
 
   @override
   Widget build(BuildContext context) {
-    if (message.isLoading) {
-      return _buildLoadingBubble();
-    }
-
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.only(
-          left: message.isUser ? 60 : 12,
-          right: message.isUser ? 12 : 60,
-          bottom: 12,
-        ),
-        child: Column(
-          crossAxisAlignment: message.isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // AI Avatar
-                if (!message.isUser) ...[
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryDark],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: HeroIcon(
-                        HeroIcons.sparkles,
-                        style: HeroIconStyle.solid,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-
-                // Message Bubble
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: message.isUser
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      // Image Preview
-                      if (message.imagePath != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.file(
-                            File(message.imagePath!),
-                            width: 200,
-                            height: 150,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      // Solid Message Bubble (No blur for clarity)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: message.isUser
-                              ? const LinearGradient(
-                                  colors: [
-                                    AppColors.primary,
-                                    AppColors.primaryDark,
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: message.isUser ? null : Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(20),
-                            topRight: const Radius.circular(20),
-                            bottomLeft: Radius.circular(
-                              message.isUser ? 20 : 4,
-                            ),
-                            bottomRight: Radius.circular(
-                              message.isUser ? 4 : 20,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          message.content,
-                          style: GoogleFonts.prompt(
-                            fontSize: 15,
-                            color: message.isUser
-                                ? Colors.white
-                                : const Color(0xFF1E293B),
-                            fontWeight: FontWeight.w400,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // Timestamp
-            Padding(
-              padding: EdgeInsets.only(
-                top: 4,
-                left: message.isUser ? 0 : 40,
-                right: 4,
-              ),
-              child: Text(
-                _formatTime(message.timestamp),
-                style: GoogleFonts.prompt(fontSize: 10, color: Colors.white60),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingBubble() {
+    final p = context.palette;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(left: 12, right: 60, bottom: 12),
+        margin: const EdgeInsets.only(bottom: Space.md),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: p.surface,
+          border: Border.all(color: p.line),
+          borderRadius: BorderRadius.circular(18),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: HeroIcon(
-                  HeroIcons.sparkles,
-                  style: HeroIconStyle.solid,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _TypingDot(delay: 0),
-                      SizedBox(width: 4),
-                      _TypingDot(delay: 150),
-                      SizedBox(width: 4),
-                      _TypingDot(delay: 300),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            for (var i = 0; i < 3; i++)
+              Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(color: p.inkSubtle, shape: BoxShape.circle),
+                  )
+                  .animate(onPlay: (c) => c.repeat())
+                  .fadeIn(
+                    delay: Duration(milliseconds: i * 160),
+                    duration: Motion.base,
+                  )
+                  .then()
+                  .fadeOut(duration: Motion.base),
           ],
         ),
       ),
     );
   }
-
-  String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
 }
 
-/// Animated typing dot
-class _TypingDot extends StatefulWidget {
-  final int delay;
-  const _TypingDot({required this.delay});
-
-  @override
-  State<_TypingDot> createState() => _TypingDotState();
-}
-
-class _TypingDotState extends State<_TypingDot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-
-    _animation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) {
-        _controller.repeat(reverse: true);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
-              0.3 + (0.7 * _animation.value),
-            ),
-            shape: BoxShape.circle,
-          ),
-        );
-      },
-    );
-  }
-}
+/// A picked photo: a file on mobile, a blob URL on the web.
+Widget _localImage(String path, {double? width, double? height}) => kIsWeb
+    ? Image.network(path, width: width, height: height, fit: BoxFit.cover)
+    : Image.file(File(path), width: width, height: height, fit: BoxFit.cover);

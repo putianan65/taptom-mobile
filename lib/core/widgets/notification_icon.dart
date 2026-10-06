@@ -1,59 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../features/notifications/providers/notification_provider.dart';
 
+import '../../app/routes.dart';
+import '../../features/notifications/providers/notification_provider.dart';
+import '../../features/settings/settings_provider.dart';
+import '../design/design.dart';
+import 'buttons.dart';
+
+/// Bell button with the unread count; opens the notification centre.
 class NotificationIcon extends StatelessWidget {
-  final Color color;
-  
-  const NotificationIcon({
-    super.key, 
-    this.color = Colors.white,
-  });
+  const NotificationIcon({super.key, this.onHero = false, this.color});
+
+  /// Use translucent styling for dark hero headers.
+  final bool onHero;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<NotificationProvider>(
-      builder: (context, provider, child) {
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            IconButton(
-              icon: HeroIcon(HeroIcons.bell, color: color),
-              onPressed: () {
-                context.push('/notifications');
-              },
-            ),
-            if (provider.unreadCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    provider.unreadCount > 99 ? '99+' : '${provider.unreadCount}',
-                    style: GoogleFonts.prompt(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+    final enabled = context.select<SettingsProvider, bool>((s) => s.notificationsEnabled);
+    if (!enabled) return const SizedBox.shrink();
+    final unread = context.select<NotificationProvider, int>((n) => n.unreadCount);
+    final p = context.palette;
+    return AppIconButton(
+      icon: unread > 0 ? AppIcons.bellActive : AppIcons.bell,
+      tooltip: 'การแจ้งเตือน',
+      badge: unread,
+      background: onHero ? Colors.white.withValues(alpha: 0.12) : null,
+      foreground: color ?? (onHero ? p.heroInk : null),
+      onPressed: () => context.push(Routes.notifications),
     );
   }
 }

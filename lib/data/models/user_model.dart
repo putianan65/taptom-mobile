@@ -32,8 +32,7 @@ class UserModel {
   final DateTime? pdpaConsentAt;
   final bool hasPin;
   final String? photoUrl;
-  final DateTime? deletedAt; // ✅ NEW
-
+  final DateTime? deletedAt;
   UserModel({
     required this.id,
     required this.phone,
@@ -55,8 +54,17 @@ class UserModel {
     this.deletedAt,
   });
 
-  String get fullName => '$firstName $lastName';
-  bool get isDeleted => deletedAt != null; // Helper getter
+  String get fullName => '$firstName $lastName'.trim();
+  bool get isDeleted => deletedAt != null;
+
+  /// Role as the API spells it.
+  String get roleCode => switch (role) {
+        UserRole.superAdmin => 'SUPER_ADMIN',
+        UserRole.admin => 'ADMIN',
+        UserRole.farmer => 'USER',
+      };
+
+  bool get isStaff => role != UserRole.farmer;
 
   String get locationDisplay {
     final parts = <String>[];
@@ -94,12 +102,12 @@ class UserModel {
 
     return UserModel(
       id: json['id']?.toString() ?? '',
-      phone: json['phone'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      role: stringToRole(json['role'] ?? 'USER'),
+      phone: json['phone']?.toString() ?? '',
+      firstName: json['firstName']?.toString() ?? '',
+      lastName: json['lastName']?.toString() ?? '',
+      role: stringToRole(json['role']?.toString() ?? 'USER'),
       birthDate: json['birthday'] != null
-          ? DateTime.parse(json['birthday'])
+          ? DateTime.tryParse(json['birthday'].toString())
           : null,
       region: json['region'],
       province: json['province'],
@@ -110,12 +118,12 @@ class UserModel {
       membershipStatus: stringToMembershipStatus(json['membershipStatus']),
       job: json['job'],
       pdpaConsentAt: json['pdpaConsentAt'] != null
-          ? DateTime.parse(json['pdpaConsentAt'])
+          ? DateTime.tryParse(json['pdpaConsentAt'].toString())
           : null,
       hasPin: json['hasPin'] ?? false,
       photoUrl: json['photoUrl'],
       deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'])
+          ? DateTime.tryParse(json['deletedAt'].toString())
           : null,
     );
   }
@@ -126,8 +134,8 @@ class UserModel {
       'phone': phone,
       'firstName': firstName,
       'lastName': lastName,
-      'role': role.name.toUpperCase(),
-      // 'birthday': birthDate?.toIso8601String(), // Backend rejects 'birthday'
+      'role': roleCode,
+      'birthday': birthDate?.toIso8601String(),
       'region': region,
       'province': province,
       'district': district,

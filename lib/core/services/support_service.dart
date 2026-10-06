@@ -1,5 +1,4 @@
 
-import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../../data/models/ticket_model.dart';
 
@@ -9,7 +8,7 @@ class SupportService {
   /// Get Tickets
   Future<List<Ticket>> getTickets({
     String status = 'ALL',
-    String? userId, // ✅ Re-enabled per Backend Update
+    String? userId, // Re-enabled per Backend Update
   }) async {
     try {
       final queryParams = <String, dynamic>{'status': status};
@@ -25,6 +24,30 @@ class SupportService {
     } catch (e) {
       throw Exception('ไม่สามารถดึงข้อมูลตั๋วได้: $e');
     }
+  }
+
+  /// One ticket with its replies.
+  Future<Ticket> getTicket(String id) async {
+    final response = await _apiClient.get('/support/tickets/$id');
+    final body = response.data;
+    final map = body is Map && body['data'] is Map ? body['data'] : body;
+    return Ticket.fromJson(Map<String, dynamic>.from(map as Map));
+  }
+
+  /// Opens a ticket. [category] follows the API's CreateSupportTicketDto.
+  Future<Ticket> createTicket({
+    required String subject,
+    required String message,
+    required String category,
+    String priority = 'MEDIUM',
+  }) async {
+    final response = await _apiClient.post(
+      '/support/tickets',
+      data: {'subject': subject, 'message': message, 'category': category, 'priority': priority},
+    );
+    final body = response.data;
+    final map = body is Map && body['data'] is Map ? body['data'] : body;
+    return Ticket.fromJson(Map<String, dynamic>.from(map as Map));
   }
 
   /// Reply to Ticket

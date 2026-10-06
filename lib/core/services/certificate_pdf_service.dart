@@ -1,54 +1,22 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:http/http.dart' as http;
-import '../../data/models/plot_model.dart';
 
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart'; // ใช้ PdfGoogleFonts
 import '../../data/models/plot_model.dart';
-import 'package:intl/intl.dart';
+import 'pdf_assets.dart';
 
-/// Service สำหรับสร้างใบรับรอง GAP เป็น PDF
+/// Builds the GAP certificate for an approved plot as an A4 PDF.
 class CertificatePdfService {
-  
-  /// สร้างใบรับรอง PDF และบันทึกลงไฟล์
-  Future<File> generateCertificate(PlotModel plot, {required String ownerName}) async {
-    final pdf = pw.Document();
-    
-    // Load Fonts via PdfGoogleFonts (Printing package helper)
-    // Taptom brand uses Prompt, but Sarabun is standard for formal Thai docs.
-    // Let's use Sarabun for a formal look, or Prompt if we want modern.
-    // User asked for "Formal", Sarabun is the government standard.
-    final fontRegular = await PdfGoogleFonts.sarabunRegular();
-    final fontBold = await PdfGoogleFonts.sarabunBold();
-    
-    // Load logos
-    Uint8List? gapLogo;
-    Uint8List? ppsLogo;
-    Uint8List? gistLogo;
-    Uint8List? bgImage;
-    
-    try {
-      gapLogo = (await rootBundle.load('assets/images/GAPLOGO.png')).buffer.asUint8List();
-    } catch (_) {}
-    
-    try {
-      ppsLogo = (await rootBundle.load('assets/images/logo_ปปส.png')).buffer.asUint8List();
-    } catch (_) {}
-    
-    try {
-      gistLogo = (await rootBundle.load('assets/images/Gistnu_new_logo.webp')).buffer.asUint8List();
-    } catch (_) {}
-    
+  /// The certificate as PDF bytes, ready for preview, print or share.
+  Future<Uint8List> buildCertificate(PlotModel plot, {required String ownerName}) async {
+    final pdf = pw.Document(title: 'GAP ${plot.name}', author: 'TAPTOM');
+    final fontRegular = await PdfAssets.regular();
+    final fontBold = await PdfAssets.bold();
+    final gapLogo = await PdfAssets.gapMark();
+    final ppsLogo = await PdfAssets.oncbSeal();
+    final gistLogo = await PdfAssets.gistnu();
+
     // Format date
     final now = DateTime.now();
     final thaiYear = now.year + 543;
@@ -72,13 +40,13 @@ class CertificatePdfService {
         build: (context) {
           return pw.Container(
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColor.fromHex('#1B5E20'), width: 5), // Outer Border
+              border: pw.Border.all(color: PdfColor.fromHex('#245A33'), width: 5), // Outer Border
               color: PdfColors.white,
             ),
             child: pw.Container(
               margin: const pw.EdgeInsets.all(5),
               decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColor.fromHex('#4CAF50'), width: 2), // Inner Border
+                border: pw.Border.all(color: PdfColor.fromHex('#6CA874'), width: 2), // Inner Border
               ),
               padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 30),
               child: pw.Column(
@@ -90,15 +58,15 @@ class CertificatePdfService {
                     mainAxisAlignment: pw.MainAxisAlignment.center,
                     children: [
                       if (gapLogo != null) ...[
-                        pw.Image(pw.MemoryImage(gapLogo), height: 60),
+                        pw.Image(gapLogo, height: 60),
                         pw.SizedBox(width: 30),
                       ],
                       if (ppsLogo != null) ...[
-                         pw.Image(pw.MemoryImage(ppsLogo), height: 70),
+                         pw.Image(ppsLogo, height: 70),
                          pw.SizedBox(width: 30),
                       ],
                       if (gistLogo != null)
-                        pw.Image(pw.MemoryImage(gistLogo), height: 50),
+                        pw.Image(gistLogo, height: 50),
                     ],
                   ),
                   pw.SizedBox(height: 40),
@@ -109,7 +77,7 @@ class CertificatePdfService {
                     style: pw.TextStyle(
                       font: fontBold,
                       fontSize: 24,
-                      color: PdfColor.fromHex('#1B5E20'),
+                      color: PdfColor.fromHex('#245A33'),
                     ),
                     textAlign: pw.TextAlign.center,
                   ),
@@ -118,7 +86,7 @@ class CertificatePdfService {
                     style: pw.TextStyle(
                       font: fontBold,
                       fontSize: 18,
-                      color: PdfColor.fromHex('#2E7D32'),
+                      color: PdfColor.fromHex('#2F7041'),
                     ),
                     textAlign: pw.TextAlign.center,
                   ),
@@ -246,12 +214,7 @@ class CertificatePdfService {
     );
     
     // Save to file
-    final outputDir = await getApplicationDocumentsDirectory();
-    final fileName = 'GAP_Certificate_${plot.name.replaceAll(' ', '_')}_$thaiYear.pdf';
-    final file = File('${outputDir.path}/$fileName');
-    await file.writeAsBytes(await pdf.save());
-    
-   return file;
+    return pdf.save();
   }
   
   pw.Widget _buildInfoRow(String label, String value, pw.Font regular, pw.Font bold) {
@@ -259,7 +222,7 @@ class CertificatePdfService {
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Text(label, style: pw.TextStyle(font: regular, fontSize: 16, color: PdfColors.grey700)),
-        pw.Text(value, style: pw.TextStyle(font: bold, fontSize: 16, color: PdfColor.fromHex('#1B5E20'))),
+        pw.Text(value, style: pw.TextStyle(font: bold, fontSize: 16, color: PdfColor.fromHex('#245A33'))),
       ],
     );
   }

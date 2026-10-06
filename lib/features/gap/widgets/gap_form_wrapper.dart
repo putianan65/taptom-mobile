@@ -1,384 +1,183 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import '../../../../core/constants/app_colors.dart';
 
-/// Wrapper for GAP forms to ensure consistent layout and styling
-class GapFormWrapper extends StatefulWidget {
-  final String title;
-  final String subtitle;
-  final HeroIcons headerIcon;
-  final Color headerColor;
-  final Widget child;
-  final VoidCallback? onSave;
-  final VoidCallback? onSaveDraft; // Optional draft save
-  final bool isSaving;
-  final bool hasUnsavedChanges; // GAP-FIX-002: Track unsaved changes
+import '../../../core/widgets/widgets.dart';
+import '../../../core/utils/thai_date.dart';
+import '../gap_categories.dart';
 
+/// Shared frame for the seven GAP forms: a collapsing title with the
+/// category code, an unsaved-changes guard, an optional draft action and a
+/// pinned save bar.
+class GapFormWrapper extends StatelessWidget {
   const GapFormWrapper({
     super.key,
-    required this.title,
-    required this.subtitle,
-    required this.headerIcon,
-    required this.headerColor,
+    required this.category,
     required this.child,
+    this.subtitle,
     this.onSave,
     this.onSaveDraft,
     this.isSaving = false,
-    this.hasUnsavedChanges = true, // Default to true for safety
+    this.hasUnsavedChanges = true,
+    this.saveLabel = 'บันทึกข้อมูล',
+    this.readOnly = false,
   });
 
-  @override
-  State<GapFormWrapper> createState() => _GapFormWrapperState();
-}
+  final GapCategory category;
+  final Widget child;
+  final String? subtitle;
+  final VoidCallback? onSave;
+  final VoidCallback? onSaveDraft;
+  final bool isSaving;
+  final bool hasUnsavedChanges;
+  final String saveLabel;
+  final bool readOnly;
 
-class _GapFormWrapperState extends State<GapFormWrapper> {
-  Future<bool> _onWillPop() async {
-    // GAP-FIX-002: Only show confirmation if there are unsaved changes
-    if (!widget.hasUnsavedChanges) {
-      return true;
-    }
-
-    final shouldPop = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'ออกจากฟอร์ม?',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'ข้อมูลที่ยังไม่ได้บันทึกจะสูญหาย\nคุณต้องการออกหรือไม่?',
-          style: GoogleFonts.prompt(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'ออก',
-              style: GoogleFonts.prompt(color: AppColors.textLight),
-            ),
-          ),
-        ],
-      ),
+  Future<bool> _confirmLeave(BuildContext context) async {
+    if (!hasUnsavedChanges || readOnly) return true;
+    return AppDialogs.confirm(
+      context,
+      title: 'ออกจากแบบฟอร์ม?',
+      message: 'ข้อมูลที่ยังไม่ได้บันทึกจะหายไป',
+      confirmLabel: 'ออก',
+      cancelLabel: 'กรอกต่อ',
+      destructive: true,
     );
-    return shouldPop ?? false;
   }
 
   @override
   Widget build(BuildContext context) {
-    // GAP-BUG-002: Wrap with PopScope to confirm before discarding unsaved data
-    return PopScope(
-      canPop: !widget.hasUnsavedChanges, // GAP-FIX-002: Allow pop if no unsaved changes
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
+    final p = context.palette;
+    final canPop = !hasUnsavedChanges || readOnly;
 
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
-        }
+    return PopScope(
+      canPop: canPop,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmLeave(context) && context.mounted) Navigator.of(context).pop();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.surface,
-        appBar: AppBar(
-          title: Text(
-            widget.title,
-            style: GoogleFonts.prompt(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: PageScaffold(
+          title: category.title,
+          subtitle: subtitle ?? 'หมวด ${category.code} · ${category.description}',
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Center(
+              child: AppIconButton(
+                icon: AppIcons.back,
+                tooltip: 'ย้อนกลับ',
+                onPressed: () async {
+                  if (await _confirmLeave(context) && context.mounted) Navigator.of(context).pop();
+                },
+              ),
             ),
-          ),
-          centerTitle: true,
-          backgroundColor: AppColors.surface,
-          elevation: 0,
-          leading: IconButton(
-            icon: HeroIcon(HeroIcons.arrowLeft, color: AppColors.textPrimary),
-            onPressed: () async {
-              // GAP-FIX-002: Use shared method for consistent behavior
-              final shouldPop = await _onWillPop();
-              if (shouldPop && context.mounted) {
-                Navigator.of(context).pop();
-              }
-            },
           ),
           actions: [
-            if (widget.onSaveDraft != null)
-              TextButton(
-                onPressed: widget.isSaving ? null : widget.onSaveDraft,
-                child: Text(
-                  'บันทึกร่าง',
-                  style: GoogleFonts.prompt(color: AppColors.textSecondary),
-                ),
+            if (onSaveDraft != null && !readOnly)
+              TextButton.icon(
+                onPressed: isSaving ? null : onSaveDraft,
+                icon: const Icon(AppIcons.draft, size: 18),
+                label: const Text('บันทึกร่าง'),
               ),
+            const SizedBox(width: Space.sm),
           ],
-        ),
-        bottomNavigationBar: widget.onSave == null ? null : Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadowLight,
-                blurRadius: 10,
-                offset: const Offset(0, -5),
+          bottomBar: onSave == null || readOnly
+              ? null
+              : SafeArea(
+                  top: false,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.md),
+                    decoration: BoxDecoration(
+                      color: p.surface,
+                      border: Border(top: BorderSide(color: p.line)),
+                    ),
+                    child: AppButton(
+                      label: saveLabel,
+                      expand: true,
+                      loading: isSaving,
+                      onPressed: onSave,
+                    ),
+                  ),
+                ),
+          slivers: [
+            SliverToBoxAdapter(
+              child: ContentWidth(
+                maxWidth: Breakpoints.maxForm + 80,
+                padding: EdgeInsets.zero,
+                child: child,
               ),
-            ],
-          ),
-          child: ElevatedButton(
-            onPressed: widget.isSaving ? null : widget.onSave,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
             ),
-            child: widget.isSaving
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: AppColors.textLight,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    'บันทึกข้อมูล',
-                    style: GoogleFonts.prompt(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textLight,
-                    ),
-                  ),
-          ),
-        ),
-        body: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior
-              .onDrag, // GAP-BUG-014: Dismiss keyboard on scroll
-          child: Column(
-            children: [
-              // Header Card
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [widget.headerColor.withOpacity(0.8), widget.headerColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.headerColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.textLight.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: HeroIcon(
-                        widget.headerIcon,
-                        color: AppColors.textLight,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.title,
-                            style: GoogleFonts.prompt(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textLight,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.subtitle,
-                            style: GoogleFonts.prompt(
-                              fontSize: 14,
-                              color: AppColors.textLight.withOpacity(0.9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Reusable content area
-              const SizedBox(
-                height: 24,
-              ), // GAP-FIX: Ensure spacing between header and content
-              widget.child,
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Standard form section card
+/// A titled group of fields inside a GAP form.
 class FormSectionCard extends StatelessWidget {
-  final String title;
-  final String example;
-  final HeroIcons icon;
-  final Color iconColor;
-  final Widget child;
-
   const FormSectionCard({
     super.key,
     required this.title,
-    required this.example,
-    required this.icon,
-    required this.iconColor,
     required this.child,
+    this.example,
+    this.icon,
   });
+
+  final String title;
+  final String? example;
+  final IconData? icon;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.lg),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                HeroIcon(icon, color: iconColor, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.prompt(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        example,
-                        style: GoogleFonts.prompt(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                if (icon != null) ...[
+                  Icon(icon, size: 20, color: p.brand),
+                  const SizedBox(width: Space.sm),
+                ],
+                Expanded(child: Text(title, style: context.text.titleSmall)),
               ],
             ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: child,
-          ),
-        ],
+            if (example != null && example!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(example!, style: context.text.bodySmall),
+            ],
+            const SizedBox(height: Space.md),
+            child,
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Info card for form guidance
+/// Guidance shown at the top of a form.
 class FormInfoCard extends StatelessWidget {
-  final String message;
-  final HeroIcons icon;
-  final Color color;
+  const FormInfoCard({super.key, required this.message, this.tone = Tone.info, this.title});
 
-  const FormInfoCard({
-    super.key,
-    required this.message,
-    required this.icon,
-    required this.color,
-  });
+  final String message;
+  final String? title;
+  final Tone tone;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HeroIcon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: GoogleFonts.prompt(
-                fontSize: 13,
-                color: color.withOpacity(0.8),
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.lg),
+      child: InlineBanner(tone: tone, title: title, message: message),
     );
   }
 }
 
-/// Dropdown with "Other" option support
+/// Dropdown of common answers with a free-text "other" option.
 class FormDropdownWithOther extends StatefulWidget {
-  final String label;
-  final String hint;
-  final List<String> options;
-  final String value;
-  final ValueChanged<String> onChanged;
-  final HeroIcons icon;
-
   const FormDropdownWithOther({
     super.key,
     required this.label,
@@ -386,136 +185,90 @@ class FormDropdownWithOther extends StatefulWidget {
     required this.options,
     required this.value,
     required this.onChanged,
-    required this.icon,
+    this.icon,
+    this.enabled = true,
   });
+
+  static const other = 'อื่น ๆ (ระบุ)';
+
+  final String label;
+  final String hint;
+  final List<String> options;
+  final String value;
+  final ValueChanged<String> onChanged;
+  final IconData? icon;
+  final bool enabled;
 
   @override
   State<FormDropdownWithOther> createState() => _FormDropdownWithOtherState();
 }
 
 class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
-  final TextEditingController _otherController = TextEditingController();
+  final _other = TextEditingController();
   bool _isOther = false;
 
   @override
   void initState() {
     super.initState();
-    _checkIfOther();
+    _sync();
   }
 
   @override
-  void didUpdateWidget(FormDropdownWithOther oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) {
-      _checkIfOther();
-    }
+  void didUpdateWidget(FormDropdownWithOther old) {
+    super.didUpdateWidget(old);
+    if (old.value != widget.value) _sync();
   }
 
-  void _checkIfOther() {
-    if (widget.value.isNotEmpty && !widget.options.contains(widget.value)) {
+  void _sync() {
+    final v = widget.value;
+    if (v.isNotEmpty && !widget.options.contains(v) && v != FormDropdownWithOther.other) {
       _isOther = true;
-      _otherController.text = widget.value;
+      if (_other.text != v) _other.text = v;
     } else {
-      _isOther = widget.value == 'อื่นๆ (ระบุ)';
+      _isOther = v == FormDropdownWithOther.other;
     }
   }
 
   @override
   void dispose() {
-    _otherController.dispose();
+    _other.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final selected = _isOther ? FormDropdownWithOther.other : (widget.value.isEmpty ? null : widget.value);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Dropdown
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
+        FieldLabel(widget.label),
+        DropdownButtonFormField<String>(
+          initialValue: selected,
+          isExpanded: true,
+          hint: Text(widget.hint, overflow: TextOverflow.ellipsis),
+          decoration: InputDecoration(
+            prefixIcon: widget.icon == null ? null : Icon(widget.icon, size: 20),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _isOther ? 'อื่นๆ (ระบุ)' : widget.value.isEmpty ? null : widget.value,
-              hint: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    HeroIcon(widget.icon, color: Colors.grey, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.hint,
-                        style: GoogleFonts.prompt(color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              isExpanded: true,
-              icon: const Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: HeroIcon(HeroIcons.chevronDown, color: Colors.grey, size: 20),
-              ),
-              items: [
-                ...widget.options.map((option) => DropdownMenuItem(
-                  value: option,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      option,
-                      style: GoogleFonts.prompt(),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                )),
-                DropdownMenuItem(
-                  value: 'อื่นๆ (ระบุ)',
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'อื่นๆ (ระบุ)',
-                      style: GoogleFonts.prompt(),
-                    ),
-                  ),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _isOther = value == 'อื่นๆ (ระบุ)';
-                  if (!_isOther) {
-                    _otherController.clear();
-                  }
-                });
-                widget.onChanged(value ?? '');
-              },
-            ),
-          ),
+          items: [
+            for (final o in [...widget.options, FormDropdownWithOther.other])
+              DropdownMenuItem(value: o, child: Text(o, overflow: TextOverflow.ellipsis)),
+          ],
+          onChanged: !widget.enabled
+              ? null
+              : (v) {
+                  setState(() {
+                    _isOther = v == FormDropdownWithOther.other;
+                    if (!_isOther) _other.clear();
+                  });
+                  widget.onChanged(_isOther ? _other.text : (v ?? ''));
+                },
         ),
-
-        // Other text field
         if (_isOther) ...[
-          const SizedBox(height: 12),
-          TextField(
-            controller: _otherController,
-            decoration: InputDecoration(
-              hintText: 'ระบุ${widget.label}',
-              hintStyle: GoogleFonts.prompt(color: Colors.grey),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-            style: GoogleFonts.prompt(),
+          const SizedBox(height: Space.sm),
+          AppTextField(
+            controller: _other,
+            hint: 'ระบุ${widget.label}',
+            enabled: widget.enabled,
             onChanged: widget.onChanged,
           ),
         ],
@@ -524,151 +277,296 @@ class _FormDropdownWithOtherState extends State<FormDropdownWithOther> {
   }
 }
 
-/// Dialog for incomplete fields
+/// Asks whether to save a form that still has empty fields.
 Future<bool> showIncompleteFieldsDialog(
   BuildContext context, {
   required String formTitle,
   required List<String> incompleteFields,
-}) async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'ข้อมูลไม่ครบถ้วน',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ),
-        ],
-      ),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.5,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+}) {
+  final list = incompleteFields.take(6).join(', ');
+  final more = incompleteFields.length > 6 ? ' และอีก ${incompleteFields.length - 6} รายการ' : '';
+  return AppDialogs.confirm(
+    context,
+    title: 'ยังกรอกไม่ครบ',
+    message: 'ยังไม่ได้กรอก $list$more\n\nบันทึกไว้ก่อนแล้วกลับมากรอกต่อภายหลังได้',
+    confirmLabel: 'บันทึกเท่าที่มี',
+    cancelLabel: 'กลับไปกรอก',
+    icon: AppIcons.warning,
+  );
+}
+
+/// Confirms a successful save with Lung Tom.
+Future<void> showGapSuccessDialog(
+  BuildContext context, {
+  required String formTitle,
+  required String formSubtitle,
+}) {
+  return AppDialogs.message(
+    context,
+    title: formTitle,
+    message: formSubtitle,
+    tone: Tone.success,
+    mood: MascotMood.joy,
+  );
+}
+
+/// Primary call to add a record in list-style forms.
+class GapAddButton extends StatelessWidget {
+  const GapAddButton({super.key, required this.label, required this.onPressed, this.icon = AppIcons.add});
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Pressable(
+      onTap: onPressed,
+      child: DottedBox(
+        color: p.lineStrong,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Space.lg),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'ฟอร์ม "$formTitle" มีข้อมูลที่ยังไม่ได้กรอก:',
-                style: GoogleFonts.prompt(fontSize: 14),
+              Icon(icon, size: 20, color: p.brand),
+              const SizedBox(width: Space.sm),
+              Text(label, style: context.text.labelLarge?.copyWith(color: p.brand)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Rounded rectangle with a dashed outline.
+class DottedBox extends StatelessWidget {
+  const DottedBox({super.key, required this.child, required this.color});
+
+  final Widget child;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashPainter(color),
+      child: child,
+    );
+  }
+}
+
+class _DashPainter extends CustomPainter {
+  _DashPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(Radii.lg));
+    final path = Path()..addRRect(rrect.deflate(0.75));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, d + 6), paint);
+        d += 11;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashPainter old) => old.color != color;
+}
+
+/// A saved record in list-style forms (inputs, activities, harvests ...).
+class GapRecordTile extends StatelessWidget {
+  const GapRecordTile({
+    super.key,
+    required this.title,
+    required this.icon,
+    this.subtitle,
+    this.meta,
+    this.onTap,
+    this.onDelete,
+    this.trailing,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? meta;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.fromLTRB(Space.md + 2, Space.md, Space.xs, Space.md),
+        child: Row(
+          children: [
+            IconTile(icon: icon, size: 40),
+            const SizedBox(width: Space.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: context.text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if ((subtitle ?? '').isNotEmpty)
+                    Text(subtitle!, style: context.text.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if ((meta ?? '').isNotEmpty)
+                    Text(meta!, style: context.text.labelSmall?.copyWith(color: p.inkSubtle)),
+                ],
               ),
-              const SizedBox(height: 12),
-              ...incompleteFields.map((field) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
+            ),
+            if (trailing != null) trailing!,
+            if (onDelete != null)
+              IconButton(
+                tooltip: 'ลบ',
+                onPressed: onDelete,
+                icon: Icon(AppIcons.delete, size: 20, color: p.inkSubtle),
+              )
+            else
+              const SizedBox(width: Space.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One option in a single-choice list, styled as a selectable card.
+class ChoiceTile extends StatelessWidget {
+  const ChoiceTile({
+    super.key,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.icon,
+  });
+
+  final String title;
+  final String? subtitle;
+  final IconData? icon;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Motion.quick,
+          padding: const EdgeInsets.all(Space.md),
+          decoration: BoxDecoration(
+            color: selected ? p.brandSoft : p.surface,
+            borderRadius: Radii.control,
+            border: Border.all(color: selected ? p.brand : p.line, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: selected ? p.brandStrong : p.inkMuted),
+                const SizedBox(width: Space.md),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.circle, size: 6, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(field, style: GoogleFonts.prompt(fontSize: 14)),
-                    ),
+                    Text(title, style: context.text.titleSmall),
+                    if (subtitle != null) Text(subtitle!, style: context.text.bodySmall),
                   ],
                 ),
-              )),
-              const SizedBox(height: 16),
-              Text(
-                'คุณต้องการบันทึกต่อไปหรือไม่?',
-                style: GoogleFonts.prompt(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              Icon(
+                selected ? AppIcons.checkCircleFill : AppIcons.checkCircle,
+                size: 20,
+                color: selected ? p.brand : p.lineStrong,
               ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text('กลับไปกรอก', style: GoogleFonts.prompt()),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-          child: Text('บันทึกต่อไป', style: GoogleFonts.prompt(color: Colors.white)),
-        ),
-      ],
-    ),
-  );
-  return result ?? false;
+    );
+  }
 }
 
-/// Success dialog after form submission
-Future<void> showGapSuccessDialog(
-  BuildContext context, {
-  required String formTitle,
-  required String formSubtitle,
-}) async {
-  await showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle,
-              color: AppColors.success,
-              size: 64,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            formTitle,
-            style: GoogleFonts.prompt(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            formSubtitle,
-            style: GoogleFonts.prompt(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+/// Tappable field that opens the date picker and shows a Thai date.
+class DatePickerField extends StatelessWidget {
+  const DatePickerField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.firstDate,
+    this.lastDate,
+    this.hint = 'เลือกวันที่',
+    this.enabled = true,
+  });
+
+  final String label;
+  final DateTime? value;
+  final ValueChanged<DateTime> onChanged;
+  final DateTime? firstDate;
+  final DateTime? lastDate;
+  final String hint;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FieldLabel(label),
+        Pressable(
+          onTap: !enabled
+              ? null
+              : () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: value ?? now,
+                    firstDate: firstDate ?? DateTime(now.year - 10),
+                    lastDate: lastDate ?? now,
+                    locale: const Locale('th', 'TH'),
+                  );
+                  if (picked != null) onChanged(picked);
+                },
+          child: Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+            decoration: BoxDecoration(color: p.surfaceSunken, borderRadius: Radii.control),
+            child: Row(
+              children: [
+                Icon(AppIcons.calendar, size: 20, color: p.inkSubtle),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Text(
+                    value == null ? hint : ThaiDate.long(value!),
+                    style: context.text.bodyLarge?.copyWith(color: value == null ? p.inkSubtle : p.ink),
+                  ),
                 ),
-              ),
-              child: Text(
-                'ตกลง',
-                style: GoogleFonts.prompt(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+                Icon(AppIcons.chevronDown, size: 18, color: p.inkSubtle),
+              ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      ],
+    );
+  }
 }

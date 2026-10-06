@@ -1,432 +1,255 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/nature_background.dart';
-import '../../../../data/models/user_model.dart';
-import '../providers/message_provider.dart';
+
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/message_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../auth/auth_provider.dart';
-import '../../../../data/models/message_model.dart';
+import '../providers/message_provider.dart';
 
+/// One conversation between two staff members.
 class MessageDetailScreen extends StatefulWidget {
-  final String id; // Partner User ID
-  final Message? message; 
+  const MessageDetailScreen({super.key, required this.id, this.message, this.partner});
 
-  const MessageDetailScreen({super.key, required this.id, this.message});
+  /// The partner's user id.
+  final String id;
+  final Message? message;
+  final UserModel? partner;
 
   @override
   State<MessageDetailScreen> createState() => _MessageDetailScreenState();
 }
 
 class _MessageDetailScreenState extends State<MessageDetailScreen> {
-  final _replyController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  bool _isSending = false;
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  bool _sending = false;
 
   @override
   void initState() {
     super.initState();
-    // ✅ FIX: Load messages and scroll to bottom
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MessageProvider>().loadMessages();
-      context.read<MessageProvider>().markThreadAsRead(widget.id);
-      _scrollToBottom();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = context.read<MessageProvider>();
+      await provider.loadMessages();
+      provider.markThreadAsRead(widget.id);
+      _toBottom(jump: true);
     });
   }
 
   @override
   void dispose() {
-    _replyController.dispose();
-    _scrollController.dispose();
+    _input.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  // ✅ FIX: ไม่ซ้อน addPostFrameCallback, ใช้ jumpTo แทน animateTo
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.jumpTo(
-        _scrollController.position.maxScrollExtent,
-      );
+  void _toBottom({bool jump = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      jump ? _scroll.jumpTo(end) : _scroll.animateTo(end, duration: Motion.base, curve: Motion.standard);
+    });
+  }
+
+  Future<void> _send(List<Message> thread) async {
+    final text = _input.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    final provider = context.read<MessageProvider>();
+    try {
+      if (thread.isNotEmpty) {
+        await provider.replyMessage(messageId: thread.last.id, message: text);
+      } else {
+        await provider.sendMessage(recipientId: widget.id, message: text);
+      }
+      _input.clear();
+      _toBottom();
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final provider = context.watch<MessageProvider>();
-    final authUser = context.watch<AuthProvider>().currentUser;
-    final isSuperAdmin = authUser?.role == UserRole.superAdmin;
+    final me = context.watch<AuthProvider>().currentUser;
     final thread = provider.getThread(widget.id);
-    
-    // Determine Partner User Model for UI
-    UserModel? partner;
-    if (widget.message != null) {
-      partner = provider.getPartner(widget.message!);
-    } else if (thread.isNotEmpty) {
-      partner = provider.getPartner(thread.first);
-    } else {
-      final extra = GoRouterState.of(context).extra;
-      if (extra is UserModel) {
-        partner = extra;
-      }
-    }
+    final partner = widget.partner ??
+        (widget.message != null ? provider.getPartner(widget.message!) : null) ??
+        (thread.isNotEmpty ? provider.getPartner(thread.first) : null);
+    final name = partner?.fullName ?? 'บทสนทนา';
 
-    final partnerName = partner?.fullName ?? 'Unknown';
-
-    Widget scaffoldContent = Scaffold(
-      backgroundColor: Colors.transparent,
+    return Scaffold(
+      backgroundColor: p.background,
       appBar: AppBar(
+        backgroundColor: p.surface,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 0,
+        shape: Border(bottom: BorderSide(color: p.line)),
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: isSuperAdmin 
-                  ? LuxuryTheme.cyanNeon.withOpacity(0.2) 
-                  : Colors.white.withOpacity(0.2),
-              backgroundImage: (partner?.photoUrl != null) 
-                ? NetworkImage(partner!.photoUrl!) 
-                : null,
-              child: (partner?.photoUrl == null) 
-                ? Text(
-                    partnerName.isNotEmpty ? partnerName[0] : '?', 
-                    style: GoogleFonts.prompt(
-                      color: isSuperAdmin ? LuxuryTheme.cyanNeon : Colors.white,
-                      fontWeight: FontWeight.bold,
-                    )
-                  ) 
-                : null,
-            ),
-            const SizedBox(width: 10),
+            InitialsAvatar(name: name, photoUrl: partner?.photoUrl, size: 36),
+            const SizedBox(width: Space.md),
             Expanded(
-              child: Text(
-                partnerName, 
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.bold, 
-                  color: Colors.white, 
-                  fontSize: 18
-                )
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: context.text.titleSmall, overflow: TextOverflow.ellipsis),
+                  if (partner != null) Text(StatusLabels.role(partner.role), style: context.text.labelSmall),
+                ],
               ),
             ),
           ],
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: isSuperAdmin 
-            ? Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: LuxuryTheme.glassSurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: LuxuryTheme.glassBorder),
-                ),
-                child: IconButton(
-                  icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
-                  onPressed: () => context.pop(),
-                ),
-              )
-            : IconButton(
-                icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: isSuperAdmin ? Colors.transparent : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: isSuperAdmin ? null : const BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: thread.isEmpty
-                ? Center(
-                    child: Text(
-                      'เริ่มต้นบทสนทนา', 
-                      style: GoogleFonts.prompt(
-                        color: isSuperAdmin ? Colors.white54 : Colors.grey
+      body: Column(
+        children: [
+          Expanded(
+            child: provider.isLoading && thread.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : thread.isEmpty
+                    ? const EmptyState(
+                        title: 'เริ่มบทสนทนา',
+                        message: 'พิมพ์ข้อความด้านล่างเพื่อส่งถึงผู้รับ',
+                        mood: MascotMood.wave,
                       )
-                    )
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(20),
-                    itemCount: thread.length,
-                    itemBuilder: (context, index) {
-                      final msg = thread[index];
-                      final isMe = msg.sender.id == authUser?.id;
-                      return _buildChatBubble(msg, isMe, isSuperAdmin);
-                    },
-                  ),
-            ),
-            _buildReplyArea(widget.id, thread, isSuperAdmin),
-          ],
-        ),
-      ),
-    );
-
-    if (isSuperAdmin) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: LuxuryTheme.backgroundGradient,
-        ),
-        child: scaffoldContent,
-      );
-    } else {
-      return NatureBackground.header(
-        child: scaffoldContent,
-      );
-    }
-  }
-
-  Widget _buildChatBubble(Message msg, bool isMe, bool isSuperAdmin) {
-    // Basic Markdown Image Support: ![alt](url)
-    final imageRegex = RegExp(r'!\[(.*?)\]\((.*?)\)');
-    final match = imageRegex.firstMatch(msg.message);
-    String? imageUrl;
-    String textMessage = msg.message;
-
-    if (match != null) {
-      imageUrl = match.group(2);
-      textMessage = msg.message.replaceAll(match.group(0)!, '').trim();
-    }
-
-    final bubbleColor = isMe 
-        ? (isSuperAdmin ? LuxuryTheme.purpleNeon : AppColors.primary)
-        : (isSuperAdmin ? LuxuryTheme.glassSurface : Colors.white);
-        
-    final textColor = isMe 
-        ? Colors.white 
-        : (isSuperAdmin ? Colors.white : Colors.black87);
-        
-    final timeColor = isMe 
-        ? Colors.white70 
-        : (isSuperAdmin ? Colors.white60 : Colors.grey[500]);
-
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-          ),
-          border: isSuperAdmin && !isMe ? Border.all(color: LuxuryTheme.glassBorder) : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imageUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / 
-                                loadingProgress.expectedTotalBytes!
-                              : null,
-                             color: isSuperAdmin ? LuxuryTheme.cyanNeon : AppColors.primary,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => 
-                      Container(
-                        height: 100,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
-                        ),
+                    : ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(Space.lg, Space.lg, Space.lg, Space.md),
+                        itemCount: thread.length,
+                        itemBuilder: (context, i) {
+                          final m = thread[i];
+                          final prev = i > 0 ? thread[i - 1] : null;
+                          final newDay = prev == null ||
+                              prev.createdAt.day != m.createdAt.day ||
+                              prev.createdAt.month != m.createdAt.month;
+                          return Column(
+                            children: [
+                              if (newDay)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: Space.md),
+                                  child: Text(ThaiDate.long(m.createdAt), style: context.text.labelSmall),
+                                ),
+                              _Bubble(message: m, mine: m.sender.id == me?.id),
+                            ],
+                          );
+                        },
                       ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: p.surface,
+              border: Border(top: BorderSide(color: p.line)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              Space.md,
+              Space.sm,
+              Space.sm,
+              Space.sm + MediaQuery.paddingOf(context).bottom,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.newline,
+                    decoration: const InputDecoration(hintText: 'พิมพ์ข้อความ'),
                   ),
                 ),
-              ),
-            if (textMessage.isNotEmpty)
-              Text(
-                textMessage,
-                style: GoogleFonts.prompt(
-                  color: textColor,
-                  fontSize: 15,
+                const SizedBox(width: Space.sm),
+                AppIconButton(
+                  icon: AppIcons.send,
+                  tooltip: 'ส่ง',
+                  background: p.brand,
+                  foreground: p.onBrand,
+                  onPressed: _sending ? null : () => _send(thread),
                 ),
-              ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(msg.createdAt),
-              style: GoogleFonts.prompt(
-                color: timeColor,
-                fontSize: 10,
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReplyArea(String recipientId, List<Message> thread, bool isSuperAdmin) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      decoration: BoxDecoration(
-        color: isSuperAdmin ? LuxuryTheme.midnightBlue.withOpacity(0.9) : Colors.white,
-        border: isSuperAdmin ? Border(top: BorderSide(color: LuxuryTheme.glassBorder)) : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _replyController,
-                style: GoogleFonts.prompt(
-                  color: isSuperAdmin ? Colors.white : Colors.black,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'พิมพ์ข้อความ...',
-                  hintStyle: GoogleFonts.prompt(
-                    color: isSuperAdmin ? Colors.white38 : Colors.grey[400]
-                  ),
-                  filled: true,
-                  fillColor: isSuperAdmin ? LuxuryTheme.glassSurface : Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: isSuperAdmin ? BorderSide(color: LuxuryTheme.glassBorder) : BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: isSuperAdmin ? BorderSide(color: LuxuryTheme.glassBorder) : BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: isSuperAdmin ? BorderSide(color: LuxuryTheme.cyanNeon) : BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20, 
-                    vertical: 10
-                  ),
-                ),
-                minLines: 1,
-                maxLines: 4,
-              ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.message, required this.mine});
+
+  final Message message;
+  final bool mine;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final time =
+        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}';
+    final showSubject = message.subject.isNotEmpty && message.subject != 'ข้อความสนทนา';
+
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: Space.sm),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+          decoration: BoxDecoration(
+            color: mine ? p.brand : p.surface,
+            border: mine ? null : Border.all(color: p.line),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(mine ? 18 : 6),
+              bottomRight: Radius.circular(mine ? 6 : 18),
             ),
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: isSuperAdmin ? LuxuryTheme.purpleNeon : AppColors.primary,
-              child: IconButton(
-                icon: _isSending 
-                  ? const SizedBox(
-                      width: 20, 
-                      height: 20, 
-                      child: CircularProgressIndicator(
-                        color: Colors.white, 
-                        strokeWidth: 2
-                      )
-                    )
-                  : const HeroIcon(
-                      HeroIcons.paperAirplane, 
-                      color: Colors.white, 
-                      size: 20
-                    ),
-                onPressed: _isSending 
-                  ? null 
-                  : () => _sendMessage(recipientId, thread),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showSubject)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    message.subject,
+                    style: context.text.labelLarge?.copyWith(color: mine ? p.onBrand : p.ink),
+                  ),
+                ),
+              for (final url in message.images)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(Radii.sm),
+                    child: CachedNetworkImage(imageUrl: url, fit: BoxFit.cover),
+                  ),
+                ),
+              if (message.text.isNotEmpty)
+                Text(
+                  message.text,
+                  style: context.text.bodyMedium?.copyWith(color: mine ? p.onBrand : p.ink),
+                ),
+              const SizedBox(height: 2),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Text(
+                  time,
+                  style: context.text.labelSmall?.tabular.copyWith(
+                    color: mine ? p.onBrand.withValues(alpha: 0.7) : p.inkSubtle,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _sendMessage(String recipientId, List<Message> thread) async {
-    final text = _replyController.text.trim();
-    if (text.isEmpty) return;
-
-    // ✅ เพิ่ม: Validate message length
-    if (text.length > 5000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'ข้อความยาวเกิน 5000 ตัวอักษร', 
-            style: GoogleFonts.prompt()
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSending = true);
-    
-    try {
-      if (thread.isNotEmpty) {
-        // Reply to the latest message in the thread
-        final lastMsg = thread.last;
-        await context.read<MessageProvider>().replyMessage(
-          messageId: lastMsg.id,
-          message: text,
-        );
-      } else {
-        // Fallback to sendMessage for new threads
-        await context.read<MessageProvider>().sendMessage(
-          recipientId: recipientId,
-          message: text,
-        );
-      }
-      
-      if (mounted) {
-        _replyController.clear();
-        // ✅ FIX: Scroll หลังส่งข้อความ
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'ส่งข้อความไม่สำเร็จ: $e', 
-              style: GoogleFonts.prompt()
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSending = false);
-    }
-  }
-
-  String _formatTime(DateTime date) {
-    return '${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

@@ -1,25 +1,20 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:image_picker/image_picker.dart'; // NEW
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/admin_service.dart'; // NEW
-import '../../../core/widgets/nature_background.dart';
+
+import '../../../core/services/admin_service.dart';
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/user_model.dart';
 import '../../auth/auth_provider.dart';
 import '../../auth/widgets/location_selector.dart';
-import '../../../data/models/user_model.dart';
 
-/// Production-grade Personal Info Screen
-/// Improvements:
-/// - Better validation with Thai phone number format
-/// - Loading state management
-/// - Proper error handling
-/// - Keyboard management
-/// - Accessibility support
-/// - Form state preservation
+/// Profile editor shared by every role. Phone number and birthday are the
+/// sign-in credentials, so they are shown but changed only by staff.
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
 
@@ -28,616 +23,250 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _lastNameController;
-  late TextEditingController _phoneController;
-  late TextEditingController _jobController;
-
-  // Location data
-  String? _selectedRegion;
-  String? _selectedProvince;
-  String? _selectedDistrict;
-  String? _selectedSubdistrict;
-
-  // Loading state
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final user = context.read<AuthProvider>().user;
-    _nameController = TextEditingController(text: user?.firstName ?? '');
-    _lastNameController = TextEditingController(text: user?.lastName ?? '');
-    _phoneController = TextEditingController(text: user?.phone ?? '');
-    _jobController = TextEditingController(text: user?.job ?? '');
-
-    // Initialize location
-    _selectedRegion = user?.region;
-    _selectedProvince = user?.province;
-    _selectedDistrict = user?.district;
-    _selectedSubdistrict = user?.subdistrict;
-  }
+  final _form = GlobalKey<FormState>();
+  late final UserModel? _user = context.read<AuthProvider>().currentUser;
+  late final _first = TextEditingController(text: _user?.firstName);
+  late final _last = TextEditingController(text: _user?.lastName);
+  late final _job = TextEditingController(text: _user?.job);
+  late String? _region = _user?.region;
+  late String? _province = _user?.province;
+  late String? _district = _user?.district;
+  late String? _subdistrict = _user?.subdistrict;
+  bool _saving = false;
+  bool _uploading = false;
+  bool _dirty = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
-    _jobController.dispose();
+    _first.dispose();
+    _last.dispose();
+    _job.dispose();
     super.dispose();
   }
 
-  // ==================== VALIDATION ====================
-
-  String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'กรุณากรอกชื่อจริง';
-    }
-    if (value.trim().length < 2) {
-      return 'ชื่อต้องมีอย่างน้อย 2 ตัวอักษร';
-    }
-    // Check for Thai or English characters
-    final thaiPattern = RegExp(r'^[ก-๙\s]+$');
-    final englishPattern = RegExp(r'^[a-zA-Z\s]+$');
-    if (!thaiPattern.hasMatch(value.trim()) &&
-        !englishPattern.hasMatch(value.trim())) {
-      return 'ชื่อต้องเป็นภาษาไทยหรืออังกฤษเท่านั้น';
-    }
-    return null;
+  void _touch() {
+    if (!_dirty) setState(() => _dirty = true);
   }
 
-  String? _validateLastName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'กรุณากรอกนามสกุล';
-    }
-    if (value.trim().length < 2) {
-      return 'นามสกุลต้องมีอย่างน้อย 2 ตัวอักษร';
-    }
-    // Check for Thai or English characters
-    final thaiPattern = RegExp(r'^[ก-๙\s]+$');
-    final englishPattern = RegExp(r'^[a-zA-Z\s]+$');
-    if (!thaiPattern.hasMatch(value.trim()) &&
-        !englishPattern.hasMatch(value.trim())) {
-      return 'นามสกุลต้องเป็นภาษาไทยหรืออังกฤษเท่านั้น';
-    }
-    return null;
-  }
-
-  String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'กรุณากรอกเบอร์โทรศัพท์';
-    }
-
-    // Remove spaces and dashes
-    final cleanPhone = value.replaceAll(RegExp(r'[\s-]'), '');
-
-    // Thai phone format: 0X-XXXX-XXXX or 0XX-XXX-XXXX
-    if (cleanPhone.length != 10) {
-      return 'เบอร์โทรศัพท์ต้องมี 10 หลัก';
-    }
-
-    if (!cleanPhone.startsWith('0')) {
-      return 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0';
-    }
-
-    // Valid Thai mobile prefixes
-    final validPrefixes = ['06', '08', '09'];
-    final prefix = cleanPhone.substring(0, 2);
-    if (!validPrefixes.contains(prefix)) {
-      return 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 06, 08 หรือ 09';
-    }
-
-    return null;
-  }
-
-  // ==================== SAVE PROFILE ====================
-
-  Future<void> _saveProfile() async {
-    // Dismiss keyboard
+  Future<void> _save() async {
     FocusScope.of(context).unfocus();
+    if (!_form.currentState!.validate()) return;
+    final auth = context.read<AuthProvider>();
+    final current = auth.currentUser;
+    if (current == null) return;
 
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
+    setState(() => _saving = true);
     try {
-      final auth = context.read<AuthProvider>();
-      final currentUser = auth.user;
-
-      if (currentUser == null) {
-        throw Exception('ไม่พบข้อมูลผู้ใช้');
-      }
-
-      final updatedUser = currentUser.copyWith(
-        phone: _phoneController.text.trim(),
-        firstName: _nameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        job: _jobController.text.trim().isEmpty
-            ? null
-            : _jobController.text.trim(),
-        region: _selectedRegion,
-        province: _selectedProvince,
-        district: _selectedDistrict,
-        subdistrict: _selectedSubdistrict,
+      await auth.updateProfile(
+        current.copyWith(
+          firstName: _first.text.trim(),
+          lastName: _last.text.trim(),
+          job: _job.text.trim().isEmpty ? null : _job.text.trim(),
+          region: _region,
+          province: _province,
+          district: _district,
+          subdistrict: _subdistrict,
+        ),
       );
-
-      await auth.updateProfile(updatedUser);
-
       if (!mounted) return;
-
-      // Show success and pop
-      _showSuccessSnackBar('บันทึกข้อมูลสำเร็จ');
-
-      // Delay navigation to allow snackbar to show
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
+      AppToast.success(context, 'บันทึกข้อมูลแล้ว');
       Navigator.of(context).pop();
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      _showErrorSnackBar(
-        'เกิดข้อผิดพลาด: ${e.toString().replaceAll("Exception: ", "")}',
-      );
-    }
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const HeroIcon(
-              HeroIcons.checkCircle,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.prompt(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const HeroIcon(
-              HeroIcons.exclamationCircle,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.prompt(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  // ==================== IMAGE PICKER ====================
-
-  Future<void> _pickImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-
-      if (image == null) return;
-
-      setState(() => _isLoading = true);
-
-      // 1. Upload Photo
-      final File file = File(image.path);
-      final adminService = context.read<AdminService>();
-      final photoUrl = await adminService.uploadProfilePhoto(file);
-
-      // 2. Update User Profile with new photo URL
-      final auth = context.read<AuthProvider>();
-      final currentUser = auth.user;
-      
-      if (currentUser != null) {
-        final updatedUser = currentUser.copyWith(photoUrl: photoUrl);
-        await auth.updateProfile(updatedUser);
-        
-        if (!mounted) return;
-        _showSuccessSnackBar('อัพโหลดรูปภาพสำเร็จ');
-      }
-
-    } catch (e) {
-      if (!mounted) return;
-      _showErrorSnackBar('อัพโหลดรูปภาพไม่สำเร็จ: $e');
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _saving = false);
     }
   }
 
-  // ==================== BUILD ====================
+  Future<void> _changePhoto() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    final auth = context.read<AuthProvider>();
+    final admin = context.read<AdminService>();
+    final current = auth.currentUser;
+    if (current == null) return;
+
+    setState(() => _uploading = true);
+    try {
+      final file = File(picked.path);
+      // Staff have a dedicated endpoint; members use the generic upload.
+      final url = current.isStaff ? await admin.uploadProfilePhoto(file) : await admin.uploadFile(file);
+      await auth.updateProfile(current.copyWith(photoUrl: url));
+      if (mounted) AppToast.success(context, 'เปลี่ยนรูปโปรไฟล์แล้ว');
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, 'อัปโหลดรูปไม่สำเร็จ: ${e.toString().replaceFirst('Exception: ', '')}');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  String? _required(String? v, String label) => (v ?? '').trim().isEmpty ? 'กรอก$label' : null;
 
   @override
   Widget build(BuildContext context) {
-    return NatureBackground.header(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text('ข้อมูลส่วนตัว', style: GoogleFonts.prompt()),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white),
-            onPressed: _isLoading ? null : () => Navigator.pop(context),
+    final p = context.palette;
+    final user = context.watch<AuthProvider>().currentUser;
+    if (user == null) return const Scaffold();
+
+    return PopScope(
+      canPop: !_dirty || _saving,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final leave = await AppDialogs.confirm(
+          context,
+          title: 'ทิ้งการแก้ไข?',
+          message: 'ข้อมูลที่แก้ไขยังไม่ถูกบันทึก',
+          confirmLabel: 'ทิ้งการแก้ไข',
+          cancelLabel: 'แก้ไขต่อ',
+          destructive: true,
+        );
+        if (leave && context.mounted) Navigator.of(context).pop();
+      },
+      child: PageScaffold(
+        title: 'ข้อมูลส่วนตัว',
+        bottomBar: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.md),
+            child: AppButton(
+              label: 'บันทึก',
+              expand: true,
+              loading: _saving,
+              onPressed: _dirty ? _save : null,
+            ),
           ),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+        slivers: [
+          SliverToBoxAdapter(
+            child: ContentWidth(
+              maxWidth: Breakpoints.maxForm,
+              padding: EdgeInsets.zero,
               child: Form(
-                key: _formKey,
+                key: _form,
+                onChanged: _touch,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Profile Avatar
-                    Center(child: _buildProfileAvatar()),
-                    const SizedBox(height: 32),
-
-                    // Form Fields
-                    _buildLabel('ชื่อจริง', required: true),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: _inputDecoration(
-                        hint: 'กรอกชื่อจริง',
-                        icon: HeroIcons.user,
+                    Center(
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl, size: 96),
+                          if (!kIsWeb)
+                            Positioned(
+                              right: -4,
+                              bottom: -4,
+                              child: _uploading
+                                  ? Container(
+                                      width: 36,
+                                      height: 36,
+                                      padding: const EdgeInsets.all(9),
+                                      decoration: BoxDecoration(color: p.surface, shape: BoxShape.circle),
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: p.brand),
+                                    )
+                                  : AppIconButton(
+                                      icon: AppIcons.camera,
+                                      tooltip: 'เปลี่ยนรูปโปรไฟล์',
+                                      size: 36,
+                                      background: p.brand,
+                                      foreground: p.onBrand,
+                                      onPressed: _changePhoto,
+                                    ),
+                            ),
+                        ],
                       ),
-                      style: GoogleFonts.prompt(),
-                      validator: _validateName,
-                      enabled: !_isLoading,
-                      textInputAction: TextInputAction.next,
                     ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('นามสกุล', required: true),
-                    TextFormField(
-                      controller: _lastNameController,
-                      decoration: _inputDecoration(
-                        hint: 'กรอกนามสกุล',
-                        icon: HeroIcons.user,
-                      ),
-                      style: GoogleFonts.prompt(),
-                      validator: _validateLastName,
-                      enabled: !_isLoading,
-                      textInputAction: TextInputAction.next,
+                    const SizedBox(height: Space.md),
+                    Center(
+                      child: StatusBadge(label: StatusLabels.role(user.role), tone: Tone.brand, dot: false),
                     ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('เบอร์โทรศัพท์', required: true),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: _inputDecoration(
-                        hint: '0XX-XXX-XXXX',
-                        icon: HeroIcons.phone,
-                      ),
-                      keyboardType: TextInputType.phone,
-                      style: GoogleFonts.prompt(),
-                      validator: _validatePhone,
-                      enabled: !_isLoading,
-                      textInputAction: TextInputAction.next,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
+                    const SizedBox(height: Space.xxl),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            label: 'ชื่อ',
+                            controller: _first,
+                            validator: (v) => _required(v, 'ชื่อ'),
+                          ),
+                        ),
+                        const SizedBox(width: Space.md),
+                        Expanded(
+                          child: AppTextField(
+                            label: 'นามสกุล',
+                            controller: _last,
+                            validator: (v) => _required(v, 'นามสกุล'),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('อาชีพ'),
-                    TextFormField(
-                      controller: _jobController,
-                      decoration: _inputDecoration(
-                        hint: 'กรอกอาชีพ (ถ้ามี)',
-                        icon: HeroIcons.briefcase,
+                    const SizedBox(height: Space.lg),
+                    AppTextField(
+                      label: user.isStaff ? 'ตำแหน่ง' : 'อาชีพ',
+                      controller: _job,
+                      icon: AppIcons.officer,
+                      hint: user.isStaff ? 'เช่น นักวิชาการส่งเสริมการเกษตร' : 'เช่น เกษตรกร',
+                    ),
+                    const SizedBox(height: Space.xxl),
+                    SectionHeader(
+                      title: user.isStaff ? 'พื้นที่ประจำ' : 'ที่อยู่',
+                      subtitle: user.isStaff ? 'พื้นที่ดูแลกำหนดโดยผู้ดูแลระบบ' : null,
+                    ),
+                    if (user.isStaff)
+                      ListGroup(
+                        children: [
+                          KeyValueRow(label: 'ภูมิภาค', value: user.region ?? '-'),
+                          KeyValueRow(label: 'จังหวัด', value: user.province ?? '-'),
+                          KeyValueRow(label: 'อำเภอ', value: user.district ?? '-'),
+                          KeyValueRow(label: 'ตำบล', value: user.subdistrict ?? '-'),
+                        ],
+                      )
+                    else
+                      LocationSelector(
+                        initialRegion: _region,
+                        initialProvince: _province,
+                        initialDistrict: _district,
+                        initialSubdistrict: _subdistrict,
+                        onChanged: (region, province, district, sub) {
+                          setState(() {
+                            _region = region;
+                            _province = province;
+                            _district = district;
+                            _subdistrict = sub;
+                          });
+                          _touch();
+                        },
                       ),
-                      style: GoogleFonts.prompt(),
-                      enabled: !_isLoading,
-                      textInputAction: TextInputAction.done,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildLabel('ข้อมูลที่อยู่'),
-                    LocationSelector(
-                      initialRegion: _selectedRegion,
-                      initialProvince: _selectedProvince,
-                      initialDistrict: _selectedDistrict,
-                      initialSubdistrict: _selectedSubdistrict,
-                      onChanged: (region, province, district, subdistrict) {
-                        setState(() {
-                          _selectedRegion = region;
-                          _selectedProvince = province;
-                          _selectedDistrict = district;
-                          _selectedSubdistrict = subdistrict;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Save Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          disabledBackgroundColor: AppColors.primary
-                              .withOpacity(0.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: _isLoading ? 0 : 2,
+                    const SizedBox(height: Space.xxl),
+                    const SectionHeader(title: 'ข้อมูลเข้าสู่ระบบ'),
+                    ListGroup(
+                      children: [
+                        KeyValueRow(label: 'เบอร์โทรศัพท์', value: user.phone, mono: true, icon: AppIcons.phone),
+                        KeyValueRow(
+                          label: 'วันเกิด',
+                          value: user.birthDate == null ? '-' : ThaiDate.long(user.birthDate!),
+                          icon: AppIcons.birthday,
                         ),
-                        child: _isLoading
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'กำลังบันทึก...',
-                                    style: GoogleFonts.prompt(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const HeroIcon(
-                                    HeroIcons.checkCircle,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'บันทึกข้อมูล',
-                                    style: GoogleFonts.prompt(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
+                      ],
                     ),
-
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      'เบอร์โทรและวันเกิดใช้เข้าสู่ระบบ หากต้องการเปลี่ยน ติดต่อเจ้าหน้าที่ในพื้นที่',
+                      style: context.text.bodySmall,
+                    ),
                   ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  // ==================== WIDGETS ====================
-
-  Widget _buildProfileAvatar() {
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                // Show photo if available
-                if (auth.user?.photoUrl != null) {
-                   return ClipOval(
-                     child: Image.network(
-                       auth.user!.photoUrl!,
-                       width: 100,
-                       height: 100,
-                       fit: BoxFit.cover,
-                       errorBuilder: (context, error, stackTrace) {
-                         final initial = auth.user?.firstName.substring(0, 1) ?? 'U';
-                         return Text(
-                           initial,
-                           style: GoogleFonts.prompt(
-                             fontSize: 40,
-                             fontWeight: FontWeight.bold,
-                             color: AppColors.primary,
-                           ),
-                         );
-                       },
-                     ),
-                   );
-                }
-
-                final initial = auth.user?.firstName.substring(0, 1) ?? 'U';
-                return Text(
-                  initial,
-                  style: GoogleFonts.prompt(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: _isLoading ? null : _pickImage,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: _isLoading 
-                ? const SizedBox(
-                    width: 16, 
-                    height: 16, 
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                  )
-                : const HeroIcon(
-                    HeroIcons.camera,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String label, {bool required = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.prompt(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
-          ),
-          if (required) ...[
-            const SizedBox(width: 4),
-            Text(
-              '*',
-              style: GoogleFonts.prompt(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: AppColors.error,
-              ),
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required HeroIcons icon,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: GoogleFonts.prompt(
-        color: isDark ? Colors.grey[400] : Colors.grey[500],
-      ),
-      filled: true,
-      fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
-      prefixIcon: Padding(
-        padding: const EdgeInsets.all(12),
-        child: HeroIcon(
-          icon,
-          size: 20,
-          color: isDark ? Colors.grey[400] : Colors.grey[600],
-        ),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
-          width: 1,
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.error, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.error, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      errorStyle: GoogleFonts.prompt(fontSize: 12),
     );
   }
 }

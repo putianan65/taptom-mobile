@@ -1,130 +1,146 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
+import 'package:flutter/widgets.dart';
+
 import '../../../core/services/notification_service.dart';
 import '../../../data/models/notification_model.dart';
 
-class NotificationProvider extends ChangeNotifier {
+/// In-app notifications, polled while the app is in the foreground.
+///
+/// Polling pauses when the app is backgrounded and stops on sign-out, so a
+/// signed-out device never keeps calling an authenticated endpoint.
+class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
+  NotificationProvider() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   final NotificationService _service = NotificationService();
-  
+
+  static const _interval = Duration(seconds: 30);
+
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
   bool _isLoading = false;
-  Timer? _pollingTimer;
-
-  /// Latest new notification for banner popup
+  bool _polling = false;
+  Timer? _timer;
   NotificationModel? _latestNotification;
+  String? _error;
 
   List<NotificationModel> get notifications => _notifications;
   int get unreadCount => _unreadCount;
   bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  /// Newest arrival since the last poll, shown as an in-app banner.
   NotificationModel? get latestNotification => _latestNotification;
 
-  // Start polling when provider is initialized (or called specifically)
   void startPolling() {
-    _fetchNotifications(silent: false); // Initial fetch
-    _pollingTimer?.cancel();
-    // ✅ ลด polling จาก 60s → 15s เพื่อให้เห็น notification เร็วขึ้น (ก่อนมี FCM)
-    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      _fetchNotifications(silent: true);
-    });
+    _polling = true;
+    refresh();
+    _schedule();
   }
 
   void stopPolling() {
-    _pollingTimer?.cancel();
+    _polling = false;
+    _timer?.cancel();
+    _timer = null;
   }
 
-  Future<void> _fetchNotifications({bool silent = false, int limit = 50}) async {
+  void _schedule() {
+    _timer?.cancel();
+    _timer = Timer.periodic(_interval, (_) => _fetch(silent: true));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_polling) return;
+    if (state == AppLifecycleState.resumed) {
+      _fetch(silent: true);
+      _schedule();
+    } else if (state == AppLifecycleState.paused) {
+      _timer?.cancel();
+    }
+  }
+
+  Future<void> refresh() => _fetch(silent: false);
+
+  Future<void> _fetch({required bool silent, int limit = 50}) async {
     if (!silent) {
       _isLoading = true;
       notifyListeners();
     }
-
     try {
-      final newNotifications = await _service.getNotifications(limit: limit);
-      
-      // Calculate unread count locally
-      _unreadCount = newNotifications.where((n) => !n.isRead).length;
-      
-      // ✅ ตรวจจับ notification ใหม่สำหรับแสดง banner
-      if (newNotifications.isNotEmpty && _notifications.isNotEmpty) {
-        if (newNotifications.first.id != _notifications.first.id) {
-          _latestNotification = newNotifications.first;
-        }
+      final fresh = await _service.getNotifications(limit: limit);
+      if (fresh.isNotEmpty &&
+          _notifications.isNotEmpty &&
+          fresh.first.id != _notifications.first.id &&
+          !fresh.first.isRead) {
+        _latestNotification = fresh.first;
       }
-      
-      // Update list if changed
-      if (_notifications.length != newNotifications.length || 
-          _hasContentChanged(_notifications, newNotifications)) {
-        _notifications = newNotifications;
-        notifyListeners();
-      }
+      _notifications = fresh;
+      _unreadCount = fresh.where((n) => !n.isRead).length;
+      _error = null;
     } catch (e) {
-      debugPrint('Polling error: $e');
+      _error = e.toString();
     } finally {
-      if (!silent) {
-        _isLoading = false;
-        notifyListeners();
-      }
+      _isLoading = false;
+      notifyListeners();
     }
-  }
-
-  bool _hasContentChanged(List<NotificationModel> oldList, List<NotificationModel> newList) {
-    if (oldList.isEmpty && newList.isEmpty) return false;
-    if (oldList.isEmpty || newList.isEmpty) return true;
-    return oldList.first.id != newList.first.id;
   }
 
   Future<void> loadMore() async {
     if (_isLoading) return;
-    await _fetchNotifications(limit: _notifications.length + 20);
+    await _fetch(silent: false, limit: _notifications.length + 20);
   }
 
-  /// Dismiss banner popup
   void dismissBanner() {
     _latestNotification = null;
     notifyListeners();
   }
 
   Future<void> markAsRead(String id) async {
-    // Optimistic update
     final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1 && !_notifications[index].isRead) {
-      _notifications[index] = _notifications[index].copyWith(isRead: true);
-      _unreadCount = (_unreadCount - 1).clamp(0, 999);
-      notifyListeners();
-      
-      await _service.markAsRead(id);
-    }
+    if (index == -1 || _notifications[index].isRead) return;
+    _notifications[index] = _notifications[index].copyWith(isRead: true);
+    _unreadCount = (_unreadCount - 1).clamp(0, 999);
+    notifyListeners();
+    await _service.markAsRead(id);
+  }
+
+  Future<void> markAllAsRead() async {
+    final unread = _notifications.where((n) => !n.isRead).toList();
+    if (unread.isEmpty) return;
+    _notifications = [
+      for (final n in _notifications) n.isRead ? n : n.copyWith(isRead: true),
+    ];
+    _unreadCount = 0;
+    notifyListeners();
+    await Future.wait(unread.map((n) => _service.markAsRead(n.id)));
   }
 
   Future<void> deleteNotification(String id) async {
-    // Optimistic update
     final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      final wasUnread = !_notifications[index].isRead;
-      _notifications.removeAt(index);
-      if (wasUnread) {
-        _unreadCount = (_unreadCount - 1).clamp(0, 999);
-      }
-      notifyListeners();
-
-      await _service.deleteNotification(id);
-    }
+    if (index == -1) return;
+    final removed = _notifications.removeAt(index);
+    if (!removed.isRead) _unreadCount = (_unreadCount - 1).clamp(0, 999);
+    notifyListeners();
+    await _service.deleteNotification(id);
   }
 
-  Future<void> createTestNotification() async {
-    await _service.createNotification(
-      title: 'ทดสอบการแจ้งเตือน',
-      message: 'นี่คือการแจ้งเตือนทดสอบ ${DateTime.now().toLocal()}',
-      type: 'INFO',
-    );
-    _fetchNotifications(silent: true);
+  /// Clears everything; called on sign-out.
+  void reset() {
+    stopPolling();
+    _notifications = [];
+    _unreadCount = 0;
+    _latestNotification = null;
+    _error = null;
+    notifyListeners();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     stopPolling();
     super.dispose();
   }
 }
-

@@ -1,449 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/super_admin_service.dart';
-import '../widgets/luxury_dialog.dart'; // Added
 
+import '../../../app/routes.dart';
+import '../../../core/services/super_admin_service.dart';
+import '../../../core/widgets/widgets.dart';
+
+/// Super admin list of field officers, with their territory and how many
+/// members each one looks after.
 class AdminManagementScreen extends StatefulWidget {
-  final bool isEmbedded;
   const AdminManagementScreen({super.key, this.isEmbedded = false});
+
+  final bool isEmbedded;
 
   @override
   State<AdminManagementScreen> createState() => _AdminManagementScreenState();
 }
 
 class _AdminManagementScreenState extends State<AdminManagementScreen> {
-  List<dynamic> _admins = [];
-  bool _isLoading = true;
+  List<Map<String, dynamic>> _admins = [];
+  bool _loading = true;
   String? _error;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _loadAdmins();
+    _load();
   }
 
-  Future<void> _loadAdmins() async {
+  Future<void> _load() async {
     setState(() {
-      _isLoading = true;
+      _loading = true;
       _error = null;
     });
-
     try {
-      // Use SuperAdminService
-      final service = context.read<SuperAdminService>();
-      final admins = await service.getAdminList();
-
-      if (mounted) {
-        setState(() {
-          _admins = admins;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceAll('Exception: ', '');
-          _isLoading = false;
-        });
-      }
+      final raw = await context.read<SuperAdminService>().getAdminList();
+      if (!mounted) return;
+      setState(() {
+        _admins = [for (final a in raw) if (a is Map) Map<String, dynamic>.from(a)];
+        _loading = false;
+      });
+    } on Object catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
+      });
     }
   }
 
-  Future<void> _deleteAdmin(String adminId, String adminName) async {
-    final confirmed = await LuxuryDialog.show(
+  Future<void> _delete(Map<String, dynamic> admin) async {
+    final name = officerName(admin);
+    final ok = await AppDialogs.confirm(
       context,
-      title: 'ลบ Admin',
-      content: 'คุณแน่ใจหรือไม่ที่จะลบ $adminName?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้',
-      icon: HeroIcons.trash,
-      accentColor: AppColors.error,
-      confirmText: 'ลบข้อมูล',
-      isDestructive: true,
+      title: 'ลบบัญชีเจ้าหน้าที่ $name?',
+      message: 'สมาชิกในความดูแลจะไม่มีผู้รับผิดชอบจนกว่าจะมอบหมายใหม่',
+      confirmLabel: 'ลบบัญชี',
+      destructive: true,
     );
-
-    if (confirmed != true) return;
-
+    if (!ok || !mounted) return;
     try {
-      final service = context.read<SuperAdminService>();
-      await service.deleteAdmin(adminId);
-
+      await context.read<SuperAdminService>().deleteAdmin('${admin['id']}');
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ลบ Admin สำเร็จ', style: GoogleFonts.prompt()),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      _loadAdmins(); // Reload list
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      AppToast.success(context, 'ลบบัญชี $name แล้ว');
+      _load();
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  Future<void> _create() async {
+    await context.push(Routes.superAdminCreate);
+    if (mounted) _load();
+  }
+
+  Future<void> _open(Map<String, dynamic> admin) async {
+    await context.push(Routes.superAdminDetail, extra: admin);
+    if (mounted) _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LuxuryTheme.backgroundGradient,
+    final q = _query.trim().toLowerCase();
+    final admins = q.isEmpty
+        ? _admins
+        : _admins
+            .where((a) => '${officerName(a)} ${a['phone']} ${officerScope(a)}'.toLowerCase().contains(q))
+            .toList();
+    final members = _admins.fold<int>(0, (sum, a) => sum + managedCount(a));
+
+    return PageScaffold(
+      title: 'เจ้าหน้าที่',
+      subtitle: _loading ? null : '${_admins.length} คน ดูแลสมาชิกรวม $members คน',
+      showBack: !widget.isEmbedded,
+      onRefresh: _load,
+      bottomPadding: widget.isEmbedded && context.isCompact ? 96 : Space.x4,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: Space.sm),
+          child: AppButton.tonal(
+            label: 'เพิ่ม',
+            icon: AppIcons.userAdd,
+            size: ButtonSize.compact,
+            onPressed: _create,
+          ),
         ),
-        child: Column(
-          children: [
-            if (!widget.isEmbedded)
-              _buildAppBar(context),
-            if (widget.isEmbedded)
-              _buildEmbeddedHeader(),
-            Expanded(
-              child: Stack(
-                children: [
-                  _buildBody(),
-                  // Floating bottom create button
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 100,
-                    child: GestureDetector(
-                      onTap: () {
-                        context.push('/super-admin/admins/create').then((_) => _loadAdmins());
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFFA855F7)],
-                          ),
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: LuxuryTheme.purpleNeon.withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const HeroIcon(HeroIcons.plus, color: Colors.white, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'เพิ่ม Admin ใหม่',
-                              style: GoogleFonts.prompt(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            _buildGlassIconButton(
-              icon: HeroIcons.arrowLeft,
-              onPressed: () => context.pop(),
-            ),
-            Expanded(
-              child: Text(
-                'จัดการ Admin',
-                style: GoogleFonts.prompt(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(width: 44), // Placeholder to keep title centered
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmbeddedHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Text(
-        'จัดการ Admin',
-        style: GoogleFonts.prompt(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassIconButton({
-    required HeroIcons icon,
-    required VoidCallback onPressed,
-    Color color = Colors.white,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: LuxuryTheme.glassSurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: LuxuryTheme.glassBorder, width: 1),
-        ),
-        child: HeroIcon(icon, color: color, size: 24),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const HeroIcon(
-              HeroIcons.exclamationTriangle,
-              size: 64,
-              color: AppColors.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error!,
-              style: GoogleFonts.prompt(fontSize: 16, color: AppColors.error),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadAdmins,
-              icon: const HeroIcon(HeroIcons.arrowPath, size: 20),
-              label: Text('ลองใหม่', style: GoogleFonts.prompt()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.superAdminPrimary,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_admins.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            HeroIcon(
-              HeroIcons.userGroup,
-              size: 64,
-              color: LuxuryTheme.textDisabled,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'ยังไม่มี Admin',
-              style: GoogleFonts.prompt(
-                fontSize: 18,
-                color: LuxuryTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadAdmins,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _admins.length,
-        itemBuilder: (context, index) {
-          final admin = _admins[index];
-          return _buildAdminCard(admin);
-        },
-      ),
-    );
-  }
-
-  Widget _buildAdminCard(dynamic admin) {
-    final String id = admin['id'] ?? '';
-    final String firstName = admin['firstName'] ?? '';
-    final String lastName = admin['lastName'] ?? '';
-    final String phone = admin['phone'] ?? '';
-    final int managedUsersCount = admin['managedUsersCount'] ?? 0;
-    final String fullName = '$firstName $lastName';
-    final String? province = admin['province'];
-    final String? district = admin['district'];
-
-    String locationStr = '';
-     if (district != null && district.isNotEmpty) {
-      locationStr = 'อ.$district';
-      if (province != null && province.isNotEmpty)
-        locationStr += ' จ.$province';
-    } else if (province != null && province.isNotEmpty) {
-      locationStr = 'จ.$province';
-    }
-
-    const accentColor = LuxuryTheme.cyanNeon;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: LuxuryTheme.glassSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: LuxuryTheme.glassBorder),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            context.push('/super-admin/admins/detail', extra: admin).then((_) => _loadAdmins());
-          },
+      ],
+      slivers: [
+        SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: accentColor.withOpacity(0.5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withOpacity(0.2),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          )
-                        ]
-                      ),
-                      child: Center(
-                        child: Text(
-                          firstName.isNotEmpty ? firstName[0].toUpperCase() : 'A',
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: accentColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fullName,
-                            style: GoogleFonts.prompt(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            phone,
-                            style: GoogleFonts.outfit(
-                              fontSize: 14,
-                              color: LuxuryTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    HeroIcon(
-                      HeroIcons.chevronRight,
-                      size: 20,
-                      color: LuxuryTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const HeroIcon(HeroIcons.trash, color: Color(0xFFFF1744)),
-                      onPressed: () => _deleteAdmin(id, fullName),
-                    ),
-                  ],
-                ),
-                 const SizedBox(height: 12),
-                 Row(
-                   children: [
-                      _buildTag(HeroIcons.users, '$managedUsersCount users', LuxuryTheme.purpleNeon),
-                      if(locationStr.isNotEmpty) ...[
-                         const SizedBox(width: 8),
-                         _buildTag(HeroIcons.mapPin, locationStr, LuxuryTheme.goldNeon),
-                      ]
-                   ],
-                 )
-              ],
+            padding: const EdgeInsets.only(bottom: Space.lg),
+            child: AppSearchField(
+              hint: 'ชื่อ เบอร์โทร หรือพื้นที่',
+              onChanged: (v) => setState(() => _query = v),
             ),
           ),
         ),
-      ),
+        if (_loading && _admins.isEmpty)
+          const SliverToBoxAdapter(child: SkeletonList(count: 4))
+        else if (_error != null)
+          SliverToBoxAdapter(child: AppCard(child: ErrorState(message: _error, onRetry: _load)))
+        else if (admins.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: EmptyState(
+                title: q.isEmpty ? 'ยังไม่มีเจ้าหน้าที่' : 'ไม่พบเจ้าหน้าที่ที่ค้นหา',
+                message: q.isEmpty ? 'เพิ่มเจ้าหน้าที่และกำหนดพื้นที่ดูแลได้จากปุ่มเพิ่ม' : null,
+                actionLabel: q.isEmpty ? 'เพิ่มเจ้าหน้าที่' : null,
+                onAction: q.isEmpty ? _create : null,
+              ),
+            ),
+          )
+        else
+          SliverList.separated(
+            itemCount: admins.length,
+            separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+            itemBuilder: (context, i) => _OfficerTile(
+              admin: admins[i],
+              onTap: () => _open(admins[i]),
+              onDelete: () => _delete(admins[i]),
+            ).entrance(context, index: i),
+          ),
+      ],
     );
   }
-  
-  Widget _buildTag(HeroIcons icon, String text, Color color) {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.1),
-         borderRadius: BorderRadius.circular(8),
-         border: Border.all(color: color.withOpacity(0.3)),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           HeroIcon(icon, size: 14, color: color),
-           const SizedBox(width: 6),
-           Text(
-             text,
-              style: GoogleFonts.prompt(fontSize: 12, color: color, fontWeight: FontWeight.normal),
-           )
-         ],
-       ),
-     );
+}
+
+String officerName(Map<String, dynamic> a) {
+  final name = '${a['firstName'] ?? ''} ${a['lastName'] ?? ''}'.trim();
+  return name.isEmpty ? 'ไม่ระบุชื่อ' : name;
+}
+
+String officerScope(Map<String, dynamic> a) {
+  String? v(String k) {
+    final s = a[k]?.toString();
+    return s == null || s.isEmpty ? null : s;
+  }
+
+  final parts = [
+    if (v('subDistrict') ?? v('subdistrict') case final s?) 'ต.$s',
+    if (v('district') case final s?) 'อ.$s',
+    if (v('province') case final s?) 'จ.$s',
+  ];
+  if (parts.isNotEmpty) return parts.join(' ');
+  return v('region') ?? 'ยังไม่กำหนดพื้นที่';
+}
+
+int managedCount(Map<String, dynamic> a) {
+  final n = a['managedUsersCount'];
+  if (n is num) return n.toInt();
+  final list = a['managedUsers'];
+  return list is List ? list.length : 0;
+}
+
+class _OfficerTile extends StatelessWidget {
+  const _OfficerTile({required this.admin, required this.onTap, required this.onDelete});
+
+  final Map<String, dynamic> admin;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final count = managedCount(admin);
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(Space.md + 2, Space.md + 2, Space.xs, Space.md + 2),
+      child: Row(
+        children: [
+          InitialsAvatar(name: officerName(admin)),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(officerName(admin), style: context.text.titleSmall),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(AppIcons.pin, size: 14, color: p.inkSubtle),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        officerScope(admin),
+                        style: context.text.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('$count', style: context.text.titleMedium?.tabular),
+              Text('สมาชิก', style: context.text.labelSmall),
+            ],
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'ตัวเลือก',
+            icon: Icon(AppIcons.more, color: p.inkSubtle),
+            onSelected: (v) => v == 'delete' ? onDelete() : onTap(),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'open', child: Text('ดูรายละเอียด')),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('ลบบัญชี', style: TextStyle(color: p.danger)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

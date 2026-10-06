@@ -1,6 +1,7 @@
 /// Thai Location Data - Official data from government sources
 /// Source: https://github.com/Dhanabhon/thailand-geodata
 /// 77 จังหวัด, 928 อำเภอ, 7,435 ตำบล
+library;
 
 class ThaiLocationData {
   /// ภูมิภาค (Regions) - 6 ภาค

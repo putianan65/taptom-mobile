@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/services/auth_service.dart';
 
+import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/user_model.dart';
+import '../../auth/auth_provider.dart';
+import '../../auth/screens/set_pin_screen.dart' show PinRules;
+import '../../auth/widgets/pin_layout.dart';
+
+enum _Step { current, next, confirm }
+
+/// Staff PIN change on the same keypad used at sign-in: current PIN, new
+/// PIN, then the new PIN again. Super admins use eight digits.
 class ChangePinScreen extends StatefulWidget {
   const ChangePinScreen({super.key});
 
@@ -12,206 +21,141 @@ class ChangePinScreen extends StatefulWidget {
 }
 
 class _ChangePinScreenState extends State<ChangePinScreen> {
-  final _formKey = GlobalKey<FormState>();
-  
-  late TextEditingController _oldPinController;
-  late TextEditingController _newPinController;
-  late TextEditingController _confirmPinController;
-  
-  bool _isLoading = false;
-  bool _obscureOld = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
+  _Step _step = _Step.current;
+  String _current = '';
+  String _next = '';
+  String _entry = '';
+  bool _busy = false;
+  bool _error = false;
+  int _errorTick = 0;
+  String? _message;
+  late final int _length;
 
   @override
   void initState() {
     super.initState();
-    _oldPinController = TextEditingController();
-    _newPinController = TextEditingController();
-    _confirmPinController = TextEditingController();
+    _length = context.read<AuthProvider>().currentUser?.role == UserRole.superAdmin ? 8 : 6;
   }
 
-  @override
-  void dispose() {
-    _oldPinController.dispose();
-    _newPinController.dispose();
-    _confirmPinController.dispose();
-    super.dispose();
+  void _fail(String message) {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _entry = '';
+      _error = true;
+      _errorTick++;
+      _message = message;
+    });
   }
 
-  String? _validateOldPin(String? value) {
-    if (value == null || value.isEmpty) return 'กรุณากรอก PIN เดิม';
-    if (!RegExp(r'^\d+$').hasMatch(value)) return 'PIN ต้องเป็นตัวเลขเท่านั้น';
-    return null;
+  void _digit(String d) {
+    if (_busy || _entry.length >= _length) return;
+    setState(() {
+      _entry += d;
+      _error = false;
+      _message = null;
+    });
+    if (_entry.length == _length) _advance();
   }
 
-  String? _validateNewPin(String? value) {
-    if (value == null || value.isEmpty) return 'กรุณากรอก PIN ใหม่';
-    if (value.length != 6) return 'PIN ต้องมี 6 หลัก';
-    if (!RegExp(r'^\d+$').hasMatch(value)) return 'PIN ต้องเป็นตัวเลขเท่านั้น';
-    if (value == _oldPinController.text) return 'PIN ใหม่ต้องไม่ซ้ำกับ PIN เดิม';
+  void _backspace() {
+    if (_busy || _entry.isEmpty) return;
+    setState(() => _entry = _entry.substring(0, _entry.length - 1));
+  }
 
-    // ✅ Weak PIN Check: Repeated digits (e.g. 111111)
-    if (RegExp(r'^(\d)\1{5}$').hasMatch(value)) {
-      return 'PIN ต้องไม่เป็นตัวเลขซ้ำกัน (เช่น 111111)';
+  Future<void> _advance() async {
+    switch (_step) {
+      case _Step.current:
+        setState(() {
+          _current = _entry;
+          _entry = '';
+          _step = _Step.next;
+        });
+      case _Step.next:
+        final weak = PinRules.weak(_entry);
+        if (weak != null) return _fail(weak);
+        if (_entry == _current) return _fail('PIN ใหม่ต้องไม่ซ้ำกับ PIN เดิม');
+        setState(() {
+          _next = _entry;
+          _entry = '';
+          _step = _Step.confirm;
+        });
+      case _Step.confirm:
+        if (_entry != _next) return _fail('รหัสทั้งสองครั้งไม่ตรงกัน');
+        await _submit();
     }
-
-    // ✅ Weak PIN Check: Sequential digits
-    const sequences = [
-      '012345', '123456', '234567', '345678', '456789', '567890',
-      '098765', '987654', '876543', '765432', '654321', '543210'
-    ];
-    if (sequences.contains(value)) {
-      return 'PIN ต้องไม่เป็นตัวเลขเรียงกันง่ายเกินไป';
-    }
-
-    return null;
-  }
-
-  String? _validateConfirm(String? value) {
-    if (value == null || value.isEmpty) return 'กรุณายืนยัน PIN ใหม่';
-    if (value != _newPinController.text) return 'PIN ไม่ตรงกัน';
-    return null;
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
+    setState(() => _busy = true);
     try {
-      await context.read<AuthService>().changePin(
-        _oldPinController.text,
-        _newPinController.text,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ เปลี่ยน PIN สำเร็จ'),
-            backgroundColor: Color(0xFF4CAF50),
-          ),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาด: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      await context.read<AuthService>().changePin(_current, _next);
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      AppToast.success(context, 'เปลี่ยน PIN แล้ว');
+      Navigator.of(context).pop();
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _step = e.code == 'INVALID_PIN' ? _Step.current : _Step.next;
+        _current = e.code == 'INVALID_PIN' ? '' : _current;
+        _next = '';
+      });
+      _fail(e.message);
+    } on Object catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _fail('เปลี่ยน PIN ไม่สำเร็จ ลองใหม่อีกครั้ง');
     }
   }
 
-  Widget _buildPinField({
-    required String label,
-    required TextEditingController controller,
-    required bool obscure,
-    required VoidCallback onToggle,
-    required String? Function(String?) validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: TextInputType.number,
-      maxLength: 6,
-      validator: validator,
-      style: GoogleFonts.prompt(fontSize: 18, letterSpacing: 2),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.prompt(color: Colors.grey[700]),
-        counterText: "",
-        prefixIcon: const Icon(Icons.lock_outline),
-        suffixIcon: IconButton(
-          icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
-          onPressed: onToggle,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-    );
+  void _back() {
+    if (_step == _Step.current || _busy) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    setState(() {
+      _entry = '';
+      _error = false;
+      _message = null;
+      _step = _step == _Step.confirm ? _Step.next : _Step.current;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('เปลี่ยนรหัส PIN', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildPinField(
-                label: 'PIN เดิม',
-                controller: _oldPinController,
-                obscure: _obscureOld,
-                onToggle: () => setState(() => _obscureOld = !_obscureOld),
-                validator: _validateOldPin,
-              ),
-              const SizedBox(height: 20),
-              _buildPinField(
-                label: 'PIN ใหม่ (6 หลัก)',
-                controller: _newPinController,
-                obscure: _obscureNew,
-                onToggle: () => setState(() => _obscureNew = !_obscureNew),
-                validator: _validateNewPin,
-              ),
-              const SizedBox(height: 20),
-              _buildPinField(
-                label: 'ยืนยัน PIN ใหม่',
-                controller: _confirmPinController,
-                obscure: _obscureConfirm,
-                onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                validator: _validateConfirm,
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24, 
-                          width: 24, 
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
-                        )
-                      : Text(
-                          'บันทึก',
-                          style: GoogleFonts.prompt(
-                            fontSize: 16, 
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final p = context.palette;
+    final (title, subtitle) = switch (_step) {
+      _Step.current => ('PIN ปัจจุบัน', 'ยืนยันตัวตนด้วย PIN ที่ใช้อยู่'),
+      _Step.next => ('PIN ใหม่', 'เลือกตัวเลข $_length หลักที่จำได้ แต่เดายาก'),
+      _Step.confirm => ('ยืนยัน PIN ใหม่', 'กรอก PIN ใหม่อีกครั้ง'),
+    };
+
+    final Widget status;
+    if (_busy) {
+      status = SizedBox.square(
+        dimension: 22,
+        child: CircularProgressIndicator(strokeWidth: 2.4, color: p.brand),
+      );
+    } else if (_message != null) {
+      status = Text(
+        _message!,
+        textAlign: TextAlign.center,
+        style: context.text.bodyMedium?.copyWith(color: p.danger),
+      );
+    } else {
+      status = Text('ขั้นตอน ${_step.index + 1} จาก 3', style: context.text.labelMedium);
+    }
+
+    return PinLayout(
+      icon: AppIcons.lock,
+      eyebrow: 'เปลี่ยนรหัส PIN',
+      title: title,
+      subtitle: subtitle,
+      onBack: _back,
+      dots: PinDots(length: _length, filled: _entry.length, error: _error, errorTick: _errorTick),
+      status: status,
+      pad: PinPad(enabled: !_busy, onDigit: _digit, onBackspace: _backspace),
     );
   }
 }

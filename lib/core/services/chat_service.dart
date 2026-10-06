@@ -1,480 +1,196 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:async';
-import 'package:http/http.dart' as http;
+
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/env.dart';
+import '../network/api_client.dart';
 
-/// Production-grade service for communicating with Google Gemini AI via REST API.
+/// Ask Lung Tom. Questions go to the TAPTOM API (`POST /assistant/chat`),
+/// which holds the Gemini key and the system prompt, so no AI credentials
+/// ship inside the app.
 ///
-/// Features:
-/// - Conversation history trimming (max turns)
-/// - Base64 image cleanup from old history entries
-/// - Retry with exponential backoff on rate limits (429)
-/// - Daily usage tracking with configurable limit
-/// - Token estimation for smart context management
-/// - Structured error handling
+/// Keeps the recent conversation for context, drops photos from older turns
+/// to keep requests small, and counts questions per day on the device. When
+/// the server has no assistant configured, or in demo builds, answers come
+/// from built-in samples instead.
 class ChatService {
-  // ─── Configuration ───────────────────────────────────────────────
-  /// Maximum number of conversation turns (user+model pairs) to keep in history
-  static const int _maxHistoryTurns = 10;
+  ChatService({ApiClient? api}) : _api = api ?? ApiClient();
 
-  /// Maximum estimated tokens before auto-trimming history
-  static const int _maxEstimatedTokens = 25000;
+  final ApiClient _api;
 
-  // ── Retry/Fallback (disabled - free tier rate limit too strict) ──
-  // static const int _maxRetries = 3;
-  // static const List<int> _retryDelays = [10, 30, 60];
-
-  /// Daily request limit per user (free tier protection)
+  /// Questions per day on this device. The server rate-limits as well.
   static const int dailyRequestLimit = 50;
 
-  /// HTTP request timeout
-  static const Duration _requestTimeout = Duration(seconds: 30);
+  /// Turns sent with each question. The API accepts at most 20 messages.
+  static const int _maxHistoryMessages = 18;
 
-  // ─── API Config ──────────────────────────────────────────────────
-  static String get _apiKey {
-    final key = Env.geminiApiKey;
-    if (key.isEmpty) {
-      debugPrint('GEMINI_API_KEY is not set in .env');
-    }
-    return key;
-  }
+  /// Gemini can take a while, especially with a photo.
+  static const Duration _timeout = Duration(seconds: 45);
 
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-  // ── Model Fallback (disabled - gemini-2.0-flash-lite ยังไม่เสถียร) ──
-  // static const List<String> _modelUrls = [
-  //   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-  //   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
-  // ];
-
-  // ─── State ───────────────────────────────────────────────────────
-  final List<Map<String, dynamic>> _history = [];
-
-  // ─── Daily Usage Tracking Keys ───────────────────────────────────
   static const String _prefKeyDailyCount = 'chat_daily_request_count';
   static const String _prefKeyDailyDate = 'chat_daily_date';
 
-  // ─── System Prompt ───────────────────────────────────────────────
-  static const String _systemPrompt = '''
-คุณคือ "AI ผู้ช่วยด้านกฎหมายและการเกษตรของประเทศไทย"
-ทำงานอยู่ภายในแอปพลิเคชัน TAPTOM ในรูปแบบช่องแชท
+  /// Set once the server answers that the assistant is not configured.
+  static bool _unavailable = false;
 
-ขอบเขตหน้าที่:
-1. ให้ข้อมูลด้านกฎหมายเกี่ยวกับพืชควบคุม/พืชเสพติดในประเทศไทย
-2. ให้ความรู้ด้านการเกษตรเชิงวิชาการและมาตรฐาน GAP
-3. วิเคราะห์ภาพถ่ายพืช (โรค, แมลง)
+  /// True when answers come from the built-in samples: in demo builds, or
+  /// when the server has no assistant configured.
+  static bool get offline => Env.demoMode || _unavailable;
 
-ข้อห้าม (ต้องปฏิบัติ):
-- ห้ามให้ how-to การปลูกพืชเสพติด
-- ห้ามให้สูตรการผลิตที่ผิดกฎหมาย
+  final List<Map<String, dynamic>> _history = [];
 
-รูปแบบการตอบ (สำคัญ - เพื่อการอ่านง่ายบนมือถือ):
-- ❌ ห้ามใช้เครื่องหมาย ** (ดอกจันคู่) หรือตัวหนา (Bold) พร่ำเพรื่อ
-- ✅ ให้ใช้ Emoji (เช่น 🌿, 💡, ⚠️) นำหน้าหัวข้อแทนการใช้ตัวหนา
-- ✅ เน้นการเว้นบรรทัดให้มีช่องว่าง สบายตา
-- สรุปเนื้อหาให้กระชับ เข้าใจง่าย ไม่ยืดเยื้อ
-- ใช้ภาษาไทยที่สุภาพและเป็นมิตร
-''';
-
-  ChatService();
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PUBLIC API
-  // ═══════════════════════════════════════════════════════════════════
-
-  /// Send a text message and get AI response.
-  /// Throws [ChatRateLimitException] if daily limit exceeded.
-  Future<String> sendMessage(String message) async {
-    // Check daily limit
-    final usageCheck = await _checkDailyLimit();
-    if (!usageCheck.allowed) {
-      return '⚠️ คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
-          'ระบบจะรีเซ็ตจำนวนการใช้งานในวันถัดไป\n'
-          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ 🙏';
+  /// Asks a question, optionally with a photo of the plant. Always returns
+  /// text to show; failures become a short Thai explanation.
+  Future<String> ask(String question, {Uint8List? imageBytes, String? imageName}) async {
+    final usage = await getDailyUsage();
+    if (!usage.allowed) {
+      return 'วันนี้ถามครบ $dailyRequestLimit คำถามแล้ว พรุ่งนี้มาถามลุงต้อมใหม่นะ';
     }
 
-    try {
-      final userContent = {
-        'role': 'user',
-        'parts': [
-          {'text': 'คำถามนี้ใช้เพื่อการศึกษาและให้ข้อมูลเท่านั้น\n\n$message'},
-        ],
-      };
-
-      _history.add(userContent);
-      _trimHistory();
-
-      final body = _buildRequestBody();
-
-      final aiText = await _callGeminiApi(body);
-
-      _history.add({
-        'role': 'model',
-        'parts': [
-          {'text': aiText},
-        ],
-      });
-
-      // Increment daily usage
-      await _incrementDailyUsage();
-
-      return aiText;
-    } on SocketException {
-      _removeLastUserMessage();
-      return '📡 ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
-    } on TimeoutException {
-      _removeLastUserMessage();
-      return '⏱️ การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
-    } on ChatRateLimitException {
-      _removeLastUserMessage();
-      return '⏳ ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
-          'ระบบลองส่งซ้ำแล้ว แต่ยังไม่สำเร็จ\n'
-          'กรุณารอ 1-2 นาทีแล้วลองใหม่ครับ';
-    } catch (e) {
-      _removeLastUserMessage();
-      debugPrint('❌ ChatService error: $e');
-      return '❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
-    }
-  }
-
-  /// Send a message with an image attachment.
-  Future<String> sendMessageWithImage(String message, File imageFile) async {
-    // Check daily limit
-    final usageCheck = await _checkDailyLimit();
-    if (!usageCheck.allowed) {
-      return '⚠️ คุณใช้งาน AI ครบ $dailyRequestLimit ครั้งแล้ววันนี้\n\n'
-          'ระบบจะรีเซ็ตจำนวนการใช้งานในวันถัดไป\n'
-          'กรุณาลองใหม่อีกครั้งพรุ่งนี้ครับ 🙏';
-    }
-
-    try {
-      final imageBytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(imageBytes);
-      final mimeType = _getMimeType(imageFile.path);
-
-      final guardedMessage = '''
-คำถามนี้ใช้เพื่อการศึกษาและให้ข้อมูลเท่านั้น
-หากเป็นพืชควบคุม ให้เน้นข้อกฎหมายและมาตรฐาน
-คำถาม: ${message.isEmpty ? 'วิเคราะห์ภาพนี้' : message}
-''';
-
-      final userContent = {
-        'role': 'user',
-        'parts': [
-          {'text': guardedMessage},
-          {
-            'inline_data': {'mime_type': mimeType, 'data': base64Image},
-          },
-        ],
-      };
-
-      _history.add(userContent);
-      _trimHistory();
-
-      final body = _buildRequestBody();
-
-      final aiText = await _callGeminiApi(body);
-
-      // ✅ Clean up: strip base64 image from the history entry we just added
-      // to save massive tokens on subsequent requests
-      _stripImagesFromHistory();
-
-      _history.add({
-        'role': 'model',
-        'parts': [
-          {'text': aiText},
-        ],
-      });
-
-      // Increment daily usage
-      await _incrementDailyUsage();
-
-      return aiText;
-    } on SocketException {
-      _removeLastUserMessage();
-      return '📡 ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้\nกรุณาตรวจสอบการเชื่อมต่อของคุณ';
-    } on TimeoutException {
-      _removeLastUserMessage();
-      return '⏱️ การเชื่อมต่อหมดเวลา\nกรุณาลองใหม่อีกครั้ง';
-    } on ChatRateLimitException {
-      _removeLastUserMessage();
-      return '⏳ ระบบ AI มีผู้ใช้งานจำนวนมากในขณะนี้\n\n'
-          'ระบบลองส่งซ้ำแล้ว แต่ยังไม่สำเร็จ\n'
-          'กรุณารอ 1-2 นาทีแล้วลองใหม่ครับ';
-    } catch (e) {
-      _removeLastUserMessage();
-      debugPrint('❌ ChatService error: $e');
-      return '❌ เกิดข้อผิดพลาดในการวิเคราะห์ภาพ\nกรุณาลองใหม่อีกครั้ง';
-    }
-  }
-
-  /// Reset conversation history.
-  void resetChat() {
-    _history.clear();
-  }
-
-  /// Get current conversation turn count.
-  int get currentTurnCount => (_history.length / 2).ceil();
-
-  /// Check if history is getting long and user should consider resetting.
-  bool get shouldSuggestReset => currentTurnCount >= _maxHistoryTurns - 2;
-
-  /// Get today's remaining usage count.
-  Future<DailyUsageInfo> getDailyUsage() async {
-    return _checkDailyLimit();
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PRIVATE: History Management
-  // ═══════════════════════════════════════════════════════════════════
-
-  /// Trim conversation history to stay within limits.
-  /// Keeps the most recent turns, removes oldest ones first.
-  void _trimHistory() {
-    // Trim by turn count (each turn = 1 user + 1 model message)
-    while (_history.length > _maxHistoryTurns * 2) {
-      _history.removeAt(0); // Remove oldest user message
-      if (_history.isNotEmpty && _history[0]['role'] == 'model') {
-        _history.removeAt(0); // Remove corresponding model response
-      }
-    }
-
-    // Trim by estimated token count
-    while (_estimateTokenCount() > _maxEstimatedTokens && _history.length > 2) {
-      _history.removeAt(0);
-      if (_history.isNotEmpty && _history[0]['role'] == 'model') {
-        _history.removeAt(0);
-      }
-    }
-  }
-
-  /// Strip base64 image data from ALL history entries (except the very last one
-  /// which is about to be sent). Replace with a text description.
-  void _stripImagesFromHistory() {
-    for (int i = 0; i < _history.length - 1; i++) {
-      final entry = _history[i];
-      if (entry['parts'] is List) {
-        final parts = entry['parts'] as List;
-        bool hadImage = false;
-
-        parts.removeWhere((part) {
-          if (part is Map && part.containsKey('inline_data')) {
-            hadImage = true;
-            return true;
-          }
-          return false;
-        });
-
-        // Add a note that an image was analyzed (so context isn't lost)
-        if (hadImage && parts.every((p) => p is Map && !p.containsKey('text') || 
-            (p is Map && p['text'] != null && !(p['text'] as String).contains('[ส่งภาพถ่ายมาวิเคราะห์]')))) {
-          parts.add({'text': '[ส่งภาพถ่ายมาวิเคราะห์]'});
-        }
-      }
-    }
-  }
-
-  /// Estimate total token count in current history.
-  /// Uses rough heuristic: 1 token ≈ 4 characters for Thai text.
-  int _estimateTokenCount() {
-    int totalChars = 0;
-
-    for (final entry in _history) {
-      if (entry['parts'] is List) {
-        for (final part in (entry['parts'] as List)) {
-          if (part is Map) {
-            if (part['text'] != null) {
-              totalChars += (part['text'] as String).length;
-            }
-            if (part['inline_data'] != null) {
-              // Base64 images use ~258 tokens per image in Gemini
-              // but the actual data transfer is much larger
-              totalChars += 1000; // Rough estimate for image token cost
-            }
-          }
-        }
-      }
-    }
-
-    return (totalChars / 4).ceil();
-  }
-
-  /// Remove the last user message from history (used on error).
-  void _removeLastUserMessage() {
-    if (_history.isNotEmpty && _history.last['role'] == 'user') {
-      _history.removeLast();
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PRIVATE: API Communication
-  // ═══════════════════════════════════════════════════════════════════
-
-  /// Build the request body for the Gemini API.
-  Map<String, dynamic> _buildRequestBody() {
-    return {
-      'contents': _history,
-      'system_instruction': {
-        'parts': {'text': _systemPrompt},
-      },
-      'generationConfig': {
-        'temperature': 0.7,
-        'maxOutputTokens': 2048,
-      },
+    final text = question.trim().isEmpty ? 'ช่วยดูภาพนี้ให้หน่อย' : question.trim();
+    final turn = <String, dynamic>{
+      'role': 'user',
+      'text': text,
+      if (imageBytes != null) 'image': {'mimeType': _mimeType(imageName ?? ''), 'data': base64Encode(imageBytes)},
     };
-  }
+    final messages = [..._history, turn];
 
-  /// Execute a single API call to Gemini (no retry).
-  // ── Retry logic disabled due to free tier rate limit issues ──
-  // Future<String> _executeWithRetry(body) → see git history
-  Future<String> _callGeminiApi(Map<String, dynamic> body) async {
-    final url = Uri.parse('$_baseUrl?key=$_apiKey');
-
-    final response = await http
-        .post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(body),
-        )
-        .timeout(_requestTimeout);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      // Check for valid response structure
-      if (data['candidates'] != null &&
-          (data['candidates'] as List).isNotEmpty &&
-          data['candidates'][0]['content'] != null &&
-          data['candidates'][0]['content']['parts'] != null &&
-          (data['candidates'][0]['content']['parts'] as List).isNotEmpty) {
-        return data['candidates'][0]['content']['parts'][0]['text'] as String;
-      }
-
-      // Handle blocked or empty responses
-      final finishReason = data['candidates']?[0]?['finishReason'];
-      if (finishReason == 'SAFETY') {
-        return '⚠️ ขออภัย ระบบไม่สามารถตอบคำถามนี้ได้\n'
-            'เนื่องจากเนื้อหาอาจไม่เหมาะสมตามนโยบายความปลอดภัย';
-      }
-
-      return '⚠️ ระบบ AI ไม่สามารถสร้างคำตอบได้ กรุณาลองถามใหม่';
-    } else if (response.statusCode == 429) {
-      throw ChatRateLimitException('Rate limited by Gemini API');
-    } else if (response.statusCode == 400) {
-      final errorBody = jsonDecode(response.body);
-      final errorMsg = (errorBody['error']?['message'] ?? '').toString().toLowerCase();
-
-      debugPrint('❌ Gemini 400 error: $errorMsg');
-
-      if (errorMsg.contains('api key') ||
-          errorMsg.contains('api_key') ||
-          errorMsg.contains('expired') ||
-          errorMsg.contains('invalid')) {
-        return '🔑 API Key ไม่ถูกต้องหรือหมดอายุ\n\n'
-            'กรุณาแจ้งผู้ดูแลระบบเพื่ออัปเดต API Key ครับ';
-      }
-
-      if (errorMsg.contains('token') ||
-          errorMsg.contains('limit') ||
-          errorMsg.contains('too long') ||
-          errorMsg.contains('context')) {
-        return '⚠️ ข้อความยาวเกินไป กรุณาเริ่มบทสนทนาใหม่ หรือส่งข้อความที่สั้นลง';
-      }
-
-      return '❌ เกิดข้อผิดพลาดจากระบบ AI\n$errorMsg';
+    String answer;
+    if (offline) {
+      answer = await _sampleAnswer(text, hasImage: imageBytes != null);
     } else {
-      debugPrint('❌ Gemini error ${response.statusCode}: ${response.body}');
-      return '❌ เกิดข้อผิดพลาดจากระบบ AI (${response.statusCode})\n'
-          'กรุณาลองใหม่อีกครั้ง';
+      try {
+        answer = await _send(messages);
+      } on _Unavailable {
+        _unavailable = true;
+        answer = await _sampleAnswer(text, hasImage: imageBytes != null);
+      } on ApiException catch (e) {
+        return _explain(e);
+      }
+    }
+
+    // Keep the question without its photo; the answer already describes it.
+    _history
+      ..add({'role': 'user', 'text': imageBytes == null ? text : '$text\n[แนบภาพถ่ายพืช]'})
+      ..add({'role': 'model', 'text': answer});
+    while (_history.length > _maxHistoryMessages) {
+      _history.removeRange(0, 2);
+    }
+    await _countUsage();
+    return answer;
+  }
+
+  /// Starts a new conversation.
+  void resetChat() => _history.clear();
+
+  int get currentTurnCount => _history.length ~/ 2;
+
+  Future<String> _send(List<Map<String, dynamic>> messages) async {
+    try {
+      final response = await _api.post(
+        '/assistant/chat',
+        data: {'messages': messages},
+        options: Options(sendTimeout: _timeout, receiveTimeout: _timeout),
+      );
+      final body = response.data;
+      final map = body is Map && body['data'] is Map ? body['data'] as Map : body as Map? ?? const {};
+      if (map['blocked'] == true) {
+        return 'ลุงต้อมตอบคำถามนี้ไม่ได้ ลองถามเรื่องการปลูก การดูแล หรือมาตรฐาน GAP ดูนะ';
+      }
+      final text = '${map['text'] ?? ''}'.trim();
+      return text.isEmpty ? 'ลุงต้อมยังคิดคำตอบไม่ออก ลองถามใหม่อีกครั้งนะ' : text;
+    } on ApiException catch (e) {
+      if (e.statusCode == 503) throw const _Unavailable();
+      rethrow;
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PRIVATE: Daily Usage Tracking
-  // ═══════════════════════════════════════════════════════════════════
+  String _explain(ApiException e) {
+    if (e.isNetwork) return 'ยังเชื่อมต่ออินเทอร์เน็ตไม่ได้ ลองใหม่เมื่อสัญญาณดีขึ้นนะ';
+    if (e.statusCode == 429) return 'ตอนนี้มีคนถามลุงต้อมเยอะ รอสักครู่แล้วลองใหม่นะ';
+    if (e.statusCode == 413 || e.statusCode == 400) {
+      return 'ข้อความหรือรูปใหญ่เกินไป ลองส่งรูปที่เล็กลงหรือเริ่มบทสนทนาใหม่';
+    }
+    debugPrint('Assistant error ${e.statusCode}: ${e.serverMessage ?? e.message}');
+    return 'ตอนนี้ลุงต้อมตอบไม่ได้ ลองใหม่อีกครั้งในอีกสักครู่';
+  }
 
-  /// Check if user has remaining daily quota.
-  Future<DailyUsageInfo> _checkDailyLimit() async {
+  // Daily usage ---------------------------------------------------------------
+
+  Future<DailyUsageInfo> getDailyUsage() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = _todayKey();
-    final savedDate = prefs.getString(_prefKeyDailyDate) ?? '';
-    int count = prefs.getInt(_prefKeyDailyCount) ?? 0;
-
-    // Reset counter if it's a new day
-    if (savedDate != today) {
-      count = 0;
-      await prefs.setString(_prefKeyDailyDate, today);
-      await prefs.setInt(_prefKeyDailyCount, 0);
-    }
-
-    return DailyUsageInfo(
-      usedCount: count,
-      limit: dailyRequestLimit,
-      allowed: count < dailyRequestLimit,
-    );
+    final count = prefs.getString(_prefKeyDailyDate) == _today() ? prefs.getInt(_prefKeyDailyCount) ?? 0 : 0;
+    return DailyUsageInfo(usedCount: count, limit: dailyRequestLimit, allowed: count < dailyRequestLimit);
   }
 
-  /// Increment the daily usage counter.
-  Future<void> _incrementDailyUsage() async {
+  Future<void> _countUsage() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = _todayKey();
-    final savedDate = prefs.getString(_prefKeyDailyDate) ?? '';
-
-    if (savedDate != today) {
-      await prefs.setString(_prefKeyDailyDate, today);
-      await prefs.setInt(_prefKeyDailyCount, 1);
-    } else {
-      final current = prefs.getInt(_prefKeyDailyCount) ?? 0;
-      await prefs.setInt(_prefKeyDailyCount, current + 1);
-    }
+    final today = _today();
+    final count = prefs.getString(_prefKeyDailyDate) == today ? prefs.getInt(_prefKeyDailyCount) ?? 0 : 0;
+    await prefs.setString(_prefKeyDailyDate, today);
+    await prefs.setInt(_prefKeyDailyCount, count + 1);
   }
 
-  /// Generate a date key for today (yyyy-MM-dd).
-  String _todayKey() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
+  String _today() => DateTime.now().toIso8601String().substring(0, 10);
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PRIVATE: Utilities
-  // ═══════════════════════════════════════════════════════════════════
-
-  String _getMimeType(String path) {
-    if (path.endsWith('.png')) return 'image/png';
-    if (path.endsWith('.webp')) return 'image/webp';
+  String _mimeType(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
     return 'image/jpeg';
+  }
+
+  // Sample answers --------------------------------------------------------------
+
+  /// Canned answers for demos, matched on keywords in the question.
+  Future<String> _sampleAnswer(String question, {required bool hasImage}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (hasImage) {
+      return 'จากภาพ ใบมีจุดสีน้ำตาลขอบเหลืองกระจายตามแผ่นใบ ลักษณะคล้ายโรคใบจุดจากเชื้อรา\n\n'
+          '- ตัดใบที่เป็นโรคออกแล้วนำไปทำลายนอกแปลง\n'
+          '- ลดความชื้นใต้ทรงพุ่มด้วยการตัดแต่งกิ่งให้โปร่ง\n'
+          '- ฉีดพ่นเชื้อราไตรโคเดอร์มาทุก 7 ถึง 10 วัน\n\n'
+          'บันทึกการจัดการนี้ในหมวด 1.3 เพื่อใช้ประกอบการตรวจ GAP';
+    }
+    if (question.contains('GAP') || question.contains('ขั้นตอน')) {
+      return 'การขอรับรอง GAP ในแอปมี 4 ขั้นตอน\n\n'
+          '- วาดขอบเขตแปลงบนแผนที่\n'
+          '- บันทึกข้อมูลให้ครบ 7 หมวด ตั้งแต่ข้อมูลทั่วไปจนถึงการตรวจสอบย้อนกลับ\n'
+          '- เจ้าหน้าที่ในพื้นที่ตรวจข้อมูลและอาจนัดตรวจแปลง\n'
+          '- เมื่ออนุมัติ ดาวน์โหลดใบรับรองได้ที่หน้าแปลง';
+    }
+    if (question.contains('ปุ๋ย')) {
+      return 'กระท่อมชอบดินร่วนที่มีอินทรียวัตถุสูง\n\n'
+          '- ใส่ปุ๋ยคอกหรือปุ๋ยหมักต้นละ 2 ถึง 3 กก. ช่วงต้นฤดูฝน\n'
+          '- เสริมปุ๋ยสูตรเสมอ 15-15-15 ปีละ 2 ครั้ง ครั้งละ 100 ถึง 200 กรัมต่อต้น\n'
+          '- เว้นการใส่ปุ๋ยเคมีอย่างน้อย 15 วันก่อนเก็บใบ\n\n'
+          'อย่าลืมบันทึกการใช้ปุ๋ยทุกครั้งในหมวด 1.2';
+    }
+    if (question.contains('กี่ต้น') || question.contains('กฎหมาย')) {
+      return 'ตั้งแต่ปี 2565 พืชกระท่อมไม่เป็นยาเสพติดตามกฎหมายแล้ว ปลูกได้โดยไม่จำกัดจำนวนต้น\n\n'
+          'ข้อควรระวัง\n'
+          '- ห้ามขายให้ผู้ที่อายุต่ำกว่า 18 ปี สตรีมีครรภ์ และสตรีให้นมบุตร\n'
+          '- การนำเข้าหรือส่งออกต้องขออนุญาตตามพระราชบัญญัติพืชกระท่อม\n\n'
+          'ข้อมูลนี้เป็นความรู้ทั่วไป ควรตรวจสอบประกาศล่าสุดกับสำนักงานเกษตรอำเภอ';
+    }
+    return 'ลุงต้อมยังตอบเรื่องนี้ได้ไม่ละเอียดนัก ลองถามเรื่องการปลูก การดูแล การเก็บเกี่ยว หรือมาตรฐาน GAP ดูนะ\n\n'
+        'ถ้าเป็นเรื่องเฉพาะแปลงของคุณ ปรึกษาเจ้าหน้าที่ในพื้นที่ได้จากเมนูติดต่อเจ้าหน้าที่';
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Models
-// ═══════════════════════════════════════════════════════════════════════
+class _Unavailable implements Exception {
+  const _Unavailable();
+}
 
-/// Information about daily AI chat usage.
+/// Today's question count on this device.
 class DailyUsageInfo {
+  const DailyUsageInfo({required this.usedCount, required this.limit, required this.allowed});
+
   final int usedCount;
   final int limit;
   final bool allowed;
 
-  const DailyUsageInfo({
-    required this.usedCount,
-    required this.limit,
-    required this.allowed,
-  });
-
   int get remaining => (limit - usedCount).clamp(0, limit);
-}
-
-/// Exception thrown when rate limit is hit and all retries exhausted.
-class ChatRateLimitException implements Exception {
-  final String message;
-  ChatRateLimitException(this.message);
-
-  @override
-  String toString() => 'ChatRateLimitException: $message';
 }

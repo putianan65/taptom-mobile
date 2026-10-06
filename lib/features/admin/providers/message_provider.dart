@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
+
 import 'package:collection/collection.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../../core/services/admin_service.dart';
 import '../../../../core/services/super_admin_service.dart';
 import '../../../../data/models/message_model.dart';
 import '../../../../data/models/user_model.dart';
-import '../../../../data/models/conversation_model.dart'; // ✅ Added Import
+import '../../../../data/models/conversation_model.dart';
 import '../../auth/auth_provider.dart';
 
 class MessageProvider extends ChangeNotifier {
@@ -39,7 +40,7 @@ class MessageProvider extends ChangeNotifier {
       if (msg.sender.id == currentUserId) {
         final recipientId = msg.recipient?.id;
         if (recipientId == null) {
-          debugPrint('⚠️ Warning: Message ${msg.id} has null recipient');
+          debugPrint('Warning: Message ${msg.id} has null recipient');
           return 'unknown'; 
         }
         return recipientId;
@@ -125,7 +126,7 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ FIX: เพิ่ม error handling ที่ดีขึ้น
+  // เพิ่ม error handling ที่ดีขึ้น
   Future<void> sendMessage({
     required String recipientId,
     required String message,
@@ -149,15 +150,15 @@ class MessageProvider extends ChangeNotifier {
       }
       
       await loadMessages();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 403) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 403) {
         throw 'คุณไม่มีสิทธิ์ส่งข้อความถึงผู้ใช้นี้';
-      } else if (e.response?.statusCode == 404) {
+      } else if (e.isNotFound) {
         throw 'ไม่พบผู้รับที่ระบุ';
-      } else if (e.response?.statusCode == 429) {
+      } else if (e.statusCode == 429) {
         throw 'คุณส่งข้อความบ่อยเกินไป กรุณารอสักครู่';
       }
-      throw 'ส่งข้อความไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}';
+      throw 'ส่งข้อความไม่สำเร็จ: ${e.serverMessage ?? e.message}';
     } catch (e) {
       throw 'เกิดข้อผิดพลาด: $e';
     }
@@ -183,19 +184,19 @@ class MessageProvider extends ChangeNotifier {
       }
       
       await loadMessages();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw 'ไม่พบข้อความที่ต้องการตอบกลับ';
-      } else if (e.response?.statusCode == 403) {
+      } else if (e.statusCode == 403) {
         throw 'คุณไม่มีสิทธิ์ตอบกลับข้อความนี้';
       }
-      throw 'ตอบกลับไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}';
+      throw 'ตอบกลับไม่สำเร็จ: ${e.serverMessage ?? e.message}';
     } catch (e) {
       throw 'เกิดข้อผิดพลาด: $e';
     }
   }
 
-  // ✅ NEW: Conversation List Support (API Based)
+  // Conversation List Support (API Based)
   List<Conversation> _conversationList = [];
   List<Conversation> get conversationList => _conversationList;
   
@@ -232,7 +233,7 @@ class MessageProvider extends ChangeNotifier {
       _totalUnreadCount = unread;
       
     } catch (e) {
-      print('Error loading conversations: $e');
+      debugPrint('Error loading conversations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -274,7 +275,7 @@ class MessageProvider extends ChangeNotifier {
          await _adminService.markAsRead(partnerId);
        }
     } catch (e) {
-      print('Failed to mark as read: $e');
+      debugPrint('Failed to mark as read: $e');
       // Revert if needed, but for Read status usually we don't strict revert
     }
   }

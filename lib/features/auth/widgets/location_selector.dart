@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import '../../../core/constants/app_colors.dart';
+
 import '../../../core/constants/thai_locations.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../core/services/location_service.dart';
-import '../../auth/models/location_models.dart';
+import '../../../data/models/location_models.dart';
 
 /// Cascading location selector widget
 /// Provides Region → Province → District → Subdistrict selection
@@ -239,147 +238,122 @@ class _LocationSelectorState extends State<LocationSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final showDistrict = _districts.isNotEmpty || _selectedProvince != null;
+    final showSubdistrict = _subdistricts.isNotEmpty || _selectedDistrict != null;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Section header
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            children: [
-              const HeroIcon(
-                HeroIcons.mapPin,
-                size: 20,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'ที่อยู่',
-                style: GoogleFonts.prompt(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMain,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Region
-        _buildDropdown(
+        _dropdown(
           label: 'ภูมิภาค',
           value: _selectedRegion,
           items: _regions,
           onChanged: _onRegionChanged,
-          isRequired: true,
-          isEnabled: !_isLoadingRegions && _regions.isNotEmpty,
-          hint: _isLoadingRegions ? 'กำลังโหลด...' : null,
+          required: true,
+          enabled: !_isLoadingRegions && _regions.isNotEmpty,
+          loading: _isLoadingRegions,
         ),
-        const SizedBox(height: 12),
-
-        // Province
-        _buildDropdown(
+        const SizedBox(height: Space.lg),
+        _dropdown(
           label: 'จังหวัด',
           value: _selectedProvince,
           items: _provinces.map((p) => p.nameTh).toList(),
           onChanged: _onProvinceChanged,
-          isEnabled: _selectedRegion != null && !_isLoadingProvinces,
-          isRequired: widget.requireFullAddress,
-          hint: _isLoadingProvinces ? 'กำลังโหลด...' : null,
+          enabled: _selectedRegion != null && !_isLoadingProvinces,
+          required: widget.requireFullAddress,
+          loading: _isLoadingProvinces,
+          hint: _selectedRegion == null ? 'เลือกภูมิภาคก่อน' : null,
         ),
-        const SizedBox(height: 12),
-
-        // District
-        if (_districts.isNotEmpty || _selectedProvince != null)
-          Column(
-            children: [
-              _buildDropdown(
-                label: 'อำเภอ/เขต',
-                value: _selectedDistrict,
-                items: _districts.map((d) => d.nameTh).toList(),
-                onChanged: _onDistrictChanged,
-                isEnabled:
-                    _selectedProvince != null &&
-                    !_isLoadingDistricts &&
-                    _districts.isNotEmpty,
-                isRequired: widget.requireFullAddress,
-                hint: _isLoadingDistricts
-                    ? 'กำลังโหลด...'
-                    : (_districts.isEmpty && _selectedProvince != null
-                          ? 'ไม่มีข้อมูลอำเภอ'
-                          : null),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-
-        // Subdistrict
-        if (_subdistricts.isNotEmpty || _selectedDistrict != null)
-          _buildDropdown(
-            label: 'ตำบล/แขวง',
-            value: _selectedSubdistrict,
-            items: _subdistricts.map((s) => s.nameTh).toList(),
-            onChanged: _onSubdistrictChanged,
-            isEnabled:
-                _selectedDistrict != null &&
-                !_isLoadingSubdistricts &&
-                _subdistricts.isNotEmpty,
-            isRequired: widget.requireFullAddress,
-            hint: _isLoadingSubdistricts
-                ? 'กำลังโหลด...'
-                : (_subdistricts.isEmpty && _selectedDistrict != null
-                      ? 'ไม่มีข้อมูลตำบล'
-                      : null),
-          ),
+        AnimatedSize(
+          duration: Motion.base,
+          curve: Motion.standard,
+          child: !showDistrict
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: Space.lg),
+                  child: _dropdown(
+                    label: 'อำเภอ / เขต',
+                    value: _selectedDistrict,
+                    items: _districts.map((d) => d.nameTh).toList(),
+                    onChanged: _onDistrictChanged,
+                    enabled: _selectedProvince != null &&
+                        !_isLoadingDistricts &&
+                        _districts.isNotEmpty,
+                    required: widget.requireFullAddress,
+                    loading: _isLoadingDistricts,
+                    hint: _districts.isEmpty && !_isLoadingDistricts
+                        ? 'ไม่พบข้อมูลอำเภอ'
+                        : null,
+                  ),
+                ),
+        ),
+        AnimatedSize(
+          duration: Motion.base,
+          curve: Motion.standard,
+          child: !showSubdistrict
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: Space.lg),
+                  child: _dropdown(
+                    label: 'ตำบล / แขวง',
+                    value: _selectedSubdistrict,
+                    items: _subdistricts.map((s) => s.nameTh).toList(),
+                    onChanged: _onSubdistrictChanged,
+                    enabled: _selectedDistrict != null &&
+                        !_isLoadingSubdistricts &&
+                        _subdistricts.isNotEmpty,
+                    required: widget.requireFullAddress,
+                    loading: _isLoadingSubdistricts,
+                    hint: _subdistricts.isEmpty && !_isLoadingSubdistricts
+                        ? 'ไม่พบข้อมูลตำบล'
+                        : null,
+                  ),
+                ),
+        ),
       ],
     );
   }
 
-  Widget _buildDropdown({
+  Widget _dropdown({
     required String label,
     required String? value,
     required List<String> items,
-    required Function(String?) onChanged,
-    bool isEnabled = true,
-    bool isRequired = false,
+    required ValueChanged<String?> onChanged,
+    bool enabled = true,
+    bool required = false,
+    bool loading = false,
     String? hint,
   }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: isRequired ? '$label *' : label,
-        labelStyle: GoogleFonts.prompt(color: AppColors.textSecondary),
-        filled: true,
-        fillColor: isEnabled ? AppColors.background : Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FieldLabel(label, required: required),
+        DropdownButtonFormField<String>(
+          // Re-key on upstream changes so cascading resets are reflected.
+          key: ValueKey('$label|$value|${items.length}|$enabled'),
+          initialValue: items.contains(value) ? value : null,
+          isExpanded: true,
+          menuMaxHeight: 360,
+          borderRadius: Radii.control,
+          dropdownColor: p.surface,
+          decoration: InputDecoration(
+            hintText: loading ? 'กำลังโหลด...' : (hint ?? 'เลือก$label'),
+          ),
+          style: context.text.bodyLarge,
+          icon: loading
+              ? SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: p.brand),
+                )
+              : Icon(AppIcons.chevronDown, size: 18, color: p.inkSubtle),
+          items: [
+            for (final item in items)
+              DropdownMenuItem(value: item, child: Text(item, overflow: TextOverflow.ellipsis)),
+          ],
+          onChanged: enabled ? onChanged : null,
+          validator: required ? (v) => v == null ? 'กรุณาเลือก$label' : null : null,
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        hintText: hint,
-        hintStyle: GoogleFonts.prompt(color: Colors.grey[400], fontSize: 13),
-      ),
-      style: GoogleFonts.prompt(color: AppColors.textMain, fontSize: 14),
-      icon: const HeroIcon(
-        HeroIcons.chevronDown,
-        size: 20,
-        color: AppColors.primary,
-      ),
-      items: items
-          .map(
-            (item) => DropdownMenuItem(
-              value: item,
-              child: Text(item, style: GoogleFonts.prompt()),
-            ),
-          )
-          .toList(),
-      onChanged: isEnabled ? onChanged : null,
-      validator: isRequired
-          ? (val) => val == null ? 'กรุณาเลือก$label' : null
-          : null,
+      ],
     );
   }
 }

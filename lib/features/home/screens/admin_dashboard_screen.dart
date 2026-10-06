@@ -1,44 +1,42 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/pdpa_content.dart'; // NEW
-import '../../../core/services/admin_service.dart';
-import '../../../core/services/auth_service.dart';
-import '../../../core/widgets/nature_background.dart';
+
+import '../../../app/routes.dart';
+import '../../../core/constants/legal_content.dart';
+import '../../../core/constants/pdpa_content.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/notification_banner.dart';
+import '../../../core/widgets/notification_icon.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../data/models/user_model.dart';
-import '../../auth/auth_provider.dart';
-import '../../admin/screens/user_management_screen.dart';
+import '../../admin/providers/admin_state_provider.dart';
+import '../../admin/screens/admin_plot_list_screen.dart';
 import '../../admin/screens/admin_plots_map_screen.dart';
 import '../../admin/screens/audit_log_screen.dart';
-
-import '../../admin/widgets/user_detail_sheet.dart';
-import '../../admin/providers/admin_state_provider.dart';
-import '../../../core/utils/admin_error_handler.dart';
-import '../../admin/widgets/admin_confirmation_dialog.dart';
-import '../../profile/screens/personal_info_screen.dart';
-import '../../settings/screens/settings_screen.dart';
-import '../../shared/screens/support_ticket_screen.dart';
-import '../../admin/widgets/gap_analytics_card.dart';
-import '../../admin/widgets/user_trends_chart.dart';
-import '../../notification/screens/notification_list_screen.dart';
-import '../../notifications/providers/notification_provider.dart'; // Add this line
-import '../../../core/widgets/notification_icon.dart'; // Added
-import '../../admin/screens/edit_profile_screen.dart';
 import '../../admin/screens/change_pin_screen.dart';
+import '../../profile/screens/personal_info_screen.dart';
+import '../../admin/screens/user_management_screen.dart';
+import '../../auth/auth_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../../settings/screens/content_display_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 import '../../settings/settings_provider.dart';
-import '../../../core/services/feedback_service.dart';
-import '../../admin/screens/create_plot_for_user_screen.dart';
-import '../../admin/screens/admin_plot_list_screen.dart';
-import '../../../core/services/cache_service.dart';
 
+/// Where a staff member's authority applies, written out in Thai.
+String staffScope(UserModel? user) {
+  if (user == null) return '';
+  if (user.role == UserRole.superAdmin) return 'ดูแลทุกพื้นที่';
+  if ((user.subdistrict ?? '').isNotEmpty) {
+    return 'ต.${user.subdistrict} อ.${user.district ?? '-'} จ.${user.province ?? '-'}';
+  }
+  if ((user.district ?? '').isNotEmpty) return 'อ.${user.district} จ.${user.province ?? '-'}';
+  if ((user.province ?? '').isNotEmpty) return 'จ.${user.province}';
+  if ((user.region ?? '').isNotEmpty) return user.region!;
+  return 'ยังไม่ได้กำหนดพื้นที่';
+}
 
-/// Admin Dashboard with Bottom Navigation - เหมือน User Dashboard
+/// Admin home: review queue, territory overview, members and map.
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
@@ -47,69 +45,76 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  int _selectedIndex = 0;
+  final _shell = GlobalKey<AppShellState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<NotificationProvider>().startPolling();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: _buildCurrentPage(),
-      bottomNavigationBar: _buildBottomNav(),
+    final pending = context.select<AdminStateProvider, int>((a) => a.pendingUsers.length);
+    return AppShell(
+      key: _shell,
+      overlay: const StaffNotificationBanner(),
+      railFooter: const StatusBadge(label: 'เจ้าหน้าที่', tone: Tone.brand),
+      destinations: [
+        ShellDestination(
+          label: 'หน้าหลัก',
+          icon: AppIcons.home,
+          activeIcon: AppIcons.homeActive,
+          page: AdminHomeScreen(onOpenMembers: () => _shell.currentState?.select(2)),
+        ),
+        const ShellDestination(
+          label: 'แผนที่',
+          icon: AppIcons.map,
+          activeIcon: AppIcons.mapActive,
+          page: AdminPlotsMapScreen(isMainTab: true),
+        ),
+        ShellDestination(
+          label: 'สมาชิก',
+          icon: AppIcons.members,
+          activeIcon: AppIcons.membersActive,
+          page: const UserManagementScreen(isEmbedded: true),
+          badge: pending,
+        ),
+        const ShellDestination(
+          label: 'บัญชี',
+          icon: AppIcons.account,
+          activeIcon: AppIcons.accountActive,
+          page: AdminProfileScreen(),
+        ),
+      ],
     );
   }
+}
 
-  Widget _buildCurrentPage() {
-    switch (_selectedIndex) {
-      case 0:
-        return const AdminHomeScreen();
-      case 1:
-        return const AdminPlotsMapScreen(isMainTab: true);
-      case 2:
-        return const UserManagementScreen(isEmbedded: true);
-      case 3:
-        return const AdminProfileScreen();
-      default:
-        return const AdminHomeScreen();
-    }
-  }
+/// In-app notification banner for staff shells.
+class StaffNotificationBanner extends StatelessWidget {
+  const StaffNotificationBanner({super.key});
 
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 20,
-            color: Colors.grey.withValues(alpha: 0.1),
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 12),
-          child: GNav(
-            rippleColor: Colors.grey[200]!,
-            hoverColor: Colors.grey[100]!,
-            gap: 8,
-            // Admin uses Orange accent to distinguish from User (Green)
-            activeColor: AppColors.adminPrimary,
-            iconSize: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            duration: const Duration(milliseconds: 300),
-            tabBackgroundColor: AppColors.adminPrimary.withValues(alpha: 0.1),
-            color: Colors.grey[500],
-            tabs: const [
-              GButton(icon: Icons.dashboard_rounded, text: 'หน้าหลัก'),
-              GButton(icon: Icons.map_rounded, text: 'แผนที่'),
-              GButton(icon: Icons.people_rounded, text: 'สมาชิก'),
-              GButton(icon: Icons.person_rounded, text: 'โปรไฟล์'),
-            ],
-            selectedIndex: _selectedIndex,
-            onTabChange: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<NotificationProvider>();
+    final latest = provider.latestNotification;
+    if (latest == null) return const SizedBox.shrink();
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 4,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: NotificationBanner(
+            notification: latest,
+            onDismiss: provider.dismissBanner,
+            onTap: () {
+              provider.dismissBanner();
+              context.push(Routes.notifications);
             },
           ),
         ),
@@ -118,320 +123,267 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-// ==================== ADMIN HOME SCREEN ====================
+// ═══════════════════════════════════════════════════════════════════════
+// Home
+// ═══════════════════════════════════════════════════════════════════════
+
 class AdminHomeScreen extends StatefulWidget {
-  const AdminHomeScreen({super.key});
+  const AdminHomeScreen({super.key, this.onOpenMembers});
+
+  final VoidCallback? onOpenMembers;
 
   @override
   State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  bool _loaded = false;
+  final Set<String> _busy = {};
+
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to avoid build error
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-      context.read<NotificationProvider>().startPolling();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadData() async {
+  Future<void> _load() async {
     final provider = context.read<AdminStateProvider>();
     await Future.wait([
       provider.loadStats(),
-      provider.loadUsers(status: 'PENDING'),
-      provider.loadAnalytics(), // NEW
+      provider.loadUsers(),
+      provider.loadPendingPlots(),
+      provider.loadAnalytics(),
     ]);
+    if (mounted) setState(() => _loaded = true);
   }
 
-  Future<void> _approveUser(UserModel user) async {
-    // Show confirmation dialog first
-    final confirmed = await AdminConfirmationDialog.showApproval(
+  Future<void> _approve(UserModel user) async {
+    final ok = await AppDialogs.confirm(
       context,
-      user: user,
+      title: 'อนุมัติสมาชิก',
+      message: 'ยืนยันให้ ${user.fullName} เป็นสมาชิกในพื้นที่ของคุณ',
+      confirmLabel: 'อนุมัติ',
+      icon: AppIcons.userAdd,
     );
-
-    if (confirmed != true) return;
-
+    if (!ok || !mounted) return;
+    setState(() => _busy.add(user.id));
     try {
       await context.read<AdminStateProvider>().approveUser(user.id);
-
-      if (!mounted) return;
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'อนุมัติ ${user.fullName} สำเร็จ',
-        detail: 'สมาชิกสามารถเข้าใช้งานระบบได้แล้ว',
-      );
+      if (mounted) AppToast.success(context, 'อนุมัติ ${user.fullName} แล้ว');
     } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(
-        context,
-        e,
-        operation: 'อนุมัติสมาชิก',
-        onRetry: () => _approveUser(user),
-      );
+      if (mounted) AppToast.error(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _busy.remove(user.id));
     }
   }
 
-  Future<void> _rejectUser(UserModel user) async {
-    // Show rejection dialog with reason input
-    final reason = await AdminConfirmationDialog.showRejection(
+  Future<void> _reject(UserModel user) async {
+    final reason = await AppDialogs.prompt(
       context,
-      user: user,
+      title: 'ไม่อนุมัติ ${user.firstName}',
+      message: 'ระบุเหตุผล ระบบจะแจ้งผู้สมัครพร้อมเหตุผลนี้',
+      hint: 'เช่น ข้อมูลที่ตั้งไม่ตรงกับพื้นที่',
+      confirmLabel: 'ไม่อนุมัติ',
+      destructive: true,
     );
-
-    if (reason == null || reason.isEmpty) return;
-
+    if (reason == null || reason.isEmpty || !mounted) return;
+    setState(() => _busy.add(user.id));
     try {
       await context.read<AdminStateProvider>().rejectUser(user.id, reason);
-
-      if (!mounted) return;
-      AdminErrorHandler.showWarning(
-        context,
-        message: 'ปฏิเสธ ${user.fullName} สำเร็จ',
-        detail: 'ส่งการแจ้งเตือนไปยังผู้สมัครแล้ว',
-      );
+      if (mounted) AppToast.info(context, 'แจ้งผลไปยัง ${user.fullName} แล้ว');
     } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(
-        context,
-        e,
-        operation: 'ปฏิเสธสมาชิก',
-        onRetry: () => _rejectUser(user),
-      );
+      if (mounted) AppToast.error(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _busy.remove(user.id));
     }
   }
 
-  Future<String?> _showRejectDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const HeroIcon(
-                HeroIcons.xCircle,
-                color: AppColors.error,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'ปฏิเสธคำขอ',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'กรุณาระบุเหตุผลในการปฏิเสธ เพื่อแจ้งให้ผู้สมัครทราบ',
-                style: GoogleFonts.prompt(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: 'เช่น ข้อมูลไม่ครบถ้วน, เอกสารไม่ถูกต้อง...',
-                  hintStyle: GoogleFonts.prompt(
-                    color: Colors.grey[400],
-                    fontSize: 13,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-                maxLines: 4,
-                style: GoogleFonts.prompt(),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'กรุณาระบุเหตุผลในการปฏิเสธ';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'เหตุผลต้องมีอย่างน้อย 10 ตัวอักษร';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const HeroIcon(
-                      HeroIcons.informationCircle,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'เหตุผลนี้จะถูกส่งเป็นการแจ้งเตือนไปยังผู้สมัคร',
-                        style: GoogleFonts.prompt(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context, controller.text.trim());
-              }
-            },
-            icon: const HeroIcon(
-              HeroIcons.xMark,
-              size: 18,
-              color: Colors.white,
-            ),
-            label: Text(
-              'ปฏิเสธ',
-              style: GoogleFonts.prompt(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  void _push(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   @override
   Widget build(BuildContext context) {
-    // Watch providers
-    final provider = context.watch<AdminStateProvider>();
-    final authProvider = context.watch<AuthProvider>();
-
-    // User info
-    final user = authProvider.user;
-    final isSuperAdmin = user?.role == UserRole.superAdmin;
-    final rolePrimary = isSuperAdmin
-        ? AppColors.superAdminPrimary
-        : AppColors.adminPrimary;
+    final p = context.palette;
+    final user = context.watch<AuthProvider>().user;
+    final admin = context.watch<AdminStateProvider>();
+    final stats = admin.stats;
+    final pending = admin.pendingUsers;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Light grey base
-      body: Container(
-        color: const Color(0xFFF5F7FA),
-        child: Stack(
-          children: [
-            // Curved Header Background (No Circles)
-            // Twisted Curved Background (Moved to Bottom)
-            // Twisted Curved Background (Bottom Design)
-            // Full Screen Background Image (Faint)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.25,
-                child: Image.asset(
-                  'assets/images/Chat.png',
-                  fit: BoxFit.cover,
-                ),
+      backgroundColor: p.background,
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: p.brand,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          slivers: [
+            SliverToBoxAdapter(
+              child: HeroHeader(
+                maxWidth: 960,
+                minHeight: 188,
+                child: StaffGreeting(user: user, roleLabel: 'เจ้าหน้าที่', roleIcon: AppIcons.officer),
               ),
             ),
-            
-            // White Overlay Gradient for readability (Optional smoothness)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withOpacity(0.9), // Fade top to white
-                      Colors.white.withOpacity(0.4),
-                    ],
+            SliverToBoxAdapter(
+              child: SheetContainer(
+                child: ContentWidth(
+                  maxWidth: 960,
+                  padding: EdgeInsets.fromLTRB(
+                    Space.gutter,
+                    Space.xs,
+                    Space.gutter,
+                    Space.x5 + 60 + MediaQuery.paddingOf(context).bottom,
                   ),
-                ),
-              ),
-            ),
-
-            // Main Content
-            SafeArea(
-              child: RefreshIndicator(
-                onRefresh: _loadData,
-                color: rolePrimary,
-                backgroundColor: Colors.white,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 16),
-                      // 1. TOP BAR
-                      _buildTopBar(isSuperAdmin),
-                      const SizedBox(height: 24),
-
-                      // 2. PROFILE SECTION
-                      _buildProfileSection(user, isSuperAdmin),
-                      const SizedBox(height: 32),
-
-                      // 3. STATS ROW
-                      _buildStatsRow(provider.stats, provider.pendingUsers.length, rolePrimary),
-                      const SizedBox(height: 32),
-
-                      // 4. QUICK SHORTCUTS
-                      _buildSectionLabel('เมนูลัด', Colors.black87),
-                      const SizedBox(height: 16),
-                      _buildNewQuickShortcuts(rolePrimary, isSuperAdmin),
-                      const SizedBox(height: 32),
-
-                      // 5. MEMBER INSIGHTS
-                      _buildSectionLabel('ข้อมูลเชิงลึกสมาชิก', Colors.black87),
-                      const SizedBox(height: 16),
-                      if (provider.userTrends.isNotEmpty) ...[
-                         UserTrendsChart(data: provider.userTrends),
-                         const SizedBox(height: 100),
-                      ],
+                      AdaptiveGrid(
+                        minTileWidth: 150,
+                        spacing: Space.sm,
+                        children: [
+                          StatTile(
+                            value: stats['total'] ?? 0,
+                            label: 'สมาชิกทั้งหมด',
+                            icon: AppIcons.users,
+                            dense: true,
+                            onTap: widget.onOpenMembers,
+                          ),
+                          StatTile(
+                            value: stats['pending'] ?? 0,
+                            label: 'รออนุมัติสมาชิก',
+                            icon: AppIcons.userAdd,
+                            tone: Tone.warning,
+                            dense: true,
+                            onTap: widget.onOpenMembers,
+                          ),
+                          StatTile(
+                            value: stats['pendingPlots'] ?? 0,
+                            label: 'แปลงรอตรวจ',
+                            icon: AppIcons.plot,
+                            tone: Tone.warning,
+                            dense: true,
+                            onTap: () => _push(const AdminPlotListScreen(initialStatusFilter: 'PENDING')),
+                          ),
+                          StatTile(
+                            value: admin.gapAnalytics?.plotsWithGap ?? 0,
+                            label: 'แปลงมีบันทึก GAP',
+                            icon: AppIcons.gap,
+                            tone: Tone.success,
+                            dense: true,
+                          ),
+                        ],
+                      ).entrance(context),
+                      const SizedBox(height: Space.xxl),
+                      SectionHeader(
+                        title: 'คำขอเป็นสมาชิก',
+                        subtitle: pending.isEmpty ? null : 'รอการพิจารณา ${pending.length} ราย',
+                        actionLabel: pending.length > 3 ? 'ดูทั้งหมด' : null,
+                        onAction: widget.onOpenMembers,
+                      ),
+                      if (!_loaded && admin.isLoading)
+                        const SkeletonList(count: 2, thumbnail: false)
+                      else if (pending.isEmpty)
+                        const AppCard(
+                          child: EmptyState(
+                            title: 'ไม่มีคำขอค้างพิจารณา',
+                            message: 'คำขอใหม่จากเกษตรกรในพื้นที่จะแสดงที่นี่',
+                            mood: MascotMood.joy,
+                            compact: true,
+                          ),
+                        )
+                      else
+                        for (var i = 0; i < pending.length && i < 3; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: Space.sm),
+                            child: _RequestCard(
+                              user: pending[i],
+                              busy: _busy.contains(pending[i].id),
+                              onApprove: () => _approve(pending[i]),
+                              onReject: () => _reject(pending[i]),
+                            ).entrance(context, index: i + 1),
+                          ),
+                      const SizedBox(height: Space.xl),
+                      const SectionHeader(title: 'งานของเจ้าหน้าที่'),
+                      AdaptiveGrid(
+                        minTileWidth: 150,
+                        spacing: Space.sm,
+                        children: [
+                          ShortcutCard(
+                            icon: AppIcons.checklist,
+                            title: 'ตรวจข้อมูล GAP',
+                            caption: 'เลือกเกษตรกร แล้วดูแปลง',
+                            onTap: () => _push(
+                              UserManagementScreen(
+                                onUserSelected: (u) {
+                                  Navigator.of(context).pop();
+                                  _push(AdminPlotListScreen(userId: u.id, userName: u.fullName));
+                                },
+                              ),
+                            ),
+                          ),
+                          ShortcutCard(
+                            icon: AppIcons.gap,
+                            title: 'แปลงที่อนุมัติ',
+                            caption: 'รายการและพิกัด',
+                            onTap: () => _push(const AdminPlotListScreen(initialStatusFilter: 'APPROVED')),
+                          ),
+                          ShortcutCard(
+                            icon: AppIcons.plot,
+                            title: 'บันทึกแปลงแทน',
+                            caption: 'สำหรับเกษตรกรที่ไม่สะดวก',
+                            onTap: () => context.push(Routes.adminCreatePlot),
+                          ),
+                          ShortcutCard(
+                            icon: AppIcons.chats,
+                            title: 'ข้อความ',
+                            caption: 'ติดต่อเจ้าหน้าที่อื่น',
+                            onTap: () => context.push(Routes.adminMessages),
+                          ),
+                        ],
+                      ).entrance(context, index: 3),
+                      const SizedBox(height: Space.xxl),
+                      const SectionHeader(title: 'ภาพรวมพื้นที่'),
+                      LayoutBuilder(
+                        builder: (context, c) {
+                          final trend = TrendLineChart(
+                            title: 'สมาชิกใหม่',
+                            subtitle: '7 วันล่าสุด',
+                            unit: ' คน',
+                            points: [for (final t in admin.userTrends) TrendPoint(t.date, t.count)],
+                          );
+                          final gap = admin.gapAnalytics;
+                          final total = gap?.totalPlots ?? 0;
+                          final withGap = gap?.plotsWithGap ?? 0;
+                          final breakdown = StatusBreakdownBar(
+                            title: 'ความครอบคลุม GAP',
+                            subtitle: 'แปลงที่มีบันทึกอย่างน้อยหนึ่งหมวด',
+                            segments: [
+                              StatusSegment('มีบันทึก GAP', withGap, ChartColors.approved(context)),
+                              StatusSegment(
+                                'ยังไม่มีบันทึก',
+                                total > withGap ? total - withGap : 0,
+                                ChartColors.none(context),
+                              ),
+                            ],
+                          );
+                          if (c.maxWidth < 720) {
+                            return Column(
+                              children: [
+                                trend,
+                                const SizedBox(height: Space.md),
+                                breakdown,
+                              ],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: trend),
+                              const SizedBox(width: Space.md),
+                              Expanded(child: breakdown),
+                            ],
+                          );
+                        },
+                      ).entrance(context, index: 4),
                     ],
                   ),
                 ),
@@ -442,1153 +394,331 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
+}
 
-  Widget _buildTopBar(bool isSuperAdmin) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            // Admin Icon
-            Container(
-               padding: const EdgeInsets.all(8),
-               decoration: BoxDecoration(
-                 color: AppColors.adminPrimary.withOpacity(0.12), // Visible glass fill
-                 borderRadius: BorderRadius.circular(12),
-                 border: Border.all(color: AppColors.adminPrimary.withOpacity(0.4), width: 1.5), // Strong glass border
-               ),
-               child: const HeroIcon(
-                 HeroIcons.shieldCheck, 
-                 color: AppColors.adminPrimary, 
-                 size: 24
-                ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'หัวหน้ารัฐวิสาหกิจชุมชน',
-              style: GoogleFonts.prompt(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        Consumer<SettingsProvider>(
-          builder: (context, settings, _) {
-            if (!settings.notificationsEnabled) return const SizedBox.shrink();
-            
-            if (!settings.notificationsEnabled) return const SizedBox.shrink();
-            
-            return NotificationIcon(color: AppColors.primary);
-          }
-        ),
-      ],
+/// Greeting block on staff hero headers.
+class StaffGreeting extends StatelessWidget {
+  const StaffGreeting({super.key, required this.user, required this.roleLabel, required this.roleIcon});
 
-    );
-  }
+  final UserModel? user;
+  final String roleLabel;
+  final IconData roleIcon;
 
-  Widget _buildProfileSection(UserModel? user, bool isSuperAdmin) {
-    final firstName = user?.firstName ?? 'Admin';
-    final lastName = user?.lastName ?? '';
-    final fullName = '$firstName $lastName'.trim();
-    
-    // Load image if available, else use initials.
-    final initial = firstName.isNotEmpty ? firstName[0] : 'A';
-    final hasPhoto = user?.photoUrl != null && user!.photoUrl!.isNotEmpty;
-
-    return Row(
-      children: [
-        // Large Avatar
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: hasPhoto ? null : AppColors.adminPrimary.withOpacity(0.1),
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-            image: hasPhoto
-                ? DecorationImage(
-                    image: NetworkImage(user!.photoUrl!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-          ),
-          child: hasPhoto
-              ? null
-              : Center(
-                  child: Text(
-                    initial,
-                    style: GoogleFonts.prompt(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.adminPrimary,
-                    ),
-                  ),
-                ),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              fullName.isNotEmpty ? fullName : 'ผู้ดูแลระบบ',
-              style: GoogleFonts.prompt(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              'ยินดีต้อนรับสู่ศูนย์ควบคุม',
-              style: GoogleFonts.prompt(
-                fontSize: 14,
-                color: AppColors.primary, 
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsRow(Map<String, dynamic> stats, int pendingCount, Color rolePrimary) {
-    return Row(
-      children: [
-        _buildStatCard(
-          'สมาชิก\nทั้งหมด',
-          '${stats['total'] ?? 0}',
-          Colors.blueGrey,
-        ),
-        const SizedBox(width: 12),
-        _buildStatCard(
-          'รอการ\nอนุมัติ',
-          '$pendingCount',
-          Colors.amber,
-        ),
-        const SizedBox(width: 12),
-        _buildStatCard(
-          'ยืนยัน\nแล้ว',
-          '${stats['approved'] ?? 0}',
-          Colors.green,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionLabel(String title, Color accentColor) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 18,
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: GoogleFonts.prompt(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String count, Color color) {
-    return Expanded(
-      child: Container(
-        height: 110,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.25), width: 1.5), // Visible colored border
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Colored Indicator Bar
-            Container(
-              width: 5,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.prompt(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF374151), // Dark gray, very readable
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    count,
-                    style: GoogleFonts.prompt(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF111827), // Near-black
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewQuickShortcuts(Color rolePrimary, bool isSuperAdmin) {
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-           children: [
-             Expanded(
-               child: _buildShortcutCard(
-                 icon: HeroIcons.map,
-                 label: 'แก้ไขแปลงผู้ใช้',
-                 color: Colors.green[700]!, // Darker Green
-                 onTap: () {
-                    Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (_) => const AdminPlotsMapScreen(userId: null),
-                     ),
-                   );
-                 },
-               ),
-             ),
-             const SizedBox(width: 16),
-             Expanded(
-               child: _buildShortcutCard(
-                 icon: HeroIcons.clipboardDocumentList,
-                 label: 'GAP',
-                 color: Colors.teal, // Slight variation but still green-tone
-                 onTap: () {
-                    Navigator.push(
-                       context,
-                       MaterialPageRoute(
-                         builder: (_) => UserManagementScreen(
-                           onUserSelected: (user) {
-                             Navigator.pop(context); // Close User Picker
-                             Navigator.push(
-                               context,
-                               MaterialPageRoute(
-                                 builder: (_) => AdminPlotListScreen(
-                                   userId: user.id,
-                                   userName: user.fullName,
-                                 ),
-                               ),
-                             );
-                           },
-                         ),
-                       ),
-                     );
-                 },
-               ),
-             ),
-           ],
-         ),
-        const SizedBox(height: 16),
-        Row(
           children: [
-            Expanded(
-              child: _buildShortcutCard(
-                icon: HeroIcons.checkBadge,
-                label: 'แปลงที่อนุมัติ',
-                color: AppColors.success,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AdminPlotListScreen(
-                        initialStatusFilter: 'APPROVED',
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildShortcutCard(
-                icon: HeroIcons.chatBubbleLeftRight,
-                label: 'ติดต่อผู้ดูแลระบบ', 
-                color: const Color(0xFF2E7D32), // Forest Green
-                onTap: () {
-                   context.push('/admin/messages');
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShortcutCard({
-    required HeroIcons icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withOpacity(0.2), width: 1.5), // Visible colored glass border
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+            InitialsAvatar(name: user?.fullName ?? '', photoUrl: user?.photoUrl, size: 44),
+            const SizedBox(width: Space.md),
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12), // Clearly visible glass fill
-                shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.4), width: 1.5), // Strong glass border
-              ),
-              child: HeroIcon(
-                icon,
-                color: color,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: GoogleFonts.prompt(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1F2937), // Very dark, high contrast
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWideShortcutCard({
-    required HeroIcons icon,
-    required String label,
-    required String subLabel,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.deepOrange.withOpacity(0.2), width: 1.5), // Visible colored border
-          boxShadow: [
-            BoxShadow(
-              color: Colors.deepOrange.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.12), // Clearly visible glass fill
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5), // Strong glass border
-              ),
-              child: const HeroIcon(
-                HeroIcons.map,
-                color: Colors.deepOrange,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: Radii.chip),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.prompt(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937), // Very dark, clear
-                    ),
-                  ),
-                  Text(
-                    subLabel,
-                    style: GoogleFonts.prompt(
-                      fontSize: 12,
-                      color: const Color(0xFF4B5563), // Dark gray subtitle
-                    ),
-                  ),
+                  Icon(roleIcon, size: 14, color: p.heroInk),
+                  const SizedBox(width: 6),
+                  Text(roleLabel, style: context.text.labelMedium?.copyWith(color: p.heroInk)),
                 ],
               ),
             ),
-            const HeroIcon(
-              HeroIcons.chevronRight,
-              color: Colors.deepOrange,
-              size: 20,
-            ),
+            const Spacer(),
+            const NotificationIcon(onHero: true),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required HeroIcons icon,
-    required String label,
-    required VoidCallback onTap,
-    required Color accentColor,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withOpacity(0.10),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5), // Visible colored border
+        const SizedBox(height: Space.xl),
+        Text(
+          ThaiDate.greeting(),
+          style: context.text.labelLarge?.copyWith(
+            color: p.heroInk.withValues(alpha: 0.75),
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        child: Row(
+        Text(
+          user?.fullName.isNotEmpty == true ? user!.fullName : roleLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.headlineLarge?.copyWith(color: p.heroInk),
+        ),
+        const SizedBox(height: Space.xs),
+        Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.12), // Clearly visible glass fill
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5), // Strong glass border
-              ),
-              child: HeroIcon(icon, color: accentColor, size: 28),
-            ),
-            const SizedBox(width: 16),
+            Icon(AppIcons.pin, size: 15, color: p.heroInk.withValues(alpha: 0.75)),
+            const SizedBox(width: 6),
             Expanded(
               child: Text(
-                label,
-                style: GoogleFonts.prompt(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1F2937), // Very dark, clear
-                ),
+                'พื้นที่ดูแล: ${staffScope(user)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: context.text.bodyMedium?.copyWith(color: p.heroInk.withValues(alpha: 0.78)),
               ),
-            ),
-            const SizedBox(width: 8),
-            HeroIcon(
-              HeroIcons.chevronRight,
-              size: 20,
-              color: Colors.grey.shade400,
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }
 
-// ==================== ADMIN PROFILE SCREEN ====================
-class AdminProfileScreen extends StatefulWidget {
-  const AdminProfileScreen({super.key});
+class _RequestCard extends StatelessWidget {
+  const _RequestCard({required this.user, required this.busy, required this.onApprove, required this.onReject});
 
-  @override
-  State<AdminProfileScreen> createState() => _AdminProfileScreenState();
-}
-
-class _AdminProfileScreenState extends State<AdminProfileScreen> {
-  bool _isClearingCache = false;
-
-  void _showClearCacheDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const HeroIcon(
-                HeroIcons.exclamationTriangle,
-                color: AppColors.warning,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'ล้างแคช',
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'คุณต้องการล้างข้อมูลแคชของแอปหรือไม่?',
-              style: GoogleFonts.prompt(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const HeroIcon(
-                    HeroIcons.informationCircle,
-                    color: AppColors.info,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'การล้างแคชจะไม่ลบข้อมูลสำคัญของคุณ',
-                      style: GoogleFonts.prompt(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isClearingCache
-                ? null
-                : () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _isClearingCache
-                ? null
-                : () async {
-                    setState(() => _isClearingCache = true);
-
-                    // Real cache clearing
-                    await CacheService().clearAllCache();
-                    // Optional delay for UI feedback
-                    await Future.delayed(const Duration(milliseconds: 500));
-
-                    if (!mounted) return;
-
-                    setState(() => _isClearingCache = false);
-                    Navigator.of(dialogContext).pop();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('ล้างแคชเรียบร้อยแล้ว')),
-                    );
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.warning,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: _isClearingCache
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    'ล้างแคช',
-                    style: GoogleFonts.prompt(color: Colors.white),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.logout, color: Colors.red),
-            const SizedBox(width: 10),
-            Text(
-              'ออกจากระบบ',
-              style: GoogleFonts.prompt(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'คุณต้องการออกจากระบบใช่หรือไม่?',
-          style: GoogleFonts.prompt(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text(
-              'ออกจากระบบ',
-              style: GoogleFonts.prompt(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      await context.read<AuthProvider>().signOut();
-      if (mounted) context.go('/login');
-    }
-  }
+  final UserModel user;
+  final bool busy;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final settings = context.watch<SettingsProvider>();
-    final user = authProvider.user;
-    final isSuperAdmin = user?.role == UserRole.superAdmin;
-    final rolePrimary =
-        isSuperAdmin ? AppColors.superAdminPrimary : AppColors.adminPrimary;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Stack(
+    return AppCard(
+      padding: const EdgeInsets.all(Space.md + 2),
+      child: Column(
         children: [
-          // 1. Background Image & Overlay (Consistent with Dashboard)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.25,
-              child: Image.asset(
-                'assets/images/Chat.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withOpacity(0.9),
-                    Colors.white.withOpacity(0.4),
+          Row(
+            children: [
+              InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user.fullName, style: context.text.titleSmall),
+                    Text(
+                      [user.phone, user.locationDisplay].where((s) => s.isNotEmpty).join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall,
+                    ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  
-                  // 2. Top Bar
-                  _buildTopBar(),
-                  const SizedBox(height: 24),
-
-                  // 3. User Profile
-                  _buildUserProfile(user, isSuperAdmin, rolePrimary),
-                  const SizedBox(height: 32),
-
-                  // 4. Settings Sections
-                  _buildSectionLabel('บัญชี'),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.userCircle,
-                    title: 'แก้ไขข้อมูลส่วนตัว',
-                    subtitle: 'ชื่อ, ที่อยู่, เบอร์โทรศัพท์',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.lockClosed,
-                    title: 'เปลี่ยนรหัส PIN',
-                    subtitle: 'รหัสเข้าใช้งาน 6 หลัก',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChangePinScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-                  _buildSectionLabel('การตั้งค่าทั่วไป'),
-                  _buildSwitchItem(
-                    title: 'การแจ้งเตือน',
-                    value: settings.notificationsEnabled,
-                    onChanged: (val) async {
-                      final success = await settings.toggleNotifications(val);
-                      if (!success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('กรุณาเปิดสิทธิ์การแจ้งเตือนในตั้งค่าอุปกรณ์'),
-                            backgroundColor: AppColors.error,
-                          ),
-                        );
-                      }
-                    },
-                    activeColor: rolePrimary,
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.trash,
-                    title: 'ล้างแคช',
-                    subtitle: 'ลบข้อมูลชั่วคราว',
-                    onTap: _showClearCacheDialog,
-                    isDestructive: true,
-                    destructiveColor: Colors.orange,
-                  ),
-
-                  const SizedBox(height: 16),
-                  _buildSectionLabel('ข้อมูลและกฎหมาย'),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.documentText,
-                    title: 'ข้อกำหนดและเงื่อนไข',
-                    subtitle: 'อ่านข้อกำหนด',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ContentDisplayScreen(
-                            title: 'ข้อกำหนดและเงื่อนไข',
-                            content: 'เนื้อหาข้อกำหนด...',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.shieldCheck,
-                    title: 'นโยบายความเป็นส่วนตัว',
-                    subtitle: 'PDPA',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ContentDisplayScreen(
-                            title: PdpaContent.title,
-                            content:
-                                '${PdpaContent.fullContent}\n\n${PdpaContent.references}',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-                  _buildSectionLabel('อื่นๆ'),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.lifebuoy,
-                    title: 'ช่วยเหลือ',
-                    subtitle: 'ติดต่อทีมงาน',
-                    onTap: () {
-                      context.push('/admin/support');
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: HeroIcons.arrowRightOnRectangle,
-                    title: 'ออกจากระบบ',
-                    subtitle: 'ลงชื่อออก',
-                    onTap: _handleLogout,
-                    isDestructive: true,
-                  ),
-
-                  const SizedBox(height: 48),
-                  Center(
-                    child: Text(
-                      'TAPTOM ADMIN v${settings.version}',
-                      style: GoogleFonts.prompt(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 100), // Bottom spacing for FAB/Nav
-                ],
+          const SizedBox(height: Space.md),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton.secondary(
+                  label: 'ไม่อนุมัติ',
+                  size: ButtonSize.compact,
+                  onPressed: busy ? null : onReject,
+                ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.adminPrimary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const HeroIcon(
-            HeroIcons.cog6Tooth,
-            color: AppColors.adminPrimary,
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          'การตั้งค่า',
-          style: GoogleFonts.prompt(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUserProfile(
-      UserModel? user, bool isSuperAdmin, Color rolePrimary) {
-    return Row(
-      children: [
-        // Avatar
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: AppButton(
+                  label: 'อนุมัติ',
+                  icon: AppIcons.check,
+                  size: ButtonSize.compact,
+                  loading: busy,
+                  onPressed: onApprove,
+                ),
               ),
             ],
-            image: (user?.photoUrl != null && user!.photoUrl!.isNotEmpty)
-                ? DecorationImage(
-                    image: NetworkImage(user.photoUrl!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-          ),
-          child: (user?.photoUrl == null || user!.photoUrl!.isEmpty)
-              ? Center(
-                  child: Text(
-                    user?.firstName.isNotEmpty == true
-                        ? user!.firstName[0]
-                        : 'A',
-                    style: GoogleFonts.prompt(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: rolePrimary,
-                    ),
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${user?.firstName ?? ''} ${user?.lastName ?? ''}'.trim(),
-              style: GoogleFonts.prompt(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: rolePrimary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                isSuperAdmin ? 'SUPER ADMIN' : 'ADMIN',
-                style: GoogleFonts.prompt(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: rolePrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionLabel(String text) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 18,
-          decoration: BoxDecoration(
-            color: Colors.grey[400],
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: GoogleFonts.prompt(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required HeroIcons icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-    Color? destructiveColor,
-  }) {
-    final color = isDestructive ? (destructiveColor ?? Colors.red) : Colors.grey[700];
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+}
+
+/// Tile for a staff task shortcut.
+class ShortcutCard extends StatelessWidget {
+  const ShortcutCard({super.key, required this.icon, required this.title, required this.caption, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String caption;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(Space.md + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconTile(icon: icon, size: 38),
+          const SizedBox(height: Space.md),
+          Text(title, style: context.text.titleSmall),
+          Text(caption, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Account
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Account tab shared by admins and super admins.
+class AdminProfileScreen extends StatelessWidget {
+  const AdminProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'ออกจากระบบ',
+      message: 'คุณต้องการออกจากระบบบนอุปกรณ์นี้ใช่หรือไม่',
+      confirmLabel: 'ออกจากระบบ',
+      destructive: true,
+      icon: AppIcons.logout,
+    );
+    if (ok && context.mounted) await context.read<AuthProvider>().signOut();
+  }
+
+  void _push(BuildContext context, Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final user = context.watch<AuthProvider>().user;
+    final version = context.select<SettingsProvider, String>((s) => s.version);
+    final isSuper = user?.role == UserRole.superAdmin;
+
+    return PageScaffold(
+      title: 'บัญชีของฉัน',
+      showBack: false,
+      bottomPadding: 120,
+      slivers: [
+        SliverToBoxAdapter(
+          child: AppCard(
+            padding: const EdgeInsets.all(Space.xl),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDestructive
-                        ? color!.withOpacity(0.1)
-                        : AppColors.adminPrimary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: HeroIcon(
-                    icon,
-                    color: isDestructive ? color : AppColors.adminPrimary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 16),
+                InitialsAvatar(name: user?.fullName ?? '', photoUrl: user?.photoUrl, size: 64),
+                const SizedBox(width: Space.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.prompt(
-                          fontWeight: FontWeight.w600,
-                          color: isDestructive ? color : Colors.black87,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          style: GoogleFonts.prompt(
-                            fontSize: 12,
-                            color: Colors.grey[500],
+                      Text(user?.fullName ?? '-', style: context.text.headlineSmall),
+                      Text(user?.phone ?? '', style: context.text.bodyMedium?.copyWith(color: p.inkMuted).mono),
+                      const SizedBox(height: Space.sm),
+                      Wrap(
+                        spacing: Space.sm,
+                        runSpacing: Space.xs,
+                        children: [
+                          StatusBadge(
+                            label: isSuper ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่',
+                            tone: Tone.brand,
+                            icon: isSuper ? AppIcons.superAdmin : AppIcons.officer,
                           ),
-                        ),
+                          StatusBadge(label: staffScope(user), icon: AppIcons.pin),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.grey[300],
-                  size: 24,
+              ],
+            ),
+          ).entrance(context),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: Space.xxl)),
+        SliverToBoxAdapter(
+          child: ListGroup(
+            header: 'บัญชีและความปลอดภัย',
+            children: [
+              ListRow(
+                icon: AppIcons.user,
+                title: 'แก้ไขข้อมูลส่วนตัว',
+                subtitle: 'ชื่อ เบอร์โทร และรูปโปรไฟล์',
+                onTap: () => _push(context, const PersonalInfoScreen()),
+              ),
+              ListRow(
+                icon: AppIcons.lock,
+                title: 'เปลี่ยนรหัส PIN',
+                subtitle: 'รหัส ${isSuper ? 8 : 6} หลักสำหรับเข้าใช้งาน',
+                onTap: () => _push(context, const ChangePinScreen()),
+              ),
+            ],
+          ).entrance(context, index: 1),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: Space.xl)),
+        SliverToBoxAdapter(
+          child: ListGroup(
+            header: 'การทำงาน',
+            children: [
+              ListRow(
+                icon: AppIcons.audit,
+                title: 'ประวัติการทำรายการ',
+                subtitle: 'การอนุมัติและแก้ไขข้อมูลที่ผ่านมา',
+                onTap: () => isSuper ? context.push(Routes.superLogs) : _push(context, const AuditLogScreen()),
+              ),
+              ListRow(icon: AppIcons.chats, title: 'ข้อความ', onTap: () => context.push(Routes.adminMessages)),
+              ListRow(
+                icon: AppIcons.support,
+                title: 'คำร้องขอความช่วยเหลือ',
+                onTap: () => context.push(Routes.adminSupport),
+              ),
+            ],
+          ).entrance(context, index: 2),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: Space.xl)),
+        SliverToBoxAdapter(
+          child: ListGroup(
+            header: 'ทั่วไป',
+            children: [
+              ListRow(
+                icon: AppIcons.settings,
+                tone: Tone.neutral,
+                title: 'ตั้งค่าแอป',
+                subtitle: 'ธีม ขนาดตัวอักษร การแจ้งเตือน',
+                onTap: () => _push(context, const SettingsScreen()),
+              ),
+              ListRow(
+                icon: AppIcons.terms,
+                tone: Tone.neutral,
+                title: TermsContent.title,
+                onTap: () =>
+                    _push(context, const ContentDisplayScreen(title: TermsContent.title, content: TermsContent.body)),
+              ),
+              ListRow(
+                icon: AppIcons.privacy,
+                tone: Tone.neutral,
+                title: 'นโยบายความเป็นส่วนตัว (PDPA)',
+                onTap: () => _push(
+                  context,
+                  const ContentDisplayScreen(
+                    title: PdpaContent.title,
+                    content: '${PdpaContent.fullContent}\n\n${PdpaContent.references}',
+                  ),
                 ),
+              ),
+              ListRow(
+                icon: AppIcons.logout,
+                title: 'ออกจากระบบ',
+                destructive: true,
+                showChevron: false,
+                onTap: () => _logout(context),
+              ),
+            ],
+          ).entrance(context, index: 3),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: Space.x3),
+            child: Column(
+              children: [
+                const LogoMark(size: 28),
+                const SizedBox(height: Space.sm),
+                Text(
+                  'TAPTOM ${isSuper ? 'Console' : 'Staff'}${version.isEmpty ? '' : ' v$version'}',
+                  style: context.text.labelMedium,
+                ),
+                const SizedBox(height: Space.xl),
+                const DevelopedBy(),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchItem({
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required Color activeColor,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: activeColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: HeroIcon(
-                HeroIcons.bell,
-                color: activeColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: activeColor,
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../../data/models/pdpa_log_model.dart';
 import '../../data/models/message_model.dart';
-import '../../data/models/conversation_model.dart'; // ✅ Added Import
+import '../../data/models/conversation_model.dart';
 
 class SuperAdminService {
   final ApiClient _apiClient = ApiClient();
@@ -22,9 +23,9 @@ class SuperAdminService {
           : (response.data['data'] ?? []);
 
       return data;
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ดึงข้อมูล Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ดึงข้อมูล Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -40,9 +41,9 @@ class SuperAdminService {
         return response.data as List<dynamic>;
       }
       return [];
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ดึงข้อมูลผู้ใช้ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ดึงข้อมูลผู้ใช้ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -73,17 +74,18 @@ class SuperAdminService {
 
       if (province != null && province.isNotEmpty) data['province'] = province;
       if (district != null && district.isNotEmpty) data['district'] = district;
-      if (subDistrict != null && subDistrict.isNotEmpty)
+      if (subDistrict != null && subDistrict.isNotEmpty) {
         data['subDistrict'] = subDistrict;
+      }
 
       final response = await _apiClient.post(
         ApiEndpoints.adminCreate,
         data: data,
       );
       return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'สร้าง Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'สร้าง Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -92,12 +94,12 @@ class SuperAdminService {
   Future<void> deleteAdmin(String adminId) async {
     try {
       await _apiClient.delete(ApiEndpoints.adminDelete(adminId));
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
         throw Exception('ไม่สามารถลบบัญชีของตัวเองได้');
       }
       throw Exception(
-        'ลบ Admin ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ลบ Admin ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -112,9 +114,9 @@ class SuperAdminService {
         ApiEndpoints.adminReassign(userId),
         data: {'newAdminId': newAdminId},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ย้าย User ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ย้าย User ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -126,9 +128,9 @@ class SuperAdminService {
         '/admin/$adminId/assign-users',
         data: {'userIds': userIds},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'มอบหมายไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'มอบหมายไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -142,9 +144,9 @@ class SuperAdminService {
         '/users/$userId/role',
         data: {'role': newRole},
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'เปลี่ยนสิทธิ์ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'เปลี่ยนสิทธิ์ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -153,9 +155,9 @@ class SuperAdminService {
   Future<void> restoreUser(String userId) async {
     try {
       await _apiClient.patch('/users/$userId/restore');
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'กู้คืนผู้ใช้ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'กู้คืนผู้ใช้ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
@@ -176,22 +178,6 @@ class SuperAdminService {
 
   // ==================== System Logs ====================
 
-  /// Get Audit Logs
-  Future<List<dynamic>> getAuditLogs({int page = 1, int limit = 20}) async {
-    try {
-      final response = await _apiClient.get(
-        '/admin/audit-logs',
-        queryParameters: {'page': page, 'limit': limit},
-      );
-      if (response.data is Map && response.data.containsKey('data')) {
-        return response.data['data'] as List<dynamic>;
-      }
-      return [];
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// Get PDPA Logs
   Future<List<PdpaLog>> getPdpaLogs() async {
     try {
@@ -209,75 +195,62 @@ class SuperAdminService {
   Future<void> deleteUser(String userId) async {
     try {
       await _apiClient.delete(ApiEndpoints.user(userId));
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ลบผู้ใช้ไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ลบผู้ใช้ไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
 
   // ==================== Dashboard & Analytics ====================
 
-  /// Get System Stats for Dashboard (parallel calls)
+  /// Platform-wide figures for the console home. Each source is fetched
+  /// independently so one failing endpoint does not blank the dashboard.
   Future<Map<String, dynamic>> getSystemStats() async {
-    try {
-      final results = await Future.wait([
-        _apiClient.get(ApiEndpoints.users),
-        _apiClient.get(ApiEndpoints.adminList),
-        _apiClient.get(ApiEndpoints.plotSummary),
-      ], eagerError: false);
-
-      // Parse users count
-      final usersData = results[0].data;
-      int totalUsers = 0;
-      int pendingUsers = 0;
-      if (usersData is Map && usersData.containsKey('data')) {
-        final userList = usersData['data'] as List? ?? [];
-        totalUsers = userList.length;
-        pendingUsers = userList
-            .where((u) => u['membershipStatus'] == 'PENDING')
-            .length;
-      } else if (usersData is List) {
-        totalUsers = usersData.length;
-        pendingUsers = usersData
-            .where((u) => u['membershipStatus'] == 'PENDING')
-            .length;
+    Future<dynamic> safe(Future<dynamic> f) async {
+      try {
+        return (await f).data;
+      } catch (_) {
+        return null;
       }
-
-      // Parse admins count
-      final adminsData = results[1].data;
-      int totalAdmins = 0;
-      if (adminsData is Map && adminsData.containsKey('data')) {
-        totalAdmins = (adminsData['data'] as List?)?.length ?? 0;
-      } else if (adminsData is List) {
-        totalAdmins = adminsData.length;
-      }
-
-      // Parse plot summary
-      final plotData = results[2].data;
-      int totalPlots = 0;
-      int pendingPlots = 0;
-      if (plotData is Map) {
-        totalPlots = plotData['totalPlots'] ?? plotData['total'] ?? 0;
-        pendingPlots = plotData['pendingPlots'] ?? plotData['pending'] ?? 0;
-      }
-
-      return {
-        'totalUsers': totalUsers,
-        'pendingUsers': pendingUsers,
-        'totalAdmins': totalAdmins,
-        'totalPlots': totalPlots,
-        'pendingPlots': pendingPlots,
-      };
-    } catch (e) {
-      return {
-        'totalUsers': 0,
-        'pendingUsers': 0,
-        'totalAdmins': 0,
-        'totalPlots': 0,
-        'pendingPlots': 0,
-      };
     }
+
+    final results = await Future.wait([
+      safe(_apiClient.get(ApiEndpoints.userStats)),
+      safe(_apiClient.get(ApiEndpoints.adminList)),
+      safe(_apiClient.get(ApiEndpoints.plotSummary)),
+      safe(_apiClient.get(ApiEndpoints.adminPlots, queryParameters: {'status': 'PENDING'})),
+      safe(_apiClient.get(ApiEndpoints.adminUsers,
+          queryParameters: {'status': 'PENDING', 'limit': 1})),
+    ]);
+
+    int asInt(dynamic v) => v is num ? v.toInt() : 0;
+    int listLength(dynamic body) {
+      if (body is List) return body.length;
+      if (body is Map) {
+        final total = body['total'] ?? body['meta']?['total'];
+        if (total is num) return total.toInt();
+        if (body['data'] is List) return (body['data'] as List).length;
+      }
+      return 0;
+    }
+
+    final userStats = results[0] is Map ? results[0] as Map : const {};
+    final byRole = userStats['byRole'] is Map ? userStats['byRole'] as Map : const {};
+    final plotSummary = results[2] is Map ? results[2] as Map : const {};
+
+    return {
+      'totalUsers': asInt(userStats['total']),
+      'farmers': asInt(byRole['USER']),
+      'totalAdmins': results[1] == null ? asInt(byRole['ADMIN']) : listLength(results[1]),
+      'activeUsers': asInt(userStats['activeUsers']),
+      'recentUsers': asInt(userStats['recentlyCreated'] ?? userStats['recentSignups']),
+      'pendingUsers': listLength(results[4]),
+      'totalPlots': asInt(plotSummary['totalPlots'] ?? plotSummary['total']),
+      'totalArea': (plotSummary['totalArea'] as num?)?.toDouble() ?? 0,
+      'riskyPlots': asInt(plotSummary['riskyPlots']),
+      'pendingPlots': listLength(results[3]),
+    };
   }
 
   /// Get GAP Analytics (optional province filter)
@@ -299,10 +272,16 @@ class SuperAdminService {
     }
   }
 
-  /// Get Registration Trends
-  Future<List<dynamic>> getRegistrationTrends() async {
+  /// Registration (or plot creation) counts per day.
+  Future<List<dynamic>> getRegistrationTrends({
+    String period = '7d',
+    String metric = 'USER_REGISTRATION',
+  }) async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.adminTrends);
+      final response = await _apiClient.get(
+        ApiEndpoints.adminTrends,
+        queryParameters: {'period': period, 'metric': metric},
+      );
       if (response.data is Map && response.data.containsKey('data')) {
         return response.data['data'] as List<dynamic>;
       }
@@ -333,7 +312,7 @@ class SuperAdminService {
       );
 
       return response.data['url'];
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception('อัพโหลดไฟล์ไม่สำเร็จ: ${e.message}');
     }
   }
@@ -380,14 +359,14 @@ class SuperAdminService {
           'message': message,
         },
       );
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception(
-        'ส่งข้อความไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ส่งข้อความไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
 
-  // ✅ NEW: Reply to Message
+  // Reply to Message
   /// Reply to an existing message in a conversation thread
   Future<void> replyMessage({
     required String messageId,
@@ -398,19 +377,19 @@ class SuperAdminService {
         ApiEndpoints.adminMessageReply(messageId),
         data: {'message': message},
       );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw Exception('ไม่พบข้อความที่ต้องการตอบกลับ');
-      } else if (e.response?.statusCode == 403) {
+      } else if (e.statusCode == 403) {
         throw Exception('คุณไม่มีสิทธิ์ตอบกลับข้อความนี้');
       }
       throw Exception(
-        'ตอบกลับไม่สำเร็จ: ${e.response?.data['message'] ?? e.message}',
+        'ตอบกลับไม่สำเร็จ: ${e.serverMessage ?? e.message}',
       );
     }
   }
 
-  // ✅ NEW: Chat Features (Unread Count & Read Status)
+  // Chat Features (Unread Count & Read Status)
 
   /// Get Conversation List with Unread Counts
   Future<List<Conversation>> getConversations() async {
@@ -445,7 +424,7 @@ class SuperAdminService {
         data: {'senderId': senderId},
       );
     } catch (e) {
-      print('Mark as read failed: $e');
+      debugPrint('Mark as read failed: $e');
     }
   }
 }

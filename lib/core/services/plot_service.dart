@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 import '../../data/models/plot_model.dart';
-import '../../locator.dart';
+import '../../app/locator.dart';
 import 'auth_service.dart';
 import 'notification_trigger_service.dart';
 
@@ -41,7 +42,7 @@ class PlotService {
       );
       final newPlot = PlotModel.fromJson(response.data);
       
-      // ✅ Trigger notification for Admin
+      // Trigger notification for Admin
       try {
         final triggerService = locator<NotificationTriggerService>();
         final user = await locator<AuthService>().getCurrentUser();
@@ -53,12 +54,12 @@ class PlotService {
         );
       } catch (e) {
         // Silent error
-        print('Trigger notification failed: $e');
+        debugPrint('Trigger notification failed: $e');
       }
 
       return newPlot;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 400) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
         throw Exception('ข้อมูลแปลงไม่ถูกต้อง ตรวจสอบชื่อแปลงและพิกัด');
       }
       throw Exception('สร้างแปลงไม่สำเร็จ: ${e.message}');
@@ -80,8 +81,8 @@ class PlotService {
   Future<void> deletePlot(String plotId) async {
     try {
       await _apiClient.delete('${ApiEndpoints.plots}/$plotId');
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw Exception('ไม่พบแปลงนี้');
       }
       throw Exception('ลบแปลงไม่สำเร็จ: ${e.message}');
@@ -96,14 +97,14 @@ class PlotService {
         data: data,
       );
       return PlotModel.fromJson(response.data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw Exception('ไม่พบแปลงนี้');
       }
-      if (e.response?.statusCode == 403) {
+      if (e.statusCode == 403) {
         throw Exception('คุณไม่มีสิทธิ์แก้ไขแปลงนี้');
       }
-      if (e.response?.statusCode == 400) {
+      if (e.statusCode == 400) {
         throw Exception('ข้อมูลไม่ถูกต้อง ตรวจสอบข้อมูลที่กรอก');
       }
       throw Exception('แก้ไขแปลงไม่สำเร็จ: ${e.message}');
@@ -123,15 +124,15 @@ class PlotService {
         data: {'geometry': geometry},
       );
       return PlotModel.fromJson(response.data);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+    } on ApiException catch (e) {
+      if (e.isNotFound) {
         throw Exception('ไม่พบแปลงนี้');
       }
-      if (e.response?.statusCode == 403) {
+      if (e.statusCode == 403) {
         throw Exception('คุณไม่มีสิทธิ์แก้ไขแปลงนี้');
       }
-      if (e.response?.statusCode == 400) {
-        final message = e.response?.data['message'] ?? 'ข้อมูลพิกัดไม่ถูกต้อง';
+      if (e.statusCode == 400) {
+        final message = e.serverMessage ?? 'ข้อมูลพิกัดไม่ถูกต้อง';
         throw Exception('แก้ไขแปลงไม่สำเร็จ: $message');
       }
       throw Exception('แก้ไขแปลงไม่สำเร็จ: ${e.message}');
@@ -182,7 +183,7 @@ class PlotService {
 
       // Backend returns { "url": "...", "filename": "..." }
       return response.data['url'];
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       throw Exception('อัพโหลดรูปภาพไม่สำเร็จ: ${e.message}');
     }
   }

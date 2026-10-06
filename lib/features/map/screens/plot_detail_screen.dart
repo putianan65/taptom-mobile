@@ -1,1728 +1,660 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/config/env.dart';
-import '../../../../core/services/plot_service.dart';
-import '../../../../core/services/gap_service.dart';
-import '../../../../core/services/certificate_pdf_service.dart';
-import '../../../../data/models/plot_model.dart';
-import '../../auth/auth_provider.dart';
-import '../../gap/screens/gap_main_screen.dart';
-import '../../certificate/screens/certificate_list_screen.dart';
-import '../../certificate/screens/certificate_viewer_screen.dart';
-import '../../gap/screens/forms/gap_traceability_form.dart';
-import '../../gap/screens/forms/gap_inputs_form.dart';
 import 'dart:math' as math;
 
-/// Production-Level Plot Detail Screen
-/// Features: Map header, comprehensive stats, GAP progress ring, activity timeline
-class PlotDetailScreen extends StatefulWidget {
-  final PlotModel plot;
+import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:provider/provider.dart';
 
+import '../../../core/services/gap_service.dart';
+import '../../../core/services/plot_service.dart';
+import '../../../core/utils/geo_json_utils.dart';
+import '../../../core/utils/map_styles.dart';
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../data/models/plot_model.dart';
+import '../../auth/auth_provider.dart';
+import '../../certificate/screens/certificate_viewer_screen.dart';
+import '../../gap/gap_categories.dart';
+import '../../gap/gap_labels.dart';
+import '../../gap/screens/forms/gap_traceability_form.dart';
+import '../../gap/screens/gap_main_screen.dart';
+import '../../gap/screens/plot_gallery_screen.dart';
+import 'map_drawing_screen.dart';
+
+/// One of the member's plots: where it is, how far its GAP records are,
+/// and what to do next. Approved plots are read-only and show the
+/// certificate; others can be renamed, redrawn or removed.
+///
+/// Pops with `true` when the plot changed so lists can refresh.
+class PlotDetailScreen extends StatefulWidget {
   const PlotDetailScreen({super.key, required this.plot});
+
+  final PlotModel plot;
 
   @override
   State<PlotDetailScreen> createState() => _PlotDetailScreenState();
 }
 
 class _PlotDetailScreenState extends State<PlotDetailScreen> {
-  MaplibreMapController? _mapController;
+  late PlotModel _plot = widget.plot;
+  GapProgress? _progress;
+  bool _changed = false;
 
-  static String get _styleUrl =>
-      'https://api.maptiler.com/maps/hybrid/style.json?key=${Env.mapTilerApiKey}';
-
-  // GAP Progress loaded from API (starts at all false)
-  Map<String, bool> _gapProgress = {
-    'general': false,
-    'inputs': false,
-    'management': false,
-    'harvest': false,
-    'post_harvest': false,
-    'safety': false,
-    'traceability': false,
-  };
-  bool _loadingGapProgress = true;
-
-  int get _gapCompleted => _gapProgress.values.where((v) => v).length;
-  int get _gapTotal => _gapProgress.length;
-  double get _gapPercent => _gapCompleted / _gapTotal;
-
-  // Real activities loaded from API
-  List<Map<String, dynamic>> _recentActivities = [];
-  bool _loadingActivities = true;
+  bool get _approved => _plot.status == 'APPROVED';
+  String get _id => _plot.id ?? '';
 
   @override
   void initState() {
     super.initState();
-    _loadActivities();
-    _loadGapProgress();
+    _loadProgress();
   }
 
-  Future<void> _loadGapProgress() async {
-    if (widget.plot.id == null) {
-      setState(() => _loadingGapProgress = false);
-      return;
-    }
-
+  Future<void> _loadProgress({bool force = false}) async {
+    if (_id.isEmpty) return;
     try {
-      final gapService = GapService();
-
-      // ✅ Optimized: Use Future.wait to parallelize API calls
-      final results = await Future.wait([
-        gapService.getGapData(widget.plot.id!),
-        gapService.getInputs(widget.plot.id!),
-        gapService.getHarvests(widget.plot.id!),
-        gapService.getTrainings(widget.plot.id!),
-        gapService.getActivities(widget.plot.id!),
-        gapService.getPostHarvestsForPlot(widget.plot.id!),
-      ]);
-
-      final gapData = results[0] as Map<String, dynamic>?;
-      final inputs = results[1] as List;
-      final harvests = results[2] as List;
-      final trainings = results[3] as List;
-      final activities = results[4] as List;
-      final postHarvests = results[5] as List;
-
-      if (mounted) {
-        setState(() {
-          _gapProgress = {
-            // GapRecord exists if farmerName is set (flat response)
-            'general': gapData != null && gapData['farmerName'] != null,
-            'inputs': inputs.isNotEmpty,
-            'management': activities.isNotEmpty,
-            'harvest': harvests.isNotEmpty,
-            'post_harvest': postHarvests.isNotEmpty,
-            'safety': trainings.isNotEmpty,
-            'traceability': harvests.isNotEmpty, // Based on harvest data
-          };
-          _loadingGapProgress = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _loadingGapProgress = false);
+      final p = await context.read<GapService>().getProgress(_id, force: force);
+      if (mounted) setState(() => _progress = p);
+    } on Object catch (_) {
+      if (mounted) setState(() => _progress = GapProgress.empty);
     }
   }
 
-  Future<void> _loadActivities() async {
-    if (widget.plot.id == null) {
-      setState(() => _loadingActivities = false);
-      return;
-    }
-
+  Future<void> _reloadPlot() async {
     try {
-      final gapService = GapService();
-      final activities = await gapService.getActivities(widget.plot.id!);
-      if (mounted) {
-        setState(() {
-          _recentActivities = activities.map((a) {
-            final type = a['type']?.toString() ?? 'general';
-            return {
-              'action': a['action']?.toString() ?? _getActionName(type),
-              'date': _formatActivityDate(a['created_at'] ?? a['date']),
-              'icon': _getActivityIcon(type),
-              'color': _getActivityColor(type),
-            };
-          }).toList();
-          _loadingActivities = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _loadingActivities = false);
-    }
+      final fresh = await context.read<PlotService>().getPlot(_id);
+      if (mounted) setState(() => _plot = fresh);
+    } on Object catch (_) {}
   }
 
-  String _getActionName(String type) {
-    switch (type) {
-      case 'general':
-        return 'บันทึกข้อมูลทั่วไป';
-      case 'input':
-        return 'เพิ่มปัจจัยการผลิต';
-      case 'management':
-        return 'จัดการแปลง';
-      case 'harvest':
-        return 'เก็บเกี่ยว';
-      case 'post_harvest':
-        return 'หลังเก็บเกี่ยว';
-      case 'safety':
-        return 'ความปลอดภัย';
-      case 'training':
-        return 'เข้าร่วมอบรม';
-      case 'plot_created':
-        return 'สร้างแปลงใหม่';
-      default:
-        return 'กิจกรรม';
-    }
+  // Actions ------------------------------------------------------------------
+
+  Future<void> _openGap() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GapMainScreen(plotId: _id, plotName: _plot.name),
+      ),
+    );
+    _loadProgress(force: true);
   }
 
-  String _formatActivityDate(dynamic date) {
-    if (date == null) return '-';
-    try {
-      final dt = DateTime.parse(date.toString());
-      final months = [
-        'ม.ค.',
-        'ก.พ.',
-        'มี.ค.',
-        'เม.ย.',
-        'พ.ค.',
-        'มิ.ย.',
-        'ก.ค.',
-        'ส.ค.',
-        'ก.ย.',
-        'ต.ค.',
-        'พ.ย.',
-        'ธ.ค.',
-      ];
-      return '${dt.day} ${months[dt.month - 1]} ${dt.year + 543}';
-    } catch (e) {
-      return date.toString();
-    }
-  }
-
-  HeroIcons _getActivityIcon(String type) {
-    switch (type) {
-      case 'general':
-        return HeroIcons.informationCircle;
-      case 'input':
-        return HeroIcons.beaker;
-      case 'management':
-        return HeroIcons.cog6Tooth;
-      case 'harvest':
-        return HeroIcons.scissors;
-      case 'post_harvest':
-        return HeroIcons.archiveBox;
-      case 'safety':
-        return HeroIcons.shieldCheck;
-      case 'training':
-        return HeroIcons.academicCap;
-      case 'plot_created':
-        return HeroIcons.mapPin;
-      default:
-        return HeroIcons.clipboardDocumentList;
-    }
-  }
-
-  Color _getActivityColor(String type) {
-    switch (type) {
-      case 'general':
-        return Colors.blue;
-      case 'input':
-        return Colors.purple;
-      case 'management':
-        return Colors.indigo;
-      case 'harvest':
-        return Colors.orange;
-      case 'post_harvest':
-        return Colors.teal;
-      case 'safety':
-        return Colors.red;
-      case 'training':
-        return Colors.cyan;
-      case 'plot_created':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  void _onMapCreated(MaplibreMapController controller) {
-    _mapController = controller;
-  }
-
-  void _onStyleLoaded() async {
-    if (_mapController == null) return;
-
-    // Add Plot Polygon with better styling
-    if (widget.plot.boundary.isNotEmpty) {
-      await _mapController!.addFill(
-        FillOptions(
-          geometry: [widget.plot.boundary],
-          fillColor: AppColors.primary.toHexStringRGB(),
-          fillOpacity: 0.35,
-          fillOutlineColor: '#FFFFFF',
-        ),
-      );
-
-      // Add outline
-      await _mapController!.addLine(
-        LineOptions(
-          geometry: widget.plot.boundary,
-          lineColor: '#FFFFFF',
-          lineWidth: 2.5,
-          lineOpacity: 0.9,
-        ),
-      );
-
-      // Calculate center of polygon
-      double sumLat = 0, sumLng = 0;
-      for (final point in widget.plot.boundary) {
-        sumLat += point.latitude;
-        sumLng += point.longitude;
-      }
-      final centerLat = sumLat / widget.plot.boundary.length;
-      final centerLng = sumLng / widget.plot.boundary.length;
-      final center = LatLng(centerLat, centerLng);
-
-      // Add red center marker circle
-      await _mapController!.addCircle(
-        CircleOptions(
-          geometry: center,
-          circleRadius: 12,
-          circleColor: '#FF0000',
-          circleStrokeWidth: 3,
-          circleStrokeColor: '#FFFFFF',
-          circleOpacity: 0.9,
-        ),
-      );
-
-      // Add plot name as a symbol annotation (workaround: add small circle for inner dot)
-      await _mapController!.addCircle(
-        CircleOptions(
-          geometry: center,
-          circleRadius: 5,
-          circleColor: '#FFFFFF',
-          circleOpacity: 1,
-        ),
-      );
-
-      // Center camera on polygon
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: center, zoom: 16.0),
-        ),
-      );
-    }
-  }
-
-  void _showDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.red,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              'ลบแปลง',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'คุณต้องการลบแปลง "${widget.plot.name}" หรือไม่?',
-              style: GoogleFonts.prompt(),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.red, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'การดำเนินการนี้ไม่สามารถย้อนกลับได้',
-                      style: GoogleFonts.prompt(
-                        color: Colors.red,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: Colors.grey[600]),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deletePlot();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text('ลบแปลง', style: GoogleFonts.prompt()),
-          ),
-        ],
+  void _openLots() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GapTraceabilityForm(plotId: _id, isReadOnly: _approved),
       ),
     );
   }
 
-  Future<void> _deletePlot() async {
-    if (widget.plot.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ไม่พบ ID ของแปลง', style: GoogleFonts.prompt()),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final plotService = context.read<PlotService>();
-      await plotService.deletePlot(widget.plot.id!);
-
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const HeroIcon(
-                HeroIcons.checkCircle,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'ลบแปลง "${widget.plot.name}" สำเร็จ',
-                style: GoogleFonts.prompt(),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  /// Show dialog to edit plot name and species
-  void _showEditPlotDialog() {
-    final nameController = TextEditingController(text: widget.plot.name);
-    final speciesController = TextEditingController(
-      text: widget.plot.species ?? '',
-    );
-    bool isLoading = false;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const HeroIcon(
-                  HeroIcons.pencilSquare,
-                  color: Colors.blue,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                'แก้ไขข้อมูลแปลง',
-                style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'ชื่อแปลง',
-                    hintText: 'เช่น แปลงกระท่อม บ้านสวน',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.edit_outlined),
-                  ),
-                  style: GoogleFonts.prompt(),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: speciesController,
-                  decoration: InputDecoration(
-                    labelText: 'ชนิดพืช',
-                    hintText: 'เช่น ข้าว, ข้าวโพด, มันสำปะหลัง',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.eco_outlined),
-                  ),
-                  style: GoogleFonts.prompt(),
-                ),
-                if (isLoading) ...[
-                  const SizedBox(height: 20),
-                  const CircularProgressIndicator(),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
-              child: Text(
-                'ยกเลิก',
-                style: GoogleFonts.prompt(color: Colors.grey[600]),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (nameController.text.isEmpty) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'กรุณากรอกชื่อแปลง',
-                              style: GoogleFonts.prompt(),
-                            ),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isLoading = true);
-
-                      try {
-                        final plotService = context.read<PlotService>();
-                        final updateData = <String, dynamic>{
-                          'name': nameController.text,
-                        };
-
-                        // Only include species if it's not empty
-                        if (speciesController.text.isNotEmpty) {
-                          updateData['species'] = speciesController.text;
-                        }
-
-                        // Store messenger before async call to be safe (though dialog context works if open)
-                        // But since we pop dialog first, we should use parent context's messenger if possible
-                        // or ensuring usage before pop?
-                        // Actually, standard pattern: Await -> Check Mounted -> Action
-                        
-                        await plotService.updatePlot(
-                          widget.plot.id!,
-                          updateData,
-                        );
-
-                        if (context.mounted) {
-                           // Close Dialog first
-                           Navigator.of(dialogContext).pop(); 
-                           
-                           // Show success on parent screen
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  const HeroIcon(
-                                    HeroIcons.checkCircle,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'แก้ไขข้อมูลแปลงสำเร็จ',
-                                    style: GoogleFonts.prompt(),
-                                  ),
-                                ],
-                              ),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                          // Return to previous screen with refresh flag
-                          Navigator.pop(context, true);
-                        }
-                      } catch (e) {
-                         if (dialogContext.mounted) {
-                            setDialogState(() => isLoading = false);
-                            ScaffoldMessenger.of(dialogContext).showSnackBar(
-                              SnackBar(
-                                content: Text('$e', style: GoogleFonts.prompt()),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                         }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text('บันทึก', style: GoogleFonts.prompt()),
-            ),
-          ],
-        ),
+  void _openCertificate() {
+    final owner = _plot.ownerName ?? context.read<AuthProvider>().currentUser?.fullName ?? 'เกษตรกร';
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CertificateViewerScreen(plot: _plot, ownerName: owner),
       ),
     );
   }
+
+  void _openGallery() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlotGalleryScreen(plotId: _id, plotName: _plot.name, isReadOnly: _approved),
+      ),
+    );
+  }
+
+  Future<void> _editInfo() async {
+    final data = await showAppSheet<Map<String, dynamic>>(
+      context,
+      title: 'แก้ไขข้อมูลแปลง',
+      child: _InfoForm(plot: _plot),
+    );
+    if (data == null || !mounted) return;
+    try {
+      final updated = await context.read<PlotService>().updatePlot(_id, data);
+      if (!mounted) return;
+      setState(() {
+        _plot = _plot.copyWith(name: updated.name, species: updated.species);
+        _changed = true;
+      });
+      AppToast.success(context, 'บันทึกข้อมูลแปลงแล้ว');
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _redraw() async {
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => MapDrawingScreen(plotToEdit: _plot)));
+    if (!mounted) return;
+    if (result is PlotModel) {
+      setState(() {
+        _plot = _plot.copyWith(geometry: result.geometry, areaRai: result.areaRai ?? _plot.areaRai);
+        _changed = true;
+      });
+    } else if (result != null) {
+      _changed = true;
+      _reloadPlot();
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'ลบแปลง ${_plot.name}?',
+      message: 'ข้อมูล GAP ทั้งหมดของแปลงนี้จะถูกลบด้วย และกู้คืนไม่ได้',
+      confirmLabel: 'ลบแปลง',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    try {
+      await context.read<PlotService>().deletePlot(_id);
+      GapService.invalidate(_id);
+      if (!mounted) return;
+      AppToast.success(context, 'ลบแปลงแล้ว');
+      Navigator.of(context).pop(true);
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  // Build --------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: CustomScrollView(
-        slivers: [
-          // 1. Enhanced Map Header
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            backgroundColor: AppColors.primary,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Map
-                  MaplibreMap(
-                    styleString: _styleUrl,
-                    onMapCreated: _onMapCreated,
-                    onStyleLoadedCallback: _onStyleLoaded,
-                    initialCameraPosition: CameraPosition(
-                      target: widget.plot.boundary.isNotEmpty
-                          ? widget.plot.boundary.first
-                          : const LatLng(13.7, 100.5),
-                      zoom: 15,
-                    ),
-                    myLocationEnabled: false,
-                    attributionButtonPosition:
-                        AttributionButtonPosition.topLeft,
-                  ),
-                  // Gradient Overlay
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.5),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Plot Name Overlay
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                widget.plot.name,
-                                style: GoogleFonts.prompt(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    const Shadow(
-                                      color: Colors.black38,
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  const HeroIcon(
-                                    HeroIcons.mapPin,
-                                    color: Colors.white70,
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${widget.plot.areaRai?.toStringAsFixed(2) ?? "-"} ไร่',
-                                    style: GoogleFonts.prompt(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const HeroIcon(
-                                    HeroIcons.sparkles,
-                                    color: Colors.white70,
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    widget.plot.species ?? 'ไม่ระบุพืช',
-                                    style: GoogleFonts.prompt(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Status Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'ปกติ',
-                                style: GoogleFonts.prompt(
-                                  color: Colors.green[700],
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            leading: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: HeroIcon(
-                      HeroIcons.arrowLeft,
-                      color: Colors.black87,
-                      size: 20,
+    final p = context.palette;
+    final (statusLabel, statusTone) = StatusLabels.plot(_plot.status);
+    final area = _plot.areaRai ?? ThaiArea.fromSqm(GeoJsonUtils.areaSqm(_plot.boundary)).inRai;
+    final gutter = context.pageGutter;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.of(context).pop(_changed);
+      },
+      child: Scaffold(
+        backgroundColor: p.background,
+        body: RefreshIndicator(
+          color: p.brand,
+          onRefresh: () async {
+            await Future.wait([_reloadPlot(), _loadProgress(force: true)]);
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 300,
+                backgroundColor: p.hero,
+                surfaceTintColor: Colors.transparent,
+                automaticallyImplyLeading: false,
+                leadingWidth: 64,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Center(
+                    child: AppIconButton(
+                      icon: AppIcons.back,
+                      tooltip: 'ย้อนกลับ',
+                      onPressed: () => Navigator.of(context).pop(_changed),
                     ),
                   ),
                 ),
+                title: Text(_plot.name, style: context.text.titleMedium?.copyWith(color: p.heroInk)),
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: _MapHeader(plot: _plot),
+                ),
               ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: GestureDetector(
-                  onTap: () {
-                    // Share or more options
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
+              SliverToBoxAdapter(
+                child: ContentWidth(
+                  padding: EdgeInsets.fromLTRB(
+                    gutter,
+                    Space.xl,
+                    gutter,
+                    Space.x5 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(_plot.name, style: context.text.headlineMedium)),
+                          StatusBadge(label: statusLabel, tone: statusTone),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        [
+                          _plot.species ?? 'ไม่ระบุสายพันธุ์',
+                          [
+                            if ((_plot.subDistrict ?? '').isNotEmpty) 'ต.${_plot.subDistrict}',
+                            if ((_plot.district ?? '').isNotEmpty) 'อ.${_plot.district}',
+                          ].join(' '),
+                        ].where((s) => s.isNotEmpty).join(' · '),
+                        style: context.text.bodyMedium?.copyWith(color: p.inkMuted),
+                      ),
+                      const SizedBox(height: Space.xl),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: StatTile(
+                                value: area,
+                                decimals: area % 1 == 0 ? 0 : 1,
+                                label: 'พื้นที่ (ไร่)',
+                                icon: AppIcons.area,
+                                dense: true,
+                              ),
+                            ),
+                            const SizedBox(width: Space.sm),
+                            Expanded(
+                              child: StatTile(
+                                value: _plot.ageInDays,
+                                label: 'วันในระบบ',
+                                icon: AppIcons.calendar,
+                                dense: true,
+                              ),
+                            ),
+                            const SizedBox(width: Space.sm),
+                            Expanded(
+                              child: StatTile(
+                                value: _plot.treeCount ?? 0,
+                                label: 'จำนวนต้น',
+                                icon: AppIcons.tree,
+                                dense: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ).entrance(context),
+                      const SizedBox(height: Space.xxl),
+                      if (_approved)
+                        _CertificateCard(onView: _openCertificate, onLots: _openLots).entrance(context, index: 1)
+                      else
+                        _GapCard(progress: _progress, onOpen: _openGap).entrance(context, index: 1),
+                      const SizedBox(height: Space.xxl),
+                      const SectionHeader(title: 'จัดการแปลง'),
+                      ListGroup(
+                        children: [
+                          if (_approved)
+                            ListRow(
+                              icon: AppIcons.records,
+                              title: 'ดูบันทึก GAP',
+                              subtitle: 'อ่านอย่างเดียวหลังได้รับการรับรอง',
+                              onTap: _openGap,
+                            ),
+                          ListRow(
+                            icon: AppIcons.gallery,
+                            title: 'รูปถ่ายแปลง',
+                            subtitle: 'หลักฐานประกอบการตรวจ',
+                            onTap: _openGallery,
+                          ),
+                          if (!_approved) ...[
+                            ListRow(icon: AppIcons.edit, title: 'แก้ไขชื่อและสายพันธุ์', onTap: _editInfo),
+                            ListRow(icon: AppIcons.path, title: 'แก้ไขขอบเขตบนแผนที่', onTap: _redraw),
+                            ListRow(icon: AppIcons.delete, title: 'ลบแปลงนี้', destructive: true, onTap: _delete),
+                          ],
+                        ],
+                      ).entrance(context, index: 2),
+                      if (_approved) ...[
+                        const SizedBox(height: Space.md),
+                        Text(
+                          'แปลงที่ได้รับการรับรองแล้วแก้ไขหรือลบไม่ได้ หากข้อมูลไม่ถูกต้อง ติดต่อเจ้าหน้าที่ในพื้นที่',
+                          style: context.text.bodySmall,
                         ),
                       ],
-                    ),
-                    child: const HeroIcon(
-                      HeroIcons.ellipsisHorizontal,
-                      color: Colors.black87,
-                      size: 20,
-                    ),
+                      if ((_progress?.activities ?? const []).isNotEmpty) ...[
+                        const SizedBox(height: Space.xxl),
+                        const SectionHeader(title: 'กิจกรรมล่าสุดในแปลง'),
+                        _Activities(items: _progress!.activities),
+                      ],
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-
-          // 2. Content
-          SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: const Offset(0, -24),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Quick Stats Row
-                      _buildQuickStats(),
-                      const SizedBox(height: 24),
-
-                      // แยก UI ตามสถานะ: APPROVED แสดง Certificate + GAP Read-Only
-                      if (widget.plot.status == 'APPROVED') ...[
-                        // Certificate Section สำหรับแปลงที่อนุมัติแล้ว
-                        _buildCertificateSection(),
-                        const SizedBox(height: 16),
-
-                        // ✅ QR Code / Traceability Access
-                        _buildModernActionTile(
-                          title: 'QR Code ตรวจสอบย้อนกลับ',
-                          subtitle: 'หมวด 7 (ดูข้อมูลและ QR Code ล็อตผลผลิต)',
-                          icon: HeroIcons.qrCode,
-                          color: AppColors.gapTraceability,
-                          badge: '1/1',
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => GapTraceabilityForm(
-                                  plotId: widget.plot.id ?? '',
-                                  isReadOnly: true,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ] else ...[
-                        // GAP Progress Section
-                        _buildGapProgressSection(),
-                        const SizedBox(height: 24),
-
-                        // GAP Actions
-                        Text(
-                          'การจัดการ GAP',
-                          style: GoogleFonts.prompt(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        _buildModernActionTile(
-                          title: 'บันทึก GAP',
-                          subtitle: 'ข้อมูลการปลูก ดูแล เก็บเกี่ยว',
-                          icon: HeroIcons.clipboardDocumentList,
-                          color: AppColors.primary,
-                          badge: '${_gapCompleted}/${_gapTotal}',
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => GapMainScreen(
-                                  plotId: widget.plot.id ?? '',
-                                  plotName: widget.plot.name,
-                                ),
-                              ),
-                            );
-                            // Refresh data after returning from GAP forms
-                            _loadGapProgress();
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-
-                      // Danger Zone - ซ่อนเมื่อแปลง APPROVED แล้ว
-                      Text(
-                        'ตั้งค่าแปลง',
-                        style: GoogleFonts.prompt(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      
-                      // ถ้าแปลง APPROVED แล้ว แสดงข้อความแจ้งเตือน
-                      if (widget.plot.status == 'APPROVED')
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.success.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const HeroIcon(
-                                HeroIcons.checkBadge,
-                                color: AppColors.success,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'แปลงได้รับการรับรองแล้ว',
-                                      style: GoogleFonts.prompt(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.success,
-                                      ),
-                                    ),
-                                    Text(
-                                      'ไม่สามารถแก้ไขหรือลบแปลงที่รับรองแล้วได้',
-                                      style: GoogleFonts.prompt(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else ...[
-                        _buildModernActionTile(
-                          title: 'แก้ไขข้อมูลแปลง',
-                          subtitle: 'ชื่อ ประเภทพืช',
-                          icon: HeroIcons.pencilSquare,
-                          color: Colors.blue,
-                          onTap: _showEditPlotDialog,
-                        ),
-
-                        _buildModernActionTile(
-                          title: 'ลบแปลงนี้',
-                          subtitle: 'ลบแปลงและข้อมูลทั้งหมด',
-                          icon: HeroIcons.trash,
-                          color: Colors.red,
-                          isDanger: true,
-                          onTap: _showDeleteConfirmation,
-                        ),
-                      ],
-
-                      const SizedBox(height: 80),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildQuickStats() {
-    // Calculate plot age from createdAt
-    final plotAge = widget.plot.ageInDays;
-    final ageDisplay = plotAge > 0 ? plotAge.toString() : '-';
+class _MapHeader extends StatefulWidget {
+  const _MapHeader({required this.plot});
 
-    // Use yieldEstimate from API if available, otherwise show '-'
-    final yieldDisplay = widget.plot.yieldEstimate != null
-        ? widget.plot.yieldEstimate!.toStringAsFixed(0)
-        : '-';
+  final PlotModel plot;
 
-    return Row(
+  @override
+  State<_MapHeader> createState() => _MapHeaderState();
+}
+
+class _MapHeaderState extends State<_MapHeader> {
+  MapLibreMapController? _controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final ring = widget.plot.boundary;
+    final center = ring.isEmpty
+        ? MapStyles.thailand.target
+        : LatLng(
+            ring.map((e) => e.latitude).reduce((a, b) => a + b) / ring.length,
+            ring.map((e) => e.longitude).reduce((a, b) => a + b) / ring.length,
+          );
+
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'ขนาดพื้นที่',
-            '${widget.plot.areaRai?.toStringAsFixed(1) ?? "-"}',
-            'ไร่',
-            HeroIcons.squares2x2,
-            Colors.blue,
-            tooltip: 'พื้นที่ของแปลงที่วาดไว้',
+        ColoredBox(color: p.hero),
+        if (ring.length >= 3)
+          IgnorePointer(
+            child: MapLibreMap(
+              styleString: MapStyles.satellite,
+              initialCameraPosition: CameraPosition(target: center, zoom: 16),
+              compassEnabled: false,
+              rotateGesturesEnabled: false,
+              scrollGesturesEnabled: false,
+              zoomGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              trackCameraPosition: false,
+              onMapCreated: (c) => _controller = c,
+              onStyleLoadedCallback: () => _draw(ring),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildStatCard(
-            'ผลผลิตคาด',
-            yieldDisplay,
-            'กก.',
-            HeroIcons.chartBar,
-            Colors.orange,
-            tooltip: 'ผลผลิตคาดการณ์ (กก./ไร่)',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildStatCard(
-            'อายุแปลง',
-            ageDisplay,
-            'วัน',
-            HeroIcons.calendar,
-            Colors.purple,
-            tooltip: 'จำนวนวันนับตั้งแต่สร้างแปลง',
+        // Keeps the back button and title legible over bright imagery.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const [0, 0.35, 1],
+              colors: [Colors.black.withValues(alpha: 0.45), Colors.transparent, Colors.black.withValues(alpha: 0.15)],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    String unit,
-    HeroIcons icon,
-    Color color, {
-    String? tooltip,
-  }) {
-    return Tooltip(
-      message: tooltip ?? label,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+  Future<void> _draw(List<LatLng> ring) async {
+    final c = _controller;
+    if (c == null) return;
+    try {
+      await c.addFill(
+        FillOptions(
+          geometry: [
+            [...ring, ring.first],
           ],
+          fillColor: MapStyles.plotFill,
+          fillOutlineColor: MapStyles.plotFill,
+          fillOpacity: 0.35,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: HeroIcon(icon, color: color, size: 18),
-                ),
-                if (tooltip != null)
-                  Icon(Icons.info_outline, size: 14, color: Colors.grey[400]),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.prompt(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    unit,
-                    style: GoogleFonts.prompt(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              label,
-              style: GoogleFonts.prompt(fontSize: 11, color: Colors.grey[500]),
-            ),
-          ],
+      );
+      await c.addLine(LineOptions(geometry: [...ring, ring.first], lineColor: '#FFFFFF', lineWidth: 2.5));
+      var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
+      for (final p in ring) {
+        minLat = math.min(minLat, p.latitude);
+        maxLat = math.max(maxLat, p.latitude);
+        minLng = math.min(minLng, p.longitude);
+        maxLng = math.max(maxLng, p.longitude);
+      }
+      await c.moveCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+          left: 48,
+          right: 48,
+          top: 96,
+          bottom: 48,
         ),
-      ),
-    );
-  }
-
-  Widget _buildGapProgressSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Progress Ring
-          SizedBox(
-            width: 80,
-            height: 80,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: CircularProgressIndicator(
-                    value: _gapPercent,
-                    strokeWidth: 8,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${(_gapPercent * 100).toInt()}%',
-                      style: GoogleFonts.prompt(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 20),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ความคืบหน้า GAP',
-                  style: GoogleFonts.prompt(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'บันทึกแล้ว $_gapCompleted จาก $_gapTotal หัวข้อ',
-                  style: GoogleFonts.prompt(
-                    fontSize: 13,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: _gapProgress.entries
-                      .take(4)
-                      .map(
-                        (e) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: e.value
-                                ? Colors.white.withOpacity(0.2)
-                                : Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: e.value
-                                ? Border.all(
-                                    color: Colors.white.withOpacity(0.5),
-                                  )
-                                : null,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                e.value
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_unchecked,
-                                size: 12,
-                                color: e.value ? Colors.white : Colors.white54,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _getGapLabel(e.key),
-                                style: GoogleFonts.prompt(
-                                  fontSize: 10,
-                                  color: e.value
-                                      ? Colors.white
-                                      : Colors.white54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getGapLabel(String key) {
-    switch (key) {
-      case 'general':
-        return 'ทั่วไป';
-      case 'inputs':
-        return 'ปัจจัย';
-      case 'management':
-        return 'จัดการ';
-      case 'harvest':
-        return 'เก็บเกี่ยว';
-      case 'post_harvest':
-        return 'หลังเกี่ยว';
-      case 'safety':
-        return 'ปลอดภัย';
-      case 'traceability':
-        return 'ตรวจสอบ';
-      default:
-        return key;
+      );
+    } on Object catch (e) {
+      debugPrint('Plot header overlay failed: $e');
     }
   }
+}
 
-  /// Certificate Section สำหรับแปลงที่อนุมัติแล้ว
-  Widget _buildCertificateSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.success,
-            AppColors.success.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+class _GapCard extends StatelessWidget {
+  const _GapCard({required this.progress, required this.onOpen});
+
+  final GapProgress? progress;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final g = progress;
+    if (g == null) return const SkeletonBox(height: 168, radius: Radii.lg);
+    final next = g.next;
+
+    return AppCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header with checkmark
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const HeroIcon(
-                  HeroIcons.checkBadge,
-                  color: Colors.white,
-                  size: 32,
-                ),
+              ProgressRing(
+                value: g.ratio,
+                size: 72,
+                child: Text('${g.completed}/7', style: context.text.titleMedium?.tabular),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: Space.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ผ่านมาตรฐาน GAP',
-                      style: GoogleFonts.prompt(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      g.isComplete ? 'บันทึกครบทุกหมวดแล้ว' : 'ความคืบหน้าบันทึก GAP',
+                      style: context.text.titleMedium,
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      'แปลงได้รับการรับรองเรียบร้อยแล้ว',
-                      style: GoogleFonts.prompt(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
+                      next == null ? 'รอเจ้าหน้าที่ตรวจประเมิน' : 'ถัดไป: ${next.code} ${next.title}',
+                      style: context.text.bodySmall,
                     ),
+                    if (g.lastUpdated != null)
+                      Text(
+                        'บันทึกล่าสุด ${ThaiDate.relative(g.lastUpdated)}',
+                        style: context.text.labelSmall?.copyWith(color: p.inkSubtle),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          
-          // Logos row
+          const SizedBox(height: Space.lg),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final c in GapCategory.values)
+                Tooltip(
+                  message: c.title,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: g.isDone(c) ? p.brandSoft : p.surface,
+                      borderRadius: Radii.chip,
+                      border: Border.all(color: g.isDone(c) ? Colors.transparent : p.line),
+                    ),
+                    child: Text(
+                      c.code,
+                      style: context.text.labelMedium?.tabular.copyWith(
+                        color: g.isDone(c) ? p.brandStrong : p.inkSubtle,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: Space.lg),
+          AppButton(
+            label: next == null ? 'ดูบันทึก GAP' : 'บันทึก GAP ต่อ',
+            icon: AppIcons.records,
+            expand: true,
+            onPressed: onOpen,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CertificateCard extends StatelessWidget {
+  const _CertificateCard({required this.onView, required this.onLots});
+
+  final VoidCallback onView;
+  final VoidCallback onLots;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      padding: EdgeInsets.zero,
+      clip: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            color: p.hero,
+            padding: const EdgeInsets.all(Space.xl),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Image.asset(
-                  'assets/images/GAPLOGO.png',
-                  height: 50,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 50, width: 50),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(color: p.heroInk.withValues(alpha: 0.12), shape: BoxShape.circle),
+                  child: Icon(AppIcons.certificate, color: p.heroInk, size: 28),
                 ),
-                Image.asset(
-                  'assets/images/logo_ปปส.png',
-                  height: 50,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 50, width: 50),
-                ),
-                Image.asset(
-                  'assets/images/Gistnu_new_logo.webp',
-                  height: 50,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 50, width: 50),
+                const SizedBox(width: Space.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ผ่านมาตรฐาน GAP', style: context.text.titleLarge?.copyWith(color: p.heroInk)),
+                      Text(
+                        'แปลงนี้ได้รับการรับรองแล้ว',
+                        style: context.text.bodySmall?.copyWith(color: p.heroInk.withValues(alpha: 0.75)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _viewCertificate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const HeroIcon(HeroIcons.eye, size: 20),
-                  label: Text(
-                    'ดูใบรับรอง',
-                    style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
-                  ),
+          // The bodies behind the certificate, as printed on it.
+          const Padding(
+            padding: EdgeInsets.fromLTRB(Space.lg, Space.lg, Space.lg, 0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Space.xl,
+              runSpacing: Space.sm,
+              children: [
+                LogoPlate(asset: 'assets/images/partners/gap-mark.png', label: 'เครื่องหมายรับรอง GAP', height: 52),
+                LogoPlate(asset: 'assets/images/partners/oncb-seal.png', label: 'สำนักงาน ป.ป.ส.', height: 44),
+                LogoPlate(asset: Gistnu.asset, label: 'GISTNU', height: 28),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Space.lg),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppButton(label: 'ใบรับรอง', icon: AppIcons.certificate, onPressed: onView),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _downloadCertificate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const HeroIcon(HeroIcons.arrowDownTray, size: 20),
-                  label: Text(
-                    'ดาวน์โหลด',
-                    style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
-                  ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: AppButton.secondary(label: 'QR ล็อต', icon: AppIcons.qr, onPressed: onLots),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Future<void> _viewCertificate() async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+class _Activities extends StatelessWidget {
+  const _Activities({required this.items});
 
-    try {
-      final pdfService = context.read<CertificatePdfService>();
-      final authProvider = context.read<AuthProvider>();
-      
-      // Use plot.ownerName if available (Admin view), else use current user name (Owner view)
-      final ownerName = widget.plot.ownerName ?? authProvider.user?.fullName ?? 'เกษตรกร';
-      
-      final file = await pdfService.generateCertificate(widget.plot, ownerName: ownerName);
-      
-      if (!mounted) return;
-      Navigator.pop(context); // Close loading
-      
-      // Open PDF viewer
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CertificateViewerScreen(pdfPath: file.path),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context); // Close loading
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
+  final List<dynamic> items;
 
-  Future<void> _downloadCertificate() async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final pdfService = context.read<CertificatePdfService>();
-      final authProvider = context.read<AuthProvider>();
-      
-      // Use plot.ownerName if available (Admin view), else use current user name (Owner view)
-      final ownerName = widget.plot.ownerName ?? authProvider.user?.fullName ?? 'เกษตรกร';
-      
-      final file = await pdfService.generateCertificate(widget.plot, ownerName: ownerName);
-      
-      if (!mounted) return;
-      Navigator.pop(context); // Close loading
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const HeroIcon(HeroIcons.checkCircle, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'บันทึกใบรับรองแล้ว: ${file.path.split('/').last}',
-                  style: GoogleFonts.prompt(),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.success,
-          action: SnackBarAction(
-            label: 'เปิด',
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CertificateViewerScreen(pdfPath: file.path),
-                ),
+  @override
+  Widget build(BuildContext context) {
+    final recent = items.whereType<Map>().take(5).toList();
+    return ListGroup(
+      children: [
+        for (final (i, item) in recent.indexed)
+          Builder(
+            builder: (context) {
+              final e = GapLabels.entry(GapCategory.management, item, i);
+              return ListRow(
+                icon: AppIcons.fieldWork,
+                title: e.title,
+                subtitle: e.subtitle,
+                showChevron: false,
+                dense: true,
               );
             },
           ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context); // Close loading
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.prompt()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-
-  Widget _buildModernActionTile({
-    required String title,
-    required String subtitle,
-    required HeroIcons icon,
-    required Color color,
-    required VoidCallback onTap,
-    String? badge,
-    bool isDanger = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: isDanger
-            ? Border.all(color: Colors.red.withOpacity(0.2))
-            : null,
-      ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: HeroIcon(icon, color: color, size: 22),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.prompt(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.prompt(fontSize: 12, color: Colors.grey[500]),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge,
-                  style: GoogleFonts.prompt(
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            const SizedBox(width: 8),
-            const HeroIcon(
-              HeroIcons.chevronRight,
-              size: 18,
-              color: Colors.grey,
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
+}
 
-  Widget _buildRecentActivitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'กิจกรรมล่าสุด',
-              style: GoogleFonts.prompt(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            // GAP-FIX-003: Removed dead button - "ดูทั้งหมด" had no functionality
-            // Future: Navigate to activity history page when implemented
-            // TextButton(
-            //   onPressed: () {
-            //     // TODO: Navigate to full activity history
-            //   },
-            //   child: Text(
-            //     'ดูทั้งหมด',
-            //     style: GoogleFonts.prompt(color: AppColors.primary),
-            //   ),
-            // ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+class _InfoForm extends StatefulWidget {
+  const _InfoForm({required this.plot});
+
+  final PlotModel plot;
+
+  @override
+  State<_InfoForm> createState() => _InfoFormState();
+}
+
+class _InfoFormState extends State<_InfoForm> {
+  late final _name = TextEditingController(text: widget.plot.name);
+  late final _species = TextEditingController(text: widget.plot.species);
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _species.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Space.xl,
+        0,
+        Space.xl,
+        Space.xl + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(label: 'ชื่อแปลง', controller: _name, onChanged: (_) => setState(() {})),
+          const SizedBox(height: Space.lg),
+          AppTextField(label: 'สายพันธุ์', controller: _species, hint: 'เช่น กระท่อมพันธุ์ก้านแดง'),
+          const SizedBox(height: Space.xl),
+          AppButton(
+            label: 'บันทึก',
+            expand: true,
+            onPressed: _name.text.trim().isEmpty
+                ? null
+                : () => Navigator.of(context).pop({
+                    'name': _name.text.trim(),
+                    if (_species.text.trim().isNotEmpty) 'species': _species.text.trim(),
+                  }),
           ),
-          child: _loadingActivities
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : _recentActivities.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      HeroIcon(
-                        HeroIcons.clipboardDocumentList,
-                        color: Colors.grey.withOpacity(0.3),
-                        size: 40,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'ยังไม่มีกิจกรรม',
-                        style: GoogleFonts.prompt(color: Colors.grey),
-                      ),
-                      Text(
-                        'เริ่มบันทึกข้อมูล GAP เพื่อดูกิจกรรมที่นี่',
-                        style: GoogleFonts.prompt(
-                          fontSize: 11,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: _recentActivities.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final activity = entry.value;
-                    final isLast = index == _recentActivities.length - 1;
-
-                    return Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: (activity['color'] as Color).withOpacity(
-                                  0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: HeroIcon(
-                                activity['icon'] as HeroIcons,
-                                color: activity['color'] as Color,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    activity['action'] as String,
-                                    style: GoogleFonts.prompt(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    activity['date'] as String,
-                                    style: GoogleFonts.prompt(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!isLast)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: 18,
-                              top: 8,
-                              bottom: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 2,
-                                  height: 20,
-                                  color: Colors.grey[200],
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

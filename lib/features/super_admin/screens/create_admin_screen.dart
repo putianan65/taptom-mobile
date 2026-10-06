@@ -1,15 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
+
 import '../../../core/services/super_admin_service.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../auth/widgets/location_selector.dart';
 
+/// Adds a field officer and the territory they will look after.
 class CreateAdminScreen extends StatefulWidget {
   const CreateAdminScreen({super.key});
 
@@ -18,477 +16,202 @@ class CreateAdminScreen extends StatefulWidget {
 }
 
 class _CreateAdminScreenState extends State<CreateAdminScreen> {
-  final _formKey = GlobalKey<FormBuilderState>();
-  final _dayController = TextEditingController();
-  final _monthController = TextEditingController();
-  final _yearController = TextEditingController();
-  final _pinController = TextEditingController();
-  bool _isLoading = false;
+  final _form = GlobalKey<FormState>();
+  final _phone = TextEditingController();
+  final _first = TextEditingController();
+  final _last = TextEditingController();
+  final _job = TextEditingController(text: 'นักวิชาการส่งเสริมการเกษตร');
+  final _pin = TextEditingController();
+  final _day = TextEditingController();
+  final _month = TextEditingController();
+  final _year = TextEditingController();
 
-  // Location state
-  String? _selectedRegion;
-  String? _selectedProvince;
-  String? _selectedDistrict;
-  String? _selectedSubDistrict;
+  String? _region;
+  String? _province;
+  String? _district;
+  String? _subDistrict;
+  bool _saving = false;
+  String? _birthdayError;
+  String? _areaError;
 
   @override
   void dispose() {
-    _dayController.dispose();
-    _monthController.dispose();
-    _yearController.dispose();
-    _pinController.dispose();
+    for (final c in [_phone, _first, _last, _job, _pin, _day, _month, _year]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
+  Future<void> _submit() async {
+    final birthday = ThaiDate.parseParts(_day.text, _month.text, _year.text);
+    setState(() {
+      _birthdayError = birthday == null ? 'กรอกวันเกิดให้ครบและถูกต้อง' : null;
+      _areaError = (_region ?? '').isEmpty ? 'เลือกพื้นที่ที่รับผิดชอบอย่างน้อยระดับภูมิภาค' : null;
+    });
+    final valid = _form.currentState!.validate();
+    if (!valid || birthday == null || _areaError != null) return;
+
+    setState(() => _saving = true);
+    try {
+      await context.read<SuperAdminService>().createAdmin(
+            phone: _phone.text.trim(),
+            firstName: _first.text.trim(),
+            lastName: _last.text.trim(),
+            job: _job.text.trim(),
+            region: _region!,
+            province: _province,
+            district: _district,
+            subDistrict: _subDistrict,
+            birthday: '${birthday.day.toString().padLeft(2, '0')}/'
+                '${birthday.month.toString().padLeft(2, '0')}/${birthday.year}',
+            pin: _pin.text,
+          );
+      if (!mounted) return;
+      AppToast.success(context, 'เพิ่ม ${_first.text.trim()} เป็นเจ้าหน้าที่แล้ว');
+      Navigator.of(context).pop(true);
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  String? _required(String? v, String label) =>
+      (v ?? '').trim().isEmpty ? 'กรอก$label' : null;
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Dark gradient background
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LuxuryTheme.backgroundGradient,
+    final p = context.palette;
+    return PageScaffold(
+      title: 'เพิ่มเจ้าหน้าที่',
+      subtitle: 'บัญชีสำหรับเจ้าหน้าที่ภาคสนาม',
+      bottomBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.md),
+          child: AppButton(
+            label: 'สร้างบัญชี',
+            icon: AppIcons.userAdd,
+            expand: true,
+            loading: _saving,
+            onPressed: _submit,
           ),
         ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          body: CustomScrollView(
-            slivers: [
-              // Glass AppBar
-              SliverAppBar(
-                pinned: true,
-                backgroundColor: LuxuryTheme.midnightBlue.withOpacity(0.8),
-                title: Text(
-                  'สร้าง Admin ใหม่',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontSize: 22,
+      ),
+      slivers: [
+        SliverToBoxAdapter(
+          child: ContentWidth(
+            maxWidth: Breakpoints.maxForm,
+            padding: EdgeInsets.zero,
+            child: Form(
+              key: _form,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SectionHeader(title: 'ข้อมูลเจ้าหน้าที่'),
+                  AppTextField(
+                    label: 'เบอร์โทรศัพท์',
+                    controller: _phone,
+                    icon: AppIcons.phone,
+                    hint: '08X XXX XXXX',
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: (v) => RegExp(r'^0\d{9}$').hasMatch(v ?? '')
+                        ? null
+                        : 'เบอร์โทรขึ้นต้นด้วย 0 และมี 10 หลัก',
                   ),
-                ),
-                centerTitle: true,
-                leading: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: LuxuryTheme.glassSurface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: LuxuryTheme.glassBorder),
+                  const SizedBox(height: Space.lg),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: 'ชื่อ',
+                          controller: _first,
+                          validator: (v) => _required(v, 'ชื่อ'),
+                        ),
+                      ),
+                      const SizedBox(width: Space.md),
+                      Expanded(
+                        child: AppTextField(
+                          label: 'นามสกุล',
+                          controller: _last,
+                          validator: (v) => _required(v, 'นามสกุล'),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: IconButton(
-                    icon: const HeroIcon(HeroIcons.arrowLeft, color: Colors.white, size: 20),
-                    onPressed: () => context.pop(),
+                  const SizedBox(height: Space.lg),
+                  AppTextField(
+                    label: 'ตำแหน่ง',
+                    controller: _job,
+                    icon: AppIcons.officer,
+                    validator: (v) => _required(v, 'ตำแหน่ง'),
                   ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: FormBuilder(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Info card (glass)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: LuxuryTheme.cyanNeon.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: LuxuryTheme.cyanNeon.withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const HeroIcon(
-                                    HeroIcons.informationCircle,
-                                    color: LuxuryTheme.cyanNeon,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'สร้าง Admin ใหม่สำหรับระบบ\nPIN จะถูกตั้งค่าให้อัตโนมัติ',
-                                      style: GoogleFonts.prompt(
-                                        fontSize: 14,
-                                        color: LuxuryTheme.cyanNeon,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Phone
-                        FormBuilderTextField(
-                          name: 'phone',
-                          decoration: _inputDecoration('เบอร์โทรศัพท์', HeroIcons.phone),
-                          keyboardType: TextInputType.phone,
-                          cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
-                          validator: FormBuilderValidators.compose([
-                            FormBuilderValidators.required(
-                              errorText: 'กรุณากรอกเบอร์โทรศัพท์',
-                            ),
-                            FormBuilderValidators.match(
-                              r'^0[0-9]{9}$',
-                              errorText: 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0 และมี 10 หลัก',
-                            ),
-                          ]),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // First Name
-                        FormBuilderTextField(
-                          name: 'firstName',
-                          decoration: _inputDecoration('ชื่อ', HeroIcons.user),
-                          cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
-                          validator: FormBuilderValidators.required(
-                            errorText: 'กรุณากรอกชื่อ',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Last Name
-                        FormBuilderTextField(
-                          name: 'lastName',
-                          decoration: _inputDecoration('นามสกุล', HeroIcons.user),
-                          cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
-                          validator: FormBuilderValidators.required(
-                            errorText: 'กรุณากรอกนามสกุล',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Job
-                        FormBuilderTextField(
-                          name: 'job',
-                          decoration: _inputDecoration('ตำแหน่งงาน', HeroIcons.briefcase),
-                          cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
-                          validator: FormBuilderValidators.required(
-                            errorText: 'กรุณากรอกตำแหน่งงาน',
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Location Section
-                        Text(
-                          'พื้นที่ที่รับผิดชอบ',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Admin จะเห็นเฉพาะ Users ในพื้นที่ที่เลือก',
-                          style: GoogleFonts.prompt(
-                            fontSize: 12,
-                            color: LuxuryTheme.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        LocationSelector(
-                          onChanged: (region, province, district, subDistrict) {
-                            setState(() {
-                              _selectedRegion = region;
-                              _selectedProvince = province;
-                              _selectedDistrict = district;
-                              _selectedSubDistrict = subDistrict;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Birthday Section
-                        Text(
-                          'วันเกิด (ใช้เป็นรหัสผ่าน)',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildDateInputSection(),
-                        const SizedBox(height: 24),
-
-                        // PIN
-                        FormBuilderTextField(
-                          name: 'pin',
-                          controller: _pinController,
-                          decoration: _inputDecoration(
-                            'PIN (4-8 หลัก)',
-                            HeroIcons.lockClosed,
-                          ),
-                          keyboardType: TextInputType.number,
-                          maxLength: 8,
-                          obscureText: true,
-                          cursorColor: LuxuryTheme.cyanNeon,
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
-                          validator: FormBuilderValidators.compose([
-                            FormBuilderValidators.required(errorText: 'กรุณากรอก PIN'),
-                            FormBuilderValidators.match(
-                              r'^[0-9]{4,8}$',
-                              errorText: 'PIN ต้องเป็นตัวเลข 4-8 หลัก',
-                            ),
-                          ]),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Submit Button (Neon style)
-                        SizedBox(
-                          height: 56,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: LuxuryTheme.neonShadow(LuxuryTheme.purpleNeon),
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _handleSubmit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: LuxuryTheme.purpleNeon,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                              ),
-                              icon: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const HeroIcon(HeroIcons.plus, size: 20),
-                              label: Text(
-                                _isLoading ? 'กำลังสร้าง...' : 'สร้าง Admin',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
+                  const SizedBox(height: Space.lg),
+                  const FieldLabel('วันเกิด'),
+                  ThaiDateFields(day: _day, month: _month, year: _year),
+                  if (_birthdayError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Text(
+                        _birthdayError!,
+                        style: context.text.bodySmall?.copyWith(color: p.danger),
+                      ),
                     ),
+                  const SizedBox(height: Space.xxl),
+                  const SectionHeader(
+                    title: 'พื้นที่รับผิดชอบ',
+                    subtitle: 'เลือกละเอียดถึงระดับที่เจ้าหน้าที่ดูแลจริง',
                   ),
-                ),
+                  LocationSelector(
+                    onChanged: (region, province, district, sub) => setState(() {
+                      _region = region;
+                      _province = province;
+                      _district = district;
+                      _subDistrict = sub;
+                      _areaError = null;
+                    }),
+                  ),
+                  if (_areaError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Text(
+                        _areaError!,
+                        style: context.text.bodySmall?.copyWith(color: p.danger),
+                      ),
+                    ),
+                  const SizedBox(height: Space.xxl),
+                  const SectionHeader(title: 'การเข้าใช้งาน'),
+                  AppTextField(
+                    label: 'PIN เริ่มต้น',
+                    controller: _pin,
+                    icon: AppIcons.lock,
+                    obscure: true,
+                    helper: 'ตัวเลข 4 ถึง 8 หลัก แจ้งเจ้าหน้าที่ผ่านช่องทางที่ปลอดภัย',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(8),
+                    ],
+                    validator: (v) =>
+                        RegExp(r'^\d{4,8}$').hasMatch(v ?? '') ? null : 'PIN เป็นตัวเลข 4 ถึง 8 หลัก',
+                  ),
+                  const SizedBox(height: Space.lg),
+                  const InlineBanner(
+                    tone: Tone.info,
+                    title: 'เจ้าหน้าที่เข้าสู่ระบบด้วยเบอร์โทรและวันเกิด',
+                    message: 'จากนั้นยืนยันตัวตนด้วย PIN ทุกครั้ง',
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateInputSection() {
-    return Row(
-      children: [
-        Expanded(flex: 2, child: _buildDateBox(_dayController, 'วัน', '15')),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: _buildDateBox(_monthController, 'เดือน', '01'),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 3,
-          child: _buildDateBox(_yearController, 'ปี (พ.ศ.)', '2540'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateBox(
-    TextEditingController controller,
-    String label,
-    String hint,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.prompt(
-            fontSize: 12,
-            color: LuxuryTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          cursorColor: LuxuryTheme.cyanNeon,
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.prompt(color: LuxuryTheme.textDisabled),
-            filled: true,
-            fillColor: const Color(0xFF1E2A4A),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 16,
-              horizontal: 8,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: LuxuryTheme.glassBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: LuxuryTheme.glassBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: LuxuryTheme.cyanNeon, width: 1.5),
             ),
           ),
         ),
       ],
     );
-  }
-
-  InputDecoration _inputDecoration(String label, HeroIcons icon) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: GoogleFonts.prompt(color: LuxuryTheme.textSecondary),
-      prefixIcon: Padding(
-        padding: const EdgeInsets.all(12),
-        child: HeroIcon(
-          icon,
-          style: HeroIconStyle.outline,
-          color: LuxuryTheme.cyanNeon,
-        ),
-      ),
-      filled: true,
-      fillColor: const Color(0xFF1E2A4A),
-      counterStyle: GoogleFonts.outfit(color: LuxuryTheme.textDisabled),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: LuxuryTheme.glassBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: LuxuryTheme.glassBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: LuxuryTheme.cyanNeon, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.error, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.error, width: 2),
-      ),
-      errorStyle: GoogleFonts.prompt(color: AppColors.error, fontSize: 12),
-    );
-  }
-
-  String _formatToBackendDate(String day, String month, String year) {
-    int d = int.tryParse(day) ?? 1;
-    int m = int.tryParse(month) ?? 1;
-    int y = int.tryParse(year) ?? 1990;
-
-    if (y > 2400) {
-      y -= 543;
-    }
-
-    return '${d.toString().padLeft(2, '0')}/${m.toString().padLeft(2, '0')}/$y';
-  }
-
-  Future<void> _handleSubmit() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = GoRouter.of(context);
-
-    if (!_formKey.currentState!.saveAndValidate()) {
-      return;
-    }
-
-    final day = _dayController.text.trim();
-    final month = _monthController.text.trim();
-    final year = _yearController.text.trim();
-
-    if (day.isEmpty || month.isEmpty || year.isEmpty) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('กรุณากรอกวันเกิดให้ครบ', style: GoogleFonts.prompt()),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final values = _formKey.currentState!.value;
-      final birthday = _formatToBackendDate(day, month, year);
-
-      // Use SuperAdminService
-      final service = context.read<SuperAdminService>();
-      await service.createAdmin(
-        phone: values['phone'] as String,
-        firstName: values['firstName'] as String,
-        lastName: values['lastName'] as String,
-        job: values['job'] as String,
-        region: _selectedRegion ?? '',
-        province: _selectedProvince,
-        district: _selectedDistrict,
-        subDistrict: _selectedSubDistrict,
-        birthday: birthday,
-        pin: values['pin'] as String,
-      );
-
-      if (!mounted) return;
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('สร้าง Admin สำเร็จ', style: GoogleFonts.prompt(color: Colors.white)),
-          backgroundColor: AppColors.success,
-        ),
-      );
-
-      navigator.pop();
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceAll('Exception: ', ''),
-            style: GoogleFonts.prompt(),
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
   }
 }

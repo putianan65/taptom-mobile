@@ -1,34 +1,42 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import '../../data/models/gap_draft_model.dart';
-import '../../data/models/chat_message.dart';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+
+import '../../data/models/chat_message.dart';
+import '../../data/models/gap_draft_model.dart';
+
+/// Local storage for GAP drafts and assistant chat history, so farmers can
+/// keep working where the signal is poor.
+///
+/// Uses SQLite on mobile and desktop. On the web, where sqflite is not
+/// available, the same API is backed by SharedPreferences.
 class DatabaseHelper {
+  DatabaseHelper._init();
+
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
-  DatabaseHelper._init();
+  static const _webDraftsKey = 'drafts_v1';
+  static const _webChatKey = 'chat_v1';
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('taptom_gap.db');
-    return _database!;
+    return _database ??= await _initDB('taptom_gap.db');
   }
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-
-    return await openDatabase(
-      path,
+    return openDatabase(
+      join(dbPath, filePath),
       version: 2,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
   }
 
-  Future _createDB(Database db, int version) async {
-    // V1 Tables
+  Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE drafts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,18 +45,14 @@ class DatabaseHelper {
         lastUpdated TEXT NOT NULL
       )
     ''');
-
-    // V2 Tables
     await _createChatTable(db);
   }
 
-  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await _createChatTable(db);
-    }
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) await _createChatTable(db);
   }
 
-  Future _createChatTable(Database db) async {
+  Future<void> _createChatTable(Database db) async {
     await db.execute('''
       CREATE TABLE chat_messages (
         id TEXT PRIMARY KEY,
@@ -60,74 +64,111 @@ class DatabaseHelper {
     ''');
   }
 
-  // --- Drafts Accessors ---
+  // Web fallback ------------------------------------------------------------
 
-  Future<int> insertDraft(GapDraftModel draft) async {
-    final db = await instance.database;
-    return await db.insert('drafts', draft.toMap());
+  Future<Map<String, GapDraftModel>> _webDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_webDraftsKey);
+    if (raw == null) return {};
+    final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    return map.map(
+      (k, v) => MapEntry(k, GapDraftModel.fromMap(Map<String, dynamic>.from(v))),
+    );
   }
 
-  Future<void> saveDraft(String category, String json) async {
-    final db = await instance.database;
-    final exists = await db.query(
-      'drafts',
-      where: 'category = ?',
-      whereArgs: [category],
+  Future<void> _saveWebDrafts(Map<String, GapDraftModel> drafts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _webDraftsKey,
+      jsonEncode(drafts.map((k, v) => MapEntry(k, v.toMap()))),
     );
+  }
 
+  // Drafts ------------------------------------------------------------------
+
+  Future<int> insertDraft(GapDraftModel draft) async {
+    if (kIsWeb) {
+      await saveDraft(draft.category, draft.jsonData);
+      return 1;
+    }
+    final db = await database;
+    return db.insert('drafts', draft.toMap());
+  }
+
+  /// Saves or replaces the draft stored under [category]
+  /// (`<form>_<plotId>`).
+  Future<void> saveDraft(String category, String json) async {
     final draft = GapDraftModel(
       category: category,
       jsonData: json,
       lastUpdated: DateTime.now().toIso8601String(),
     );
-
-    if (exists.isNotEmpty) {
-      await db.update(
-        'drafts',
-        draft.toMap(),
-        where: 'category = ?',
-        whereArgs: [category],
-      );
-    } else {
-      await db.insert('drafts', draft.toMap());
+    if (kIsWeb) {
+      final drafts = await _webDrafts();
+      drafts[category] = draft;
+      await _saveWebDrafts(drafts);
+      return;
     }
+    final db = await database;
+    final updated = await db.update(
+      'drafts',
+      draft.toMap()..remove('id'),
+      where: 'category = ?',
+      whereArgs: [category],
+    );
+    if (updated == 0) await db.insert('drafts', draft.toMap()..remove('id'));
   }
 
   Future<GapDraftModel?> getDraft(String category) async {
-    final db = await instance.database;
-    final maps = await db.query(
+    if (kIsWeb) return (await _webDrafts())[category];
+    final db = await database;
+    final rows = await db.query(
       'drafts',
-      columns: ['id', 'category', 'jsonData', 'lastUpdated'],
       where: 'category = ?',
       whereArgs: [category],
+      limit: 1,
     );
-
-    if (maps.isNotEmpty) {
-      return GapDraftModel.fromMap(maps.first);
-    } else {
-      return null;
-    }
+    return rows.isEmpty ? null : GapDraftModel.fromMap(rows.first);
   }
 
   Future<List<GapDraftModel>> getAllDrafts() async {
-    final db = await instance.database;
-    final result = await db.query('drafts');
-    return result.map((json) => GapDraftModel.fromMap(json)).toList();
+    if (kIsWeb) return (await _webDrafts()).values.toList();
+    final db = await database;
+    final rows = await db.query('drafts', orderBy: 'lastUpdated DESC');
+    return rows.map(GapDraftModel.fromMap).toList();
+  }
+
+  /// Drafts that belong to [plotId].
+  Future<List<GapDraftModel>> getDraftsForPlot(String plotId) async {
+    final all = await getAllDrafts();
+    return all.where((d) => d.category.endsWith('_$plotId')).toList();
   }
 
   Future<int> deleteDraft(String category) async {
-    final db = await instance.database;
-    return await db.delete(
-      'drafts',
-      where: 'category = ?',
-      whereArgs: [category],
-    );
+    if (kIsWeb) {
+      final drafts = await _webDrafts();
+      final removed = drafts.remove(category) != null;
+      await _saveWebDrafts(drafts);
+      return removed ? 1 : 0;
+    }
+    final db = await database;
+    return db.delete('drafts', where: 'category = ?', whereArgs: [category]);
   }
 
-  // --- Chat Persistence Accessors ---
+  // Chat --------------------------------------------------------------------
 
   Future<void> saveMessage(ChatMessage message) async {
-    final db = await instance.database;
+    if (kIsWeb) {
+      final history = await getChatHistory();
+      history.add(message);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _webChatKey,
+        jsonEncode(history.map((m) => m.toMap()).toList()),
+      );
+      return;
+    }
+    final db = await database;
     await db.insert(
       'chat_messages',
       message.toMap(),
@@ -136,13 +177,26 @@ class DatabaseHelper {
   }
 
   Future<List<ChatMessage>> getChatHistory() async {
-    final db = await instance.database;
-    final result = await db.query('chat_messages', orderBy: 'timestamp ASC');
-    return result.map((json) => ChatMessage.fromMap(json)).toList();
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_webChatKey);
+      if (raw == null) return [];
+      return (jsonDecode(raw) as List)
+          .map((m) => ChatMessage.fromMap(Map<String, dynamic>.from(m)))
+          .toList();
+    }
+    final db = await database;
+    final rows = await db.query('chat_messages', orderBy: 'timestamp ASC');
+    return rows.map(ChatMessage.fromMap).toList();
   }
 
   Future<void> clearChatHistory() async {
-    final db = await instance.database;
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_webChatKey);
+      return;
+    }
+    final db = await database;
     await db.delete('chat_messages');
   }
 }

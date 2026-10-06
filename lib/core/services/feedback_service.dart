@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 
@@ -37,7 +36,7 @@ class FeedbackService {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       // If 404 or empty, return null
-      if (e is DioException && e.response?.statusCode == 404) {
+      if (e is ApiException && e.isNotFound) {
         return null;
       }
       return null; // Fail safe

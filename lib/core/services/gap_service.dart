@@ -1,13 +1,86 @@
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
+
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
-import '../../locator.dart';
+import '../../features/gap/gap_categories.dart';
+import '../../app/locator.dart';
 import 'notification_trigger_service.dart';
 
 /// Service for managing GAP form data via API
 class GapService {
   final ApiClient _apiClient = ApiClient();
+
+  static final Map<String, (DateTime, GapProgress)> _progressCache = {};
+  static const _progressTtl = Duration(seconds: 45);
+
+  /// Forget cached progress after a save so the next read is fresh.
+  static void invalidate(String plotId) => _progressCache.remove(plotId);
+
+  /// Everything recorded for [plotId] across the seven categories.
+  ///
+  /// Requests go out in two small waves instead of all at once, which keeps
+  /// the backend's rate limiter happy when several plots load together.
+  /// Results are cached briefly so switching tabs does not refetch.
+  Future<GapProgress> getProgress(String plotId, {bool force = false}) async {
+    final cached = _progressCache[plotId];
+    if (!force &&
+        cached != null &&
+        DateTime.now().difference(cached.$1) < _progressTtl) {
+      return cached.$2;
+    }
+
+    Future<T> safe<T>(Future<T> f, T fallback) async {
+      try {
+        return await f;
+      } on ApiException catch (e) {
+        if (e.isNotFound) return fallback;
+        rethrow;
+      }
+    }
+
+    final first = await Future.wait<dynamic>([
+      safe(getGapData(plotId), null),
+      safe(getInputs(plotId), const []),
+      safe(getActivities(plotId), const []),
+    ]);
+    final second = await Future.wait<dynamic>([
+      safe(getHarvests(plotId), const []),
+      safe(getTrainings(plotId), const []),
+      safe(_getLotsOnly(plotId), const []),
+    ]);
+
+    final harvests = List<dynamic>.from(second[0] as List);
+    final postHarvests = <dynamic>[];
+    for (final h in harvests) {
+      if (h is! Map) continue;
+      final embedded = h['postHarvests'];
+      if (embedded is List) {
+        postHarvests.addAll(embedded);
+      } else if (h['id'] != null) {
+        postHarvests.addAll(await safe(getPostHarvest(h['id'].toString()), const []));
+      }
+    }
+
+    final progress = GapProgress(
+      general: first[0] as Map<String, dynamic>?,
+      inputs: List<dynamic>.from(first[1] as List),
+      activities: List<dynamic>.from(first[2] as List),
+      harvests: harvests,
+      postHarvests: postHarvests,
+      trainings: List<dynamic>.from(second[1] as List),
+      lots: List<dynamic>.from(second[2] as List),
+    );
+    _progressCache[plotId] = (DateTime.now(), progress);
+    return progress;
+  }
+
+  Future<List<dynamic>> _getLotsOnly(String plotId) async {
+    final response = await _apiClient.get(ApiEndpoints.traceabilityLots(plotId));
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['data'] is List) return data['data'] as List;
+    return const [];
+  }
 
   /// Get all GAP data for a plot
   Future<Map<String, dynamic>?> getGapData(String plotId) async {
@@ -18,8 +91,8 @@ class GapService {
         return response.data as Map<String, dynamic>;
       }
       return null;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return null;
+    } on ApiException catch (e) {
+      if (e.isNotFound) return null;
       debugPrint('Error getting GAP data: ${e.message}');
       rethrow;
     } catch (e) {
@@ -37,8 +110,8 @@ class GapService {
         ApiEndpoints.gapReset(plotId),
         data: {'confirm': 'RESET'},
       );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 409) {
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) {
         throw Exception(
           'ไม่สามารถล้างข้อมูลได้: มีล็อตผลผลิตที่ส่งออกแล้ว',
         );
@@ -110,8 +183,8 @@ class GapService {
         return data['data'] as List<dynamic>;
       }
       return data as List<dynamic>? ?? [];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+    } on ApiException catch (e) {
+      if (e.isNotFound) return [];
       debugPrint('Error getting inputs: ${e.message}');
       rethrow;
     } catch (e) {
@@ -134,8 +207,8 @@ class GapService {
         return data['data'] as List<dynamic>;
       }
       return data as List<dynamic>? ?? [];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+    } on ApiException catch (e) {
+      if (e.isNotFound) return [];
       debugPrint('Error getting activities: ${e.message}');
       rethrow;
     } catch (e) {
@@ -158,8 +231,8 @@ class GapService {
         return data['data'] as List<dynamic>;
       }
       return data as List<dynamic>? ?? [];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+    } on ApiException catch (e) {
+      if (e.isNotFound) return [];
       debugPrint('Error getting harvests: ${e.message}');
       rethrow;
     } catch (e) {
@@ -182,8 +255,8 @@ class GapService {
         return data['data'] as List<dynamic>;
       }
       return data as List<dynamic>? ?? [];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+    } on ApiException catch (e) {
+      if (e.isNotFound) return [];
       debugPrint('Error getting trainings: ${e.message}');
       rethrow;
     } catch (e) {
@@ -283,6 +356,14 @@ class GapService {
     }
   }
 
+  /// Issues a new lot number for the plot's latest harvest.
+  Future<Map<String, dynamic>> createLot(String plotId, Map<String, dynamic> data) async {
+    final response = await _apiClient.post(ApiEndpoints.createLot(plotId), data: data);
+    invalidate(plotId);
+    final body = response.data;
+    return body is Map ? Map<String, dynamic>.from(body) : <String, dynamic>{};
+  }
+
   // ============ UPDATE METHODS (PUT) ============
 
   /// Update existing harvest record
@@ -367,7 +448,7 @@ class GapService {
     required String plotId,
     required String formType,
     required String recordId,
-    List<String>? adminIds, // ✅ เพิ่ม parameter นี้ (optional with default null)
+    List<String>? adminIds, // เพิ่ม parameter นี้ (optional with default null)
   }) async {
     try {
       final triggerService = locator<NotificationTriggerService>();
@@ -375,7 +456,7 @@ class GapService {
         plotId: plotId,
         formType: formType,
         recordId: recordId,
-        adminIds: adminIds ?? [], // ✅ ส่ง empty list ถ้าไม่มีค่า
+        adminIds: adminIds ?? [], // ส่ง empty list ถ้าไม่มีค่า
       );
     } catch (e) {
       // Silently fail - notification is not critical

@@ -1,245 +1,189 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/gap_service.dart';
+import 'package:provider/provider.dart';
+
 import '../../../core/services/admin_service.dart';
+import '../../../core/services/gap_service.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
 
+/// Lots issued for a plot, with the export flag and removal for staff.
 class TraceabilityManagementSheet extends StatefulWidget {
-  final String plotId;
-  final GapService gapService;
-  final AdminService adminService;
+  const TraceabilityManagementSheet({super.key, required this.plotId});
 
-  const TraceabilityManagementSheet({
-    super.key,
-    required this.plotId,
-    required this.gapService,
-    required this.adminService,
-  });
+  final String plotId;
 
   @override
-  State<TraceabilityManagementSheet> createState() =>
-      _TraceabilityManagementSheetState();
+  State<TraceabilityManagementSheet> createState() => _TraceabilityManagementSheetState();
 }
 
-class _TraceabilityManagementSheetState
-    extends State<TraceabilityManagementSheet> {
-  final List<dynamic> _lots = [];
-  bool _isLoading = true;
-  String? _errorMessage;
-
+class _TraceabilityManagementSheetState extends State<TraceabilityManagementSheet> {
+  List<Map<String, dynamic>> _lots = [];
+  bool _loading = true;
+  String? _error;
+  final Set<String> _busy = {};
 
   @override
   void initState() {
     super.initState();
-    _loadLots();
+    _load();
   }
 
-  Future<void> _loadLots() async {
-    setState(() => _isLoading = true);
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final lots = await widget.gapService.getTraceabilityLots(widget.plotId);
-      if (mounted) {
-        setState(() {
-          _lots.clear();
-          _lots.addAll(lots);
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'ไม่สามารถโหลดข้อมูลได้: $e';
-        });
-      }
+      final lots = await context.read<GapService>().getTraceabilityLots(widget.plotId);
+      if (!mounted) return;
+      setState(() {
+        _lots = [for (final l in lots) if (l is Map) Map<String, dynamic>.from(l)];
+        _loading = false;
+      });
+    } on Object catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'โหลดล็อตไม่สำเร็จ';
+      });
     }
   }
 
-  Future<void> _toggleExported(String id, bool currentValue) async {
+  Future<void> _toggleExported(Map<String, dynamic> lot) async {
+    final id = '${lot['id']}';
+    final next = lot['isExported'] != true;
+    setState(() => _busy.add(id));
     try {
-      await widget.adminService.updateTraceability(
-        id,
-        {'isExported': !currentValue},
-      );
-      _loadLots(); // Reload
-    } catch (e) {
-      // Show Error
+      await context.read<AdminService>().updateTraceability(id, {'isExported': next});
+      if (!mounted) return;
+      setState(() => lot['isExported'] = next);
+      GapService.invalidate(widget.plotId);
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
     }
   }
 
-  Future<void> _deleteLot(String id) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ลบรายการ', style: GoogleFonts.prompt(fontWeight: FontWeight.bold)),
-        content: Text('ต้องการลบข้อมูลล็อตนี้หรือไม่?', style: GoogleFonts.prompt()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('ยกเลิก', style: GoogleFonts.prompt()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('ลบ', style: GoogleFonts.prompt(color: Colors.white)),
-          ),
-        ],
-      ),
+  Future<void> _delete(Map<String, dynamic> lot) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'ลบล็อต ${lot['lotNumber'] ?? ''}?',
+      message: 'QR ของล็อตนี้จะใช้ตรวจสอบย้อนกลับไม่ได้อีก',
+      confirmLabel: 'ลบล็อต',
+      destructive: true,
     );
-
-    if (confirmed == true) {
-      try {
-        await widget.adminService.deleteTraceability(id);
-        _loadLots();
-      } catch (e) {
-        // Show Error
-      }
+    if (!ok || !mounted) return;
+    final id = '${lot['id']}';
+    setState(() => _busy.add(id));
+    try {
+      await context.read<AdminService>().deleteTraceability(id);
+      if (!mounted) return;
+      GapService.invalidate(widget.plotId);
+      setState(() => _lots.remove(lot));
+      AppToast.success(context, 'ลบล็อตแล้ว');
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.only(top: 20, bottom: 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'จัดการ Traceability',
-                  style: GoogleFonts.prompt(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: GoogleFonts.prompt(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _loadLots,
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      label: Text('ลองใหม่', style: GoogleFonts.prompt(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else if (_lots.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Text(
-                      'ไม่พบข้อมูลล็อต',
-                      style: GoogleFonts.prompt(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(20),
-                itemCount: _lots.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final lot = _lots[index];
-                  final id = lot['id']?.toString() ?? '';
-                  final lotNumber = lot['lotNumber'] ?? id;
-                  final isExported = lot['isExported'] == true;
+    final p = context.palette;
+    final bottom = Space.xl + MediaQuery.paddingOf(context).bottom;
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+    if (_loading) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, bottom),
+        child: const SkeletonList(count: 3, thumbnail: false),
+      );
+    }
+    if (_error != null) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, bottom),
+        child: ErrorState(message: _error, onRetry: _load, compact: true),
+      );
+    }
+    if (_lots.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, bottom),
+        child: const EmptyState(
+          title: 'ยังไม่มีล็อตผลผลิต',
+          message: 'ล็อตจะถูกสร้างเมื่อเกษตรกรบันทึกการเก็บเกี่ยวและออกเลขล็อต',
+          compact: true,
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, bottom),
+      itemCount: _lots.length,
+      separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+      itemBuilder: (context, i) {
+        final lot = _lots[i];
+        final id = '${lot['id']}';
+        final exported = lot['isExported'] == true;
+        final busy = _busy.contains(id);
+        final created = DateTime.tryParse('${lot['harvestDate'] ?? lot['createdAt'] ?? ''}');
+        final amount = lot['quantity'] ?? lot['yieldAmount'];
+
+        return AppCard(
+          padding: const EdgeInsets.fromLTRB(Space.md + 2, Space.md, Space.xs, Space.md),
+          child: Row(
+            children: [
+              IconTile(icon: AppIcons.qr, tone: exported ? Tone.success : Tone.brand, size: 40),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${lot['lotNumber'] ?? id}', style: context.text.titleSmall?.mono),
+                    Text(
+                      [
+                        if (created != null) ThaiDate.short(created.toLocal()),
+                        if (amount != null) '$amount ${lot['unit'] ?? 'กก.'}',
+                      ].join(' · '),
+                      style: context.text.bodySmall,
                     ),
-                    child: ListTile(
-                      title: Text(
-                        lotNumber,
-                        style: GoogleFonts.prompt(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        'สถานะ: ${isExported ? "ส่งออกแล้ว" : "รอดำเนินการ"}',
-                        style: GoogleFonts.prompt(
-                          fontSize: 12,
-                          color: isExported ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              isExported
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
-                              color: isExported ? Colors.green : Colors.grey,
-                            ),
-                            tooltip: 'เปลี่ยนสถานะส่งออก',
-                            onPressed: () => _toggleExported(id, isExported),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteLot(id),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: Space.xs),
+                    StatusBadge(
+                      label: exported ? 'ส่งออกแล้ว' : 'ยังไม่ส่งออก',
+                      tone: exported ? Tone.success : Tone.neutral,
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
-        ],
-      ),
+              if (busy)
+                Padding(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: p.brand),
+                  ),
+                )
+              else
+                PopupMenuButton<String>(
+                  tooltip: 'ตัวเลือก',
+                  icon: Icon(AppIcons.more, color: p.inkSubtle),
+                  onSelected: (v) => v == 'delete' ? _delete(lot) : _toggleExported(lot),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'export',
+                      child: Text(exported ? 'ทำเครื่องหมายว่ายังไม่ส่งออก' : 'ทำเครื่องหมายว่าส่งออกแล้ว'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('ลบล็อต', style: TextStyle(color: p.danger)),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

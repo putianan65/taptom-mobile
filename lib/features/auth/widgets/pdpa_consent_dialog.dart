@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/pdpa_content.dart';
 
-/// PDPA Consent Dialog Widget
-/// Shows full PDPA terms and requires user to scroll to bottom and accept
+import '../../../core/constants/pdpa_content.dart';
+import '../../../core/widgets/widgets.dart';
+
+/// PDPA consent. The accept button unlocks only after the user has scrolled
+/// to the end of the notice and ticked the confirmation.
 class PdpaConsentDialog extends StatefulWidget {
   const PdpaConsentDialog({super.key});
 
-  /// Show the dialog and return true if user accepts
+  /// Returns true when the user accepts.
   static Future<bool> show(BuildContext context) async {
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const PdpaConsentDialog(),
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: false,
+      enableDrag: false,
+      constraints: const BoxConstraints(maxWidth: 640),
+      builder: (_) => const PdpaConsentDialog(),
     );
     return result ?? false;
   }
@@ -23,272 +27,137 @@ class PdpaConsentDialog extends StatefulWidget {
 }
 
 class _PdpaConsentDialogState extends State<PdpaConsentDialog> {
-  final ScrollController _scrollController = ScrollController();
-  bool _hasScrolledToBottom = false;
-  bool _isChecked = false;
+  final _scroll = ScrollController();
+  bool _readToEnd = false;
+  bool _checked = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 50) {
-      if (!_hasScrolledToBottom) {
-        setState(() => _hasScrolledToBottom = true);
+    _scroll.addListener(() {
+      if (!_readToEnd &&
+          _scroll.position.pixels >= _scroll.position.maxScrollExtent - 48) {
+        setState(() => _readToEnd = true);
       }
-    }
+    });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-          maxWidth: 500,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'PDPA',
-                          style: GoogleFonts.prompt(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        Text(
-                          'ข้อตกลงการคุ้มครองข้อมูล',
-                          style: GoogleFonts.prompt(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Scroll indicator
-            if (!_hasScrolledToBottom)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
-                ),
-                color: AppColors.warning.withValues(alpha: 0.1),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_downward,
-                      size: 16,
-                      color: AppColors.warning,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'กรุณาเลื่อนอ่านจนจบก่อนยินยอม',
-                      style: GoogleFonts.prompt(
-                        fontSize: 12,
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w500,
+    final p = context.palette;
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.88,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.md),
+            child: Row(
+              children: [
+                const IconTile(icon: AppIcons.privacy),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ความยินยอม PDPA', style: context.text.headlineSmall),
+                      Text(
+                        'พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562',
+                        style: context.text.bodySmall,
                       ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: p.line),
+          Expanded(
+            child: Scrollbar(
+              controller: _scroll,
+              child: SingleChildScrollView(
+                controller: _scroll,
+                padding: const EdgeInsets.fromLTRB(Space.xl, Space.lg, Space.xl, Space.xl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(PdpaContent.title, style: context.text.titleMedium),
+                    const SizedBox(height: Space.md),
+                    Text(
+                      PdpaContent.fullContent,
+                      style: context.text.bodyMedium?.copyWith(height: 1.7),
+                    ),
+                    const SizedBox(height: Space.lg),
+                    Text(
+                      PdpaContent.references,
+                      style: context.text.bodySmall,
                     ),
                   ],
                 ),
               ),
-
-            // Content
-            Expanded(
-              child: Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        PdpaContent.shortDescription,
-                        style: GoogleFonts.prompt(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      Text(
-                        PdpaContent.fullContent,
-                        style: GoogleFonts.prompt(
-                          fontSize: 13,
-                          height: 1.6,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      Text(
-                        PdpaContent.references,
-                        style: GoogleFonts.prompt(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
-
-            // Footer with consent
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(24),
-                ),
-                border: Border(top: BorderSide(color: Colors.grey[200]!)),
-              ),
-              child: Column(
-                children: [
-                  // Consent checkbox
-                  InkWell(
-                    onTap: _hasScrolledToBottom
-                        ? () => setState(() => _isChecked = !_isChecked)
-                        : null,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Checkbox(
-                          value: _isChecked,
-                          onChanged: _hasScrolledToBottom
-                              ? (v) => setState(() => _isChecked = v ?? false)
-                              : null,
-                          activeColor: AppColors.primary,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              PdpaContent.consentText,
-                              style: GoogleFonts.prompt(
-                                fontSize: 12,
-                                color: _hasScrolledToBottom
-                                    ? AppColors.textMain
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+          ),
+          Container(
+            padding: EdgeInsets.fromLTRB(
+              Space.xl,
+              Space.md,
+              Space.xl,
+              Space.md + MediaQuery.paddingOf(context).bottom,
+            ),
+            decoration: BoxDecoration(
+              color: p.surface,
+              border: Border(top: BorderSide(color: p.line)),
+            ),
+            child: Column(
+              children: [
+                AnimatedOpacity(
+                  opacity: _readToEnd ? 1 : 0.5,
+                  duration: Motion.quick,
+                  child: CheckboxListTile(
+                    value: _checked,
+                    onChanged: _readToEnd ? (v) => setState(() => _checked = v ?? false) : null,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'ข้าพเจ้าได้อ่านและยินยอมให้เก็บ ใช้ และเปิดเผยข้อมูลส่วนบุคคลตามที่ระบุไว้',
+                      style: context.text.bodyMedium,
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'ไม่ยินยอม',
-                            style: GoogleFonts.prompt(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: (_hasScrolledToBottom && _isChecked)
-                              ? () => Navigator.pop(context, true)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            disabledBackgroundColor: Colors.grey[300],
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'ยินยอมและดำเนินการต่อ',
-                            style: GoogleFonts.prompt(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                if (!_readToEnd)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Space.sm),
+                    child: Text(
+                      'เลื่อนอ่านให้ถึงท้ายเอกสารก่อนยืนยัน',
+                      style: context.text.bodySmall?.copyWith(color: p.warning),
+                    ),
                   ),
-                ],
-              ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.secondary(
+                        label: 'ไม่ยินยอม',
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                    ),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: AppButton(
+                        label: 'ยินยอม',
+                        onPressed: _checked ? () => Navigator.of(context).pop(true) : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

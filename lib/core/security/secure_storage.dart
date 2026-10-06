@@ -7,12 +7,16 @@ class SecureStorage {
   SecureStorage._internal();
 
   final _storage = const FlutterSecureStorage(
+    // Kept until a migration moves existing sessions to the new default
+    // store; switching now would sign every Android user out.
+    // ignore: deprecated_member_use
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
-  static const String _pinKey = 'user_pin_hash'; // If we store local PIN hash
+  static const String _pinKey = 'user_pin_hash';
+  static const String _userKey = 'cached_user';
   
   // PIN Rate Limiting Keys
   static const String _pinAttemptsKey = 'pin_attempts';
@@ -46,6 +50,17 @@ class SecureStorage {
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
     await _storage.delete(key: _tokenExpiryKey);
+  }
+
+  /// Last known profile, used to open the app offline.
+  Future<void> saveUserJson(String json) async {
+    await _storage.write(key: _userKey, value: json);
+  }
+
+  Future<String?> readUserJson() => _storage.read(key: _userKey);
+
+  Future<void> clearUserJson() async {
+    await _storage.delete(key: _userKey);
   }
 
   Future<void> savePin(String pin) async {

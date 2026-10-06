@@ -8,8 +8,8 @@ class AppLogger {
       errorMethodCount: 8,
       lineLength: 120,
       colors: true,
-      printEmojis: true,
-      printTime: true,
+      printEmojis: false,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
     filter: ProductionFilter(), // Custom filter to control logs in production
   );

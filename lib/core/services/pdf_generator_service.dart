@@ -1,10 +1,10 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import '../utils/date_formatter.dart';
 import '../config/env.dart';
+import 'pdf_assets.dart';
 
 // ==================== EXCEPTIONS ====================
 
@@ -21,7 +21,7 @@ class PdfGenerationException implements Exception {
 // ==================== CONFIG ====================
 
 class PdfConfig {
-  // ⚠️ PRODUCTION: ย้ายไปใช้ Environment Variable
+  // PRODUCTION: ย้ายไปใช้ Environment Variable
   static String get mapApiKey {
     const key = String.fromEnvironment('MAPTILER_API_KEY', defaultValue: '');
     if (key.isEmpty) {
@@ -146,7 +146,7 @@ class PdfGeneratorService {
     } on PdfGenerationException {
       rethrow;
     } catch (e, stack) {
-      print('❌ PDF Generation Error: $e\n$stack');
+      debugPrint('PDF Generation Error: $e\n$stack');
       throw PdfGenerationException('ไม่สามารถสร้าง PDF ได้', e);
     }
   }
@@ -167,8 +167,7 @@ class PdfGeneratorService {
   Future<pw.Font> _loadFont() async {
     if (_fontCache != null) return _fontCache!;
     try {
-      _fontCache = await PdfGoogleFonts.sarabunRegular()
-          .timeout(const Duration(seconds: 5));
+      _fontCache = await PdfAssets.regular();
       return _fontCache!;
     } catch (e) {
       throw PdfGenerationException('ไม่สามารถโหลดฟอนต์ได้', e);
@@ -178,8 +177,7 @@ class PdfGeneratorService {
   Future<pw.Font> _loadFontBold() async {
     if (_fontBoldCache != null) return _fontBoldCache!;
     try {
-      _fontBoldCache = await PdfGoogleFonts.sarabunBold()
-          .timeout(const Duration(seconds: 5));
+      _fontBoldCache = await PdfAssets.bold();
       return _fontBoldCache!;
     } catch (e) {
       throw PdfGenerationException('ไม่สามารถโหลดฟอนต์ตัวหนาได้', e);
@@ -507,7 +505,7 @@ class PdfGeneratorService {
       
       // Data Content
       if (hasData) {
-        final rawData = catData!['data'];
+        final rawData = catData['data'];
         
         if (cat['hasTable'] == true && rawData is List && rawData.isNotEmpty) {
           // แสดงเป็นตาราง - ไม่จำกัดจำนวน
@@ -986,7 +984,7 @@ class PdfGeneratorService {
         };
       }).toList();
     } catch (e) {
-      print('⚠️ Error parsing polygon: $e');
+      debugPrint('Error parsing polygon: $e');
       return [];
     }
   }
@@ -1043,7 +1041,7 @@ class PdfGeneratorService {
       final lat = _getCoord(plot, 1);
       final lng = _getCoord(plot, 0);
       if (lat == 0 || lng == 0) {
-        print('⚠️ Invalid coordinates for map');
+        debugPrint('Invalid coordinates for map');
         return null;
       }
       
@@ -1066,19 +1064,19 @@ class PdfGeneratorService {
         } // Uri will encode value automatically (e.g. | becomes %7C)
       );
       
-      print('📍 Fetching map: $uri');
+      debugPrint('Fetching map: $uri');
       
       final res = await http.get(uri).timeout(PdfConfig.networkTimeout);
       
       if (res.statusCode == 200) {
-        print('✅ Map loaded successfully');
+        debugPrint('Map loaded successfully');
         return res.bodyBytes;
       } else {
-        print('⚠️ Map fetch failed: ${res.statusCode} | Body: ${res.body}');
+        debugPrint('Map fetch failed: ${res.statusCode} | Body: ${res.body}');
         return null;
       }
     } catch (e) {
-      print('⚠️ Error loading map: $e');
+      debugPrint('Error loading map: $e');
       return null;
     }
   }
@@ -1119,7 +1117,7 @@ class PdfGeneratorService {
       // Safe approach: fill:rgba(76,175,80,0.3)|stroke:rgb(76,175,80)|width:2
       return 'fill:rgba(76,175,80,0.3)|stroke:rgb(76,175,80)|width:2|$points';
     } catch (e) {
-      print('⚠️ Error building polygon param: $e');
+      debugPrint('Error building polygon param: $e');
       return '';
     }
   }
@@ -1140,7 +1138,7 @@ class PdfGeneratorService {
     
     if (validUrls.isEmpty) return photos;
     
-    print('📷 Loading ${validUrls.length} photos...');
+    debugPrint('Loading ${validUrls.length} photos...');
     
     // โหลดทีละ batch
     for (var i = 0; i < validUrls.length; i += PdfConfig.maxConcurrentFetch) {
@@ -1157,7 +1155,7 @@ class PdfGeneratorService {
       photos.addAll(results.whereType<Uint8List>());
     }
     
-    print('✅ Loaded ${photos.length}/${validUrls.length} photos');
+    debugPrint('Loaded ${photos.length}/${validUrls.length} photos');
     return photos;
   }
 
@@ -1171,7 +1169,7 @@ class PdfGeneratorService {
       }
       return null;
     } catch (e) {
-      print('⚠️ Failed to load photo: $url - $e');
+      debugPrint('Failed to load photo: $url - $e');
       return null;
     }
   }

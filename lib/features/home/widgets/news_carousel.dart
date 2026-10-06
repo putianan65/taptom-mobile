@@ -1,11 +1,28 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../core/constants/app_colors.dart';
 
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/widgets/widgets.dart';
+
+class _NewsItem {
+  const _NewsItem({
+    required this.category,
+    required this.title,
+    required this.source,
+    required this.image,
+    required this.url,
+  });
+
+  final String category;
+  final String title;
+  final String source;
+  final String image;
+  final String url;
+}
+
+/// Short carousel of official guidance for kratom growers. Advances on its
+/// own, pauses while the user is touching it, and opens the source website.
 class NewsCarousel extends StatefulWidget {
   const NewsCarousel({super.key});
 
@@ -14,330 +31,175 @@ class NewsCarousel extends StatefulWidget {
 }
 
 class _NewsCarouselState extends State<NewsCarousel> {
-  final PageController _pageController = PageController(viewportFraction: 0.9);
-  int _currentPage = 0;
-  Timer? _timer;
-
-  final List<Map<String, dynamic>> _newsItems = [
-    {
-      'title': 'กฎหมายพืชกระท่อม 2568: ข้อควรระวังและบทลงโทษล่าสุดจาก ป.ป.ส.',
-      'date': 'อัปเดตล่าสุด',
-      'image': 'assets/images/ปปส.jpg', // ONCB Image
-      'fallbackUrl':
-          'https://placehold.co/600x400/C62828/FFFFFF/png?text=Laws+2568',
-      'url': 'https://www.oncb.go.th/',
-      'color': '0xFFC62828',
-      'isAsset': true,
-    },
-    {
-      'title': 'มาตรฐาน GAP พืชกระท่อม: คู่มือการขอรับรองจากกรมวิชาการเกษตร',
-      'date': 'คู่มือเกษตรกร',
-      'image': 'assets/images/GAP.jpg', // GAP Image
-      'fallbackUrl':
-          'https://placehold.co/600x400/2E7D32/FFFFFF/png?text=GAP+Standard',
-      'url': 'https://www.doa.go.th/gap/',
-      'color': '0xFF2E7D32',
-      'isAsset': true,
-    },
-    {
-      'title': 'คลังความรู้พืชกระท่อม: สรรพคุณ การปลูก และการแปรรูปที่ถูกต้อง',
-      'date': 'สาระน่ารู้',
-      'image': 'assets/images/กสก.webp', // DOAE Image
-      'fallbackUrl':
-          'https://placehold.co/600x400/F57F17/FFFFFF/png?text=Kratom+Knowledge',
-      'url': 'https://www.doae.go.th/',
-      'color': '0xFFF57F17',
-      'isAsset': true,
-    },
+  static const _items = [
+    _NewsItem(
+      category: 'คู่มือเกษตรกร',
+      title: 'มาตรฐาน GAP พืชกระท่อม: ขั้นตอนขอรับรองกับกรมวิชาการเกษตร',
+      source: 'กรมวิชาการเกษตร',
+      image: 'assets/images/news/gap-standard.jpg',
+      url: 'https://www.doa.go.th/',
+    ),
+    _NewsItem(
+      category: 'กฎหมาย',
+      title: 'ข้อกฎหมายพืชกระท่อมล่าสุด สิ่งที่ผู้ปลูกต้องรู้',
+      source: 'สำนักงาน ป.ป.ส.',
+      image: 'assets/images/news/oncb-building.jpg',
+      url: 'https://www.oncb.go.th/',
+    ),
+    _NewsItem(
+      category: 'ส่งเสริมการเกษตร',
+      title: 'กิจกรรมและโครงการสนับสนุนเกษตรกรจากกรมส่งเสริมการเกษตร',
+      source: 'กรมส่งเสริมการเกษตร',
+      image: 'assets/images/news/doae-campaign.jpg',
+      url: 'https://www.doae.go.th/',
+    ),
   ];
+
+  final _controller = PageController(viewportFraction: 0.88);
+  Timer? _timer;
+  int _page = 0;
 
   @override
   void initState() {
     super.initState();
-    _startAutoScroll();
+    _schedule();
   }
 
-  void _startAutoScroll() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
-      if (_currentPage < _newsItems.length - 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
+  void _schedule() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 6), (_) {
+      if (!mounted || !_controller.hasClients) return;
+      if (MediaQuery.of(context).disableAnimations) return;
+      final next = (_page + 1) % _items.length;
+      _controller.animateToPage(next, duration: Motion.slower, curve: Motion.emphasized);
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _pageController.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _open(_NewsItem item) async {
+    final uri = Uri.parse(item.url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) AppToast.error(context, 'เปิดลิงก์ไม่สำเร็จ');
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const HeroIcon(
-                    HeroIcons.bookOpen, // Changed icon to Book/Knowledge
-                    style: HeroIconStyle.solid,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'คลังความรู้และกฎหมาย', // Changed Title
-                    style: GoogleFonts.prompt(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              // GAP-FIX-003: Removed dead button - "ดูทั้งหมด" had no functionality
-              // Future: Navigate to news listing page when implemented
-              // TextButton(
-              //   onPressed: () {
-              //     // TODO: Navigate to full news listing
-              //   },
-              //   child: Text(
-              //     'ดูทั้งหมด',
-              //     style: GoogleFonts.prompt(fontSize: 12),
-              //   ),
-              // ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
         SizedBox(
-          height: 180,
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemCount: _newsItems.length,
-            itemBuilder: (context, index) {
-              return _buildNewsCard(_newsItems[index]);
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildPageIndicator(),
-      ],
-    );
-  }
-
-  Widget _buildNewsCard(Map<String, dynamic> news) {
-    return GestureDetector(
-      onTap: () => _launchNewsUrl(news['url']),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Color(int.parse(news['color'])).withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 1. Image
-              news['isAsset'] == true
-                  ? Image.asset(
-                      news['image'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        // Fallback to Cached Network Image if Asset fails
-                        if (news.containsKey('fallbackUrl')) {
-                          return CachedNetworkImage(
-                            imageUrl: news['fallbackUrl'],
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: AppColors.surface,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white30,
-                                ),
+          height: 168,
+          child: Listener(
+            onPointerDown: (_) => _timer?.cancel(),
+            onPointerUp: (_) => _schedule(),
+            child: PageView.builder(
+              controller: _controller,
+              padEnds: false,
+              itemCount: _items.length,
+              onPageChanged: (i) => setState(() => _page = i),
+              itemBuilder: (context, i) {
+                final item = _items[i];
+                return Padding(
+                  padding: EdgeInsets.only(right: Space.md, left: i == 0 ? 0 : 0),
+                  child: Pressable(
+                    onTap: () => _open(item),
+                    semanticLabel: item.title,
+                    child: ClipRRect(
+                      borderRadius: Radii.card,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(item.image, fit: BoxFit.cover),
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: [0.25, 1],
+                                colors: [Color(0x00000000), Color(0xD9101812)],
                               ),
                             ),
-                            errorWidget: (context, url, error) =>
-                                Container(color: AppColors.surface),
-                          );
-                        }
-                        return Container(color: AppColors.surface);
-                      },
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: news['image'],
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Color(int.parse(news['color'])),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.textLight.withOpacity(0.3),
                           ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Color(int.parse(news['color'])),
-                        child: Center(
-                          child: HeroIcon(
-                            HeroIcons.photo,
-                            color: AppColors.textLight.withOpacity(0.5),
-                            size: 40,
+                          Padding(
+                            padding: const EdgeInsets.all(Space.lg),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.18),
+                                    borderRadius: Radii.chip,
+                                  ),
+                                  child: Text(
+                                    item.category,
+                                    style: context.text.labelMedium?.copyWith(color: Colors.white),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.text.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Text(
+                                      item.source,
+                                      style: context.text.labelMedium?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.75),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      AppIcons.arrowUpRight,
+                                      size: 12,
+                                      color: Colors.white.withValues(alpha: 0.75),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-
-              // 2. Gradient Overlay (Enhanced for Readability)
-              Container(
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: Space.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < _items.length; i++)
+              AnimatedContainer(
+                duration: Motion.base,
+                curve: Motion.emphasized,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == _page ? 18 : 6,
+                height: 6,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      AppColors.textPrimary.withOpacity(
-                        0.9,
-                      ), // Darker at bottom
-                    ],
-                    stops: const [0.3, 1.0], // Start gradient earlier
-                  ),
+                  color: i == _page ? p.brand : p.lineStrong,
+                  borderRadius: Radii.chip,
                 ),
               ),
-
-              // 3. Text Content
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(news['color'])),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadowStrong,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        news['date'],
-                        style: GoogleFonts.prompt(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      news['title'],
-                      style: GoogleFonts.prompt(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textLight,
-                        height: 1.3,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 4,
-                            color: AppColors.textPrimary,
-                          ),
-                          Shadow(
-                            offset: Offset(0, 2),
-                            blurRadius: 8,
-                            color: AppColors.textPrimary.withOpacity(0.5),
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-
-              // 4. Link Icon Helper
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.textPrimary.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: HeroIcon(
-                    HeroIcons.arrowTopRightOnSquare,
-                    color: AppColors.textLight,
-                    size: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
-      ),
+      ],
     );
-  }
-
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _newsItems.length,
-        (index) => AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: _currentPage == index ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: _currentPage == index
-                ? Color(int.parse(_newsItems[index]['color']))
-                : AppColors.border,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _launchNewsUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

@@ -16,10 +16,10 @@ class TicketReply {
 
   factory TicketReply.fromJson(Map<String, dynamic> json) {
     return TicketReply(
-      id: json['id'] as String,
-      message: json['message'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      author: UserModel.fromJson(json['author'] as Map<String, dynamic>),
+      id: '${json['id']}',
+      message: '${json['message'] ?? ''}',
+      createdAt: DateTime.tryParse('${json['createdAt']}')?.toLocal() ?? DateTime.now(),
+      author: UserModel.fromJson(Map<String, dynamic>.from((json['author'] ?? json['user'] ?? const {'id': ''}) as Map)),
     );
   }
 }
@@ -30,6 +30,7 @@ class Ticket {
   final String message;
   final String status; // OPEN, IN_PROGRESS, RESOLVED, CLOSED
   final String priority; // HIGH, MEDIUM, LOW
+  final String? category; // BUG, FEATURE, QUESTION or OTHER
   final DateTime createdAt;
   final DateTime? updatedAt;
   final UserModel user;
@@ -41,6 +42,7 @@ class Ticket {
     required this.message,
     required this.status,
     required this.priority,
+    this.category,
     required this.createdAt,
     this.updatedAt,
     required this.user,
@@ -49,16 +51,15 @@ class Ticket {
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
     return Ticket(
-      id: json['id'] as String,
-      subject: json['subject'] as String,
-      message: json['message'] as String,
+      id: '${json['id']}',
+      subject: '${json['subject'] ?? ''}',
+      message: '${json['message'] ?? ''}',
+      category: json['category']?.toString(),
       status: json['status'] as String? ?? 'OPEN',
       priority: json['priority'] as String? ?? 'MEDIUM',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt'] as String) 
-          : null,
-      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
+      createdAt: DateTime.tryParse('${json['createdAt']}')?.toLocal() ?? DateTime.now(),
+      updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}')?.toLocal(),
+      user: UserModel.fromJson(Map<String, dynamic>.from((json['user'] ?? const {'id': ''}) as Map)),
       replies: json['replies'] != null
           ? (json['replies'] as List)
               .map((e) => TicketReply.fromJson(e as Map<String, dynamic>))

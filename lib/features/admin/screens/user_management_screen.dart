@@ -1,30 +1,24 @@
-import 'dart:async';
-import '../../super_admin/widgets/luxury_dialog.dart'; // Added
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:heroicons/heroicons.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
+
+import '../../../core/network/api_exception.dart';
 import '../../../core/services/admin_service.dart';
 import '../../../core/services/super_admin_service.dart';
-import '../../../core/widgets/nature_background.dart';
+import '../../../core/utils/status_labels.dart';
+import '../../../core/utils/thai_date.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../data/models/user_model.dart';
 import '../../auth/auth_provider.dart';
-import '../widgets/user_list_item.dart';
+import '../../home/screens/admin_dashboard_screen.dart' show staffScope;
 import '../providers/admin_state_provider.dart';
-import '../../../core/utils/admin_error_handler.dart';
-import '../widgets/admin_confirmation_dialog.dart';
 import 'admin_plot_list_screen.dart';
 
-/// Admin User Management Screen
-/// Allows Admin to view and manage users in their territory
-class UserManagementScreen extends StatefulWidget {
-  final bool isEmbedded; // true เมื่อใช้เป็น tab ใน AdminDashboard
-  final String? initialStatus;
-  final Function(UserModel)? onUserSelected;
+enum _Filter { all, pending, approved, rejected, deleted }
 
+/// Members in scope. Admins review applications from their territory;
+/// super admins see every account and can also change roles, move members
+/// between officers, and delete or restore accounts.
+class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({
     super.key,
     this.isEmbedded = false,
@@ -32,1674 +26,696 @@ class UserManagementScreen extends StatefulWidget {
     this.initialStatus,
   });
 
+  /// True when shown as a tab in the staff shell.
+  final bool isEmbedded;
+
+  /// Opens on the pending filter when 'PENDING'.
+  final String? initialStatus;
+
+  /// Overrides the default detail sheet, e.g. when picking a member.
+  final ValueChanged<UserModel>? onUserSelected;
+
   @override
   State<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends State<UserManagementScreen>
-    with SingleTickerProviderStateMixin {
-  bool _isProcessing = false; // Rate limiting guard
-  String _searchQuery = '';
-  Timer? _debounceTimer;
+class _UserManagementScreenState extends State<UserManagementScreen> {
+  late _Filter _filter =
+      widget.initialStatus == 'PENDING' ? _Filter.pending : _Filter.all;
+  String _query = '';
+  final Set<String> _busy = {};
 
-  bool get _isSuperAdmin {
-    final user = context.read<AuthProvider>().user;
-    return user?.role == UserRole.superAdmin;
-  }
+  bool get _isSuperAdmin =>
+      context.read<AuthProvider>().currentUser?.role == UserRole.superAdmin;
 
   @override
   void initState() {
     super.initState();
-    // Load data
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final provider = context.read<AdminStateProvider>();
-      await provider.loadUsers();
-      final isSuperAdmin = context.read<AuthProvider>().user?.role == UserRole.superAdmin;
-      if (isSuperAdmin) {
-        await provider.loadDeletedUsers();
-        // Auto-approve pending users
-        if (provider.pendingUsers.isNotEmpty && mounted) {
-           for (final user in provider.pendingUsers) {
-             try {
-                // Auto-Approve without showing dialogs for Super Admins
-                await provider.approveUser(user.id);
-             } catch (e) {
-                // Silently handle or log errors during auto-approve
-             }
-           }
-           // Refresh list after auto-approvals
-           await provider.loadUsers();
-        }
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
-  @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    _debounceTimer = null;
-    super.dispose();
+  Future<void> _refresh() async {
+    final provider = context.read<AdminStateProvider>();
+    await provider.loadUsers();
+    if (mounted && _isSuperAdmin) await provider.loadDeletedUsers();
   }
 
-  void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      setState(() => _searchQuery = value);
-    });
-  }
+  List<UserModel> _source(AdminStateProvider s) => switch (_filter) {
+        _Filter.all => s.allUsers,
+        _Filter.pending => s.pendingUsers,
+        _Filter.approved => s.approvedUsers,
+        _Filter.rejected =>
+          s.allUsers.where((u) => u.membershipStatus == MembershipStatus.rejected).toList(),
+        _Filter.deleted => s.deletedUsers,
+      };
 
-  Future<void> _approveUser(UserModel user) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-
-    // Show confirmation dialog first
-    bool? confirmed;
-    
-    // Check if Super Admin to use Luxury Dialog
-    final isSuperAdmin = context.read<AuthProvider>().user?.role == UserRole.superAdmin;
-    
-    if (isSuperAdmin) {
-       confirmed = await LuxuryDialog.show(
-        context,
-        title: 'ยืนยันการอนุมัติ',
-        content: 'คุณต้องการอนุมัติ ${user.fullName} หรือไม่?\nสมาชิกจะสามารถเข้าใช้งานระบบได้ทันที',
-        icon: HeroIcons.checkBadge,
-        accentColor: LuxuryTheme.emeraldNeon,
-        confirmText: 'อนุมัติสมาชิก',
-      );
-    } else {
-      confirmed = await AdminConfirmationDialog.showApproval(
-        context,
-        user: user,
-      );
-    }
-
-    if (confirmed != true) {
-      if (mounted) setState(() => _isProcessing = false);
-      return;
-    }
-
-    // Show loading dialog
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(
-                  'กำลังอนุมัติ...',
-                  style: GoogleFonts.prompt(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      await context.read<AdminStateProvider>().approveUser(user.id);
-
-      if (!mounted) return;
-      Navigator.pop(context); // ปิด loading dialog
-
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'อนุมัติ ${user.fullName} เรียบร้อย',
-        detail: isSuperAdmin
-            ? 'สมาชิกได้รับอนุมัติเข้าใช้ระบบแล้ว'
-            : 'สมาชิกถูก assign ให้คุณแล้ว และสามารถเข้าใช้งานระบบได้',
-      );
-
-      // Refresh list
-      await context.read<AdminStateProvider>().loadUsers();
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context); // ปิด loading dialog
-
-      AdminErrorHandler.handle(
-        context,
-        e,
-        operation: 'อนุมัติสมาชิก',
-        onRetry: () => _approveUser(user),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  Future<void> _rejectUser(UserModel user) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-    
-    // Show rejection dialog with reason input
-    final reason = await AdminConfirmationDialog.showRejection(
-      context,
-      user: user,
-    );
-
-    if (reason == null || reason.isEmpty) {
-      setState(() => _isProcessing = false);
-      return;
-    }
-
-    try {
-      await context.read<AdminStateProvider>().rejectUser(user.id, reason);
-
-      if (!mounted) return;
-      AdminErrorHandler.showWarning(
-        context,
-        message: 'ปฏิเสธ ${user.fullName} เรียบร้อย',
-        detail: 'ส่งการแจ้งเตือนไปยังผู้สมัครแล้ว',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(
-        context,
-        e,
-        operation: 'ปฏิเสธสมาชิก',
-        onRetry: () => _rejectUser(user),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  List<UserModel> _filterUsers(List<UserModel> users) {
-    if (_searchQuery.isEmpty) return users;
-    final query = _searchQuery.toLowerCase();
+  List<UserModel> _search(List<UserModel> users) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return users;
     return users.where((u) {
-      return u.fullName.toLowerCase().contains(query) ||
-          u.phone.contains(query) ||
-          (u.province?.toLowerCase().contains(query) ?? false);
+      final hay = '${u.fullName} ${u.phone} ${u.province ?? ''} ${u.district ?? ''} ${u.subdistrict ?? ''}'
+          .toLowerCase();
+      return hay.contains(q);
     }).toList();
   }
 
-  Future<String?> _showRejectDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+  // Actions ------------------------------------------------------------------
 
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const HeroIcon(
-                HeroIcons.xCircle,
-                color: AppColors.error,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'ปฏิเสธคำขอ',
-              style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Form(
-          key: formKey,
+  Future<void> _run(UserModel user, Future<void> Function() action, String done) async {
+    if (_busy.contains(user.id)) return;
+    setState(() => _busy.add(user.id));
+    try {
+      await action();
+      if (mounted) AppToast.success(context, done);
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, _message(e));
+    } finally {
+      if (mounted) setState(() => _busy.remove(user.id));
+    }
+  }
+
+  String _message(Object e) {
+    if (e is ApiException) return e.message;
+    return e.toString().replaceFirst('Exception: ', '');
+  }
+
+  Future<void> _approve(UserModel user) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'อนุมัติ ${user.fullName}?',
+      message: _isSuperAdmin
+          ? 'สมาชิกจะเข้าใช้งานระบบได้ทันที'
+          : 'สมาชิกจะเข้าใช้งานได้ทันที และอยู่ในความดูแลของคุณ',
+      confirmLabel: 'อนุมัติ',
+      icon: AppIcons.checkCircle,
+    );
+    if (!ok || !mounted) return;
+    final provider = context.read<AdminStateProvider>();
+    await _run(user, () => provider.approveUser(user.id), 'อนุมัติ ${user.fullName} แล้ว');
+  }
+
+  Future<void> _reject(UserModel user) async {
+    final reason = await AppDialogs.prompt(
+      context,
+      title: 'ไม่อนุมัติ ${user.fullName}',
+      message: 'ผู้สมัครจะได้รับเหตุผลนี้ในการแจ้งเตือน',
+      hint: 'เช่น ที่อยู่ไม่อยู่ในพื้นที่ให้บริการ',
+      confirmLabel: 'ไม่อนุมัติ',
+      destructive: true,
+    );
+    if (reason == null || reason.isEmpty || !mounted) return;
+    final provider = context.read<AdminStateProvider>();
+    await _run(user, () => provider.rejectUser(user.id, reason), 'แจ้งผลให้ผู้สมัครแล้ว');
+  }
+
+  Future<void> _restore(UserModel user) async {
+    final provider = context.read<AdminStateProvider>();
+    await _run(user, () => provider.restoreUser(user.id), 'กู้คืน ${user.fullName} แล้ว');
+  }
+
+  Future<void> _delete(UserModel user) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'ลบบัญชี ${user.fullName}?',
+      message: 'บัญชีจะถูกปิดการใช้งาน และกู้คืนได้จากตัวกรอง "ถูกลบ"',
+      confirmLabel: 'ลบบัญชี',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    final service = context.read<SuperAdminService>();
+    await _run(user, () async {
+      await service.deleteUser(user.id);
+      await _refresh();
+    }, 'ลบบัญชีแล้ว');
+  }
+
+  Future<void> _changeRole(UserModel user) async {
+    final role = await showAppSheet<UserRole>(
+      context,
+      title: 'สิทธิ์การใช้งาน',
+      subtitle: user.fullName,
+      child: _RolePicker(current: user.role),
+    );
+    if (role == null || role == user.role || !mounted) return;
+    final provider = context.read<AdminStateProvider>();
+    final code = switch (role) {
+      UserRole.superAdmin => 'SUPER_ADMIN',
+      UserRole.admin => 'ADMIN',
+      UserRole.farmer => 'USER',
+    };
+    await _run(
+      user,
+      () => provider.updateUserRole(user.id, code),
+      'เปลี่ยนเป็น${StatusLabels.role(role)}แล้ว',
+    );
+  }
+
+  Future<void> _reassign(UserModel user) async {
+    final service = context.read<AdminService>();
+    List<dynamic> admins;
+    try {
+      admins = await service.getAdminList();
+    } on Object catch (e) {
+      if (mounted) AppToast.error(context, _message(e));
+      return;
+    }
+    if (!mounted) return;
+    if (admins.isEmpty) {
+      AppToast.info(context, 'ยังไม่มีเจ้าหน้าที่ในระบบ');
+      return;
+    }
+    final adminId = await showAppSheet<String>(
+      context,
+      title: 'ย้ายไปให้เจ้าหน้าที่',
+      subtitle: user.fullName,
+      expand: true,
+      child: _OfficerPicker(admins: admins),
+    );
+    if (adminId == null || !mounted) return;
+    final provider = context.read<AdminStateProvider>();
+    await _run(user, () async {
+      await service.reassignUser(userId: user.id, newAdminId: adminId);
+      await provider.loadUsers();
+    }, 'ย้ายสมาชิกแล้ว');
+  }
+
+  void _openPlots(UserModel user) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdminPlotListScreen(userId: user.id, userName: user.fullName),
+      ),
+    );
+  }
+
+  Future<void> _openDetail(UserModel user, {required bool deleted}) async {
+    if (widget.onUserSelected != null) {
+      widget.onUserSelected!(user);
+      return;
+    }
+    final action = await showAppSheet<_DetailAction>(
+      context,
+      child: _MemberDetail(user: user, deleted: deleted, superAdmin: _isSuperAdmin),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _DetailAction.plots:
+        _openPlots(user);
+      case _DetailAction.approve:
+        await _approve(user);
+      case _DetailAction.reject:
+        await _reject(user);
+      case _DetailAction.role:
+        await _changeRole(user);
+      case _DetailAction.reassign:
+        await _reassign(user);
+      case _DetailAction.delete:
+        await _delete(user);
+      case _DetailAction.restore:
+        await _restore(user);
+    }
+  }
+
+  // Build --------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AdminStateProvider>();
+    final me = context.watch<AuthProvider>().currentUser;
+    final superAdmin = me?.role == UserRole.superAdmin;
+    final users = _search(_source(state));
+    final rejected = state.allUsers.where((u) => u.membershipStatus == MembershipStatus.rejected).length;
+    final navSpace = widget.isEmbedded && context.isCompact ? 96.0 : Space.x4;
+
+    return PageScaffold(
+      title: superAdmin ? 'ผู้ใช้ทั้งหมด' : 'สมาชิก',
+      subtitle: superAdmin
+          ? '${state.allUsers.length} บัญชีในระบบ'
+          : 'พื้นที่ ${staffScope(me)}',
+      showBack: !widget.isEmbedded,
+      onRefresh: _refresh,
+      bottomPadding: navSpace,
+      slivers: [
+        SliverToBoxAdapter(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'กรุณาระบุเหตุผลในการปฏิเสธ เพื่อแจ้งให้ผู้สมัครทราบ',
-                style: GoogleFonts.prompt(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+              AppSearchField(
+                hint: 'ชื่อ เบอร์โทร หรือพื้นที่',
+                onChanged: (v) => setState(() => _query = v),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: 'เช่น ข้อมูลไม่ครบถ้วน, เอกสารไม่ถูกต้อง...',
-                  hintStyle: GoogleFonts.prompt(
-                    color: AppColors.textTertiary,
-                    fontSize: 13,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surfaceVariant,
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-                maxLines: 4,
-                style: GoogleFonts.prompt(),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'กรุณาระบุเหตุผลในการปฏิเสธ';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'เหตุผลต้องมีอย่างน้อย 10 ตัวอักษร';
-                  }
-                  return null;
-                },
+              const SizedBox(height: Space.md),
+              FilterChips<_Filter>(
+                value: _filter,
+                onChanged: (v) => setState(() => _filter = v),
+                options: [
+                  (_Filter.all, 'ทั้งหมด', state.allUsers.length),
+                  (_Filter.pending, 'รออนุมัติ', state.pendingUsers.length),
+                  (_Filter.approved, 'อนุมัติแล้ว', state.approvedUsers.length),
+                  if (rejected > 0) (_Filter.rejected, 'ไม่อนุมัติ', rejected),
+                  if (superAdmin) (_Filter.deleted, 'ถูกลบ', state.deletedUsers.length),
+                ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-                ),
-                child: Row(
+              const SizedBox(height: Space.lg),
+            ],
+          ),
+        ),
+        if (state.isLoading && state.allUsers.isEmpty)
+          const SliverToBoxAdapter(child: SkeletonList(count: 5))
+        else if (state.error != null && state.allUsers.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: ErrorState(message: state.error!, onRetry: _refresh),
+            ),
+          )
+        else if (users.isEmpty)
+          SliverToBoxAdapter(
+            child: AppCard(
+              child: EmptyState(
+                title: _query.isNotEmpty
+                    ? 'ไม่พบผู้ที่ค้นหา'
+                    : switch (_filter) {
+                        _Filter.pending => 'ไม่มีใบสมัครค้างอยู่',
+                        _Filter.deleted => 'ไม่มีบัญชีที่ถูกลบ',
+                        _ => 'ยังไม่มีสมาชิก',
+                      },
+                message: _query.isNotEmpty
+                    ? 'ลองค้นหาด้วยชื่อหรือเบอร์โทรอื่น'
+                    : _filter == _Filter.pending
+                        ? 'ใบสมัครใหม่ในพื้นที่จะแสดงที่นี่'
+                        : null,
+                mood: _filter == _Filter.pending ? MascotMood.joy : MascotMood.think,
+              ),
+            ),
+          )
+        else
+          SliverList.separated(
+            itemCount: users.length,
+            separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+            itemBuilder: (context, i) {
+              final user = users[i];
+              final deleted = _filter == _Filter.deleted;
+              return _MemberTile(
+                user: user,
+                showRole: superAdmin,
+                deleted: deleted,
+                busy: _busy.contains(user.id),
+                onTap: () => _openDetail(user, deleted: deleted),
+                onApprove: () => _approve(user),
+                onReject: () => _reject(user),
+                onRestore: () => _restore(user),
+              ).entrance(context, index: i);
+            },
+          ),
+      ],
+    );
+  }
+}
+
+// Tile ---------------------------------------------------------------------
+
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({
+    required this.user,
+    required this.showRole,
+    required this.deleted,
+    required this.busy,
+    required this.onTap,
+    required this.onApprove,
+    required this.onReject,
+    required this.onRestore,
+  });
+
+  final UserModel user;
+  final bool showRole;
+  final bool deleted;
+  final bool busy;
+  final VoidCallback onTap;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onRestore;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final pending = !deleted && user.membershipStatus == MembershipStatus.pending;
+    final (statusLabel, statusTone) = StatusLabels.membership(user.membershipStatus);
+    final place = [
+      if ((user.subdistrict ?? '').isNotEmpty) 'ต.${user.subdistrict}',
+      if ((user.district ?? '').isNotEmpty) 'อ.${user.district}',
+      if ((user.province ?? '').isNotEmpty) 'จ.${user.province}',
+    ].join(' ');
+
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(Space.md + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const HeroIcon(
-                      HeroIcons.informationCircle,
-                      color: AppColors.warning,
-                      size: 20,
+                    Text(
+                      user.fullName,
+                      style: context.text.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'เหตุผลนี้จะถูกส่งเป็นการแจ้งเตือนไปยังผู้สมัคร',
-                        style: GoogleFonts.prompt(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      place.isEmpty ? user.phone : '${user.phone} · $place',
+                      style: context.text.bodySmall?.tabular,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Space.sm),
+              if (deleted)
+                const StatusBadge(label: 'ถูกลบ', tone: Tone.danger)
+              else if (showRole && user.role != UserRole.farmer)
+                StatusBadge(
+                  label: StatusLabels.role(user.role),
+                  tone: Tone.info,
+                  dot: false,
+                  icon: user.role == UserRole.superAdmin ? AppIcons.superAdmin : AppIcons.officer,
+                )
+              else
+                StatusBadge(label: statusLabel, tone: statusTone),
+            ],
+          ),
+          if (pending || deleted) ...[
+            const SizedBox(height: Space.md),
+            Divider(height: 1, color: p.line),
+            const SizedBox(height: Space.md),
+            if (deleted)
+              Align(
+                alignment: Alignment.centerRight,
+                child: AppButton.secondary(
+                  label: 'กู้คืนบัญชี',
+                  icon: AppIcons.undo,
+                  size: ButtonSize.compact,
+                  loading: busy,
+                  onPressed: onRestore,
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton.secondary(
+                      label: 'ไม่อนุมัติ',
+                      size: ButtonSize.compact,
+                      onPressed: busy ? null : onReject,
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: AppButton(
+                      label: 'อนุมัติ',
+                      icon: AppIcons.check,
+                      size: ButtonSize.compact,
+                      loading: busy,
+                      onPressed: onApprove,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Detail sheet --------------------------------------------------------------
+
+enum _DetailAction { plots, approve, reject, role, reassign, delete, restore }
+
+class _MemberDetail extends StatelessWidget {
+  const _MemberDetail({required this.user, required this.deleted, required this.superAdmin});
+
+  final UserModel user;
+  final bool deleted;
+  final bool superAdmin;
+
+  @override
+  Widget build(BuildContext context) {
+    final (statusLabel, statusTone) = StatusLabels.membership(user.membershipStatus);
+    final approved = user.membershipStatus == MembershipStatus.approved;
+    final pending = user.membershipStatus == MembershipStatus.pending;
+    void pick(_DetailAction a) => Navigator.of(context).pop(a);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Space.xl,
+        Space.sm,
+        Space.xl,
+        Space.xl + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              InitialsAvatar(name: user.fullName, photoUrl: user.photoUrl, size: 56),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user.fullName, style: context.text.headlineSmall),
+                    Text(user.phone, style: context.text.bodyMedium?.mono),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context, controller.text.trim());
-              }
-            },
-            icon: const HeroIcon(
-              HeroIcons.xMark,
-              size: 18,
-              color: AppColors.textLight,
-            ),
-            label: Text(
-              'ปฏิเสธ',
-              style: GoogleFonts.prompt(
-                color: AppColors.textLight,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showDebugInfo(BuildContext context) async {
-    final user = context.read<AuthProvider>().user;
-    if (user == null) return;
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Admin Debug Info',
-          style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: Space.md),
+          Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.sm,
             children: [
-              _buildDebugRow('ID', user.id),
-              _buildDebugRow('Name', user.fullName),
-              _buildDebugRow('Role', user.role.name),
-
-              const Divider(),
-              Text(
-                'Territory (พื้นที่ที่ดูแล):',
-                style: GoogleFonts.prompt(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.info,
-                ),
-              ),
-              _buildDebugRow('Region', user.region ?? 'null'),
-              _buildDebugRow('Province', user.province ?? 'null'),
-              _buildDebugRow('District', user.district ?? 'null'),
-              _buildDebugRow('Subdistrict', user.subdistrict ?? 'null'),
-
-              const SizedBox(height: 8),
-              // ✅ NEW: Territory Summary
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _getTerritoryDescription(user),
-                  style: GoogleFonts.prompt(
-                    fontSize: 12,
-                    color: AppColors.info,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-
-              const Divider(),
-              Text(
-                'คำอธิบาย:',
-                style: GoogleFonts.prompt(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '• คุณสามารถอนุมัติได้เฉพาะสมาชิกในพื้นที่ที่คุณดูแล\n'
-                '• หลังอนุมัติ สมาชิกจะถูก assign ให้คุณอัตโนมัติ\n'
-                '• Super Admin สามารถจัดการได้ทุกพื้นที่',
-                style: GoogleFonts.prompt(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
-              ),
+              if (deleted)
+                const StatusBadge(label: 'ถูกลบ', tone: Tone.danger)
+              else
+                StatusBadge(label: statusLabel, tone: statusTone),
+              StatusBadge(label: StatusLabels.role(user.role), tone: Tone.neutral, dot: false),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDebugRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: GoogleFonts.robotoMono(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: GoogleFonts.robotoMono(fontSize: 12)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ NEW: เพิ่ม helper method นี้ต่อท้าย class
-  String _getTerritoryDescription(UserModel user) {
-    if (user.role == UserRole.superAdmin) {
-      return '🌟 Super Admin: ดูแลทุกพื้นที่ในประเทศ';
-    }
-
-    if (user.subdistrict != null) {
-      return '📍 ดูแลระดับตำบล: ${user.subdistrict}, ${user.district}, ${user.province}';
-    } else if (user.district != null) {
-      return '📍 ดูแลระดับอำเภอ: ${user.district}, ${user.province}';
-    } else if (user.province != null) {
-      return '📍 ดูแลระดับจังหวัด: ${user.province}';
-    } else if (user.region != null) {
-      return '📍 ดูแลระดับภูมิภาค: ${user.region}';
-    }
-
-    return '⚠️ ไม่ได้กำหนดพื้นที่ (ดูได้เฉพาะที่ assigned)';
-  }
-
-  /// Show dialog to reassign user to another admin (SUPER_ADMIN only)
-  Future<void> _showReassignDialog(UserModel user) async {
-    // First, fetch list of admins
-    List<dynamic> admins = [];
-    try {
-      final adminService = context.read<AdminService>();
-      admins = await adminService.getAdminList();
-    } catch (e) {
-      if (mounted) {
-        AdminErrorHandler.handle(context, e, operation: 'โหลดรายชื่อ Admin');
-      }
-      return;
-    }
-
-    if (admins.isEmpty) {
-      if (mounted) {
-        AdminErrorHandler.showWarning(
-          context,
-          message: 'ไม่พบ Admin อื่นในระบบ',
-        );
-      }
-      return;
-    }
-
-    String? selectedAdminId;
-
-    if (!mounted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'ย้าย User ไปยัง Admin อื่น',
-            style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: Space.lg),
+          ListGroup(
             children: [
-              Text(
-                'ย้าย ${user.fullName} ไปให้ Admin:',
-                style: GoogleFonts.prompt(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: 'เลือก Admin',
-                  labelStyle: GoogleFonts.prompt(),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                value: selectedAdminId,
-                items: admins.map((admin) {
-                  final name =
-                      '${admin['firstName'] ?? ''} ${admin['lastName'] ?? ''}'
-                          .trim();
-                  final phone = admin['phone'] ?? '';
-                  return DropdownMenuItem<String>(
-                    value: admin['id'] as String?,
-                    child: Text('$name ($phone)', style: GoogleFonts.prompt()),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedAdminId = value;
-                  });
-                },
+              KeyValueRow(label: 'อาชีพ', value: user.job ?? 'ไม่ระบุ'),
+              KeyValueRow(label: 'ตำบล', value: user.subdistrict ?? 'ไม่ระบุ'),
+              KeyValueRow(label: 'อำเภอ', value: user.district ?? 'ไม่ระบุ'),
+              KeyValueRow(label: 'จังหวัด', value: user.province ?? 'ไม่ระบุ'),
+              KeyValueRow(
+                label: 'วันเกิด',
+                value: user.birthDate == null ? 'ไม่ระบุ' : ThaiDate.long(user.birthDate!),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('ยกเลิก', style: GoogleFonts.prompt()),
-            ),
-            ElevatedButton(
-              onPressed: selectedAdminId != null
-                  ? () => Navigator.pop(context, true)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.superAdminPrimary,
-              ),
-              child: Text(
-                'ย้าย',
-                style: GoogleFonts.prompt(color: AppColors.textLight),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed == true && selectedAdminId != null) {
-      await _reassignUser(user, selectedAdminId!);
-    }
-  }
-
-  Future<void> _reassignUser(UserModel user, String newAdminId) async {
-    try {
-      final adminService = context.read<AdminService>();
-      await adminService.reassignUser(userId: user.id, newAdminId: newAdminId);
-      if (!mounted) return;
-
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'ย้าย ${user.fullName} สำเร็จ',
-      );
-      context.read<AdminStateProvider>().loadUsers();
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(context, e, operation: 'ย้าย User');
-    }
-  }
-
-  Future<void> _updateUserRole(UserModel user, UserRole newRole) async {
-    try {
-      final superAdminService = context.read<SuperAdminService>();
-      
-      String roleString;
-      switch (newRole) {
-        case UserRole.superAdmin:
-          roleString = 'SUPER_ADMIN'; // Fixed: Match backend expectation
-          break;
-        case UserRole.admin:
-          roleString = 'ADMIN';
-          break;
-        case UserRole.farmer:
-          roleString = 'USER'; // Or 'FARMER' based on backend, 'USER' is common default
-          break;
-      }
-
-      await superAdminService.updateUserRole(user.id, roleString);
-      
-      if (!mounted) return;
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'เปลี่ยนสิทธิ์ ${user.fullName} เป็น ${_getRoleName(newRole)} สำเร็จ',
-      );
-      context.read<AdminStateProvider>().loadUsers();
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(context, e, operation: 'เปลี่ยนสิทธิ์ User');
-    }
-  }
-
-  String _getRoleName(UserRole role) {
-    switch (role) {
-      case UserRole.farmer:
-        return 'เกษตรกร';
-      case UserRole.admin:
-        return 'Admin';
-      case UserRole.superAdmin:
-        return 'Super Admin';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEmbedded = widget.isEmbedded;
-    final provider = context.watch<AdminStateProvider>();
-    final authProvider = context.watch<AuthProvider>();
-    final allUsers = provider.users;
-    final pendingUsers = provider.pendingUsers;
-    final approvedUsers = provider.approvedUsers;
-    final isLoading = provider.isLoading;
-    final error = provider.error;
-
-    // Role-based gradient - Admin uses Orange, Super Admin uses Red
-    final isSuperAdmin = authProvider.user?.role == UserRole.superAdmin;
-    final roleGradient = isSuperAdmin
-        ? AppColors.superAdminGradient
-        : AppColors.adminGradient;
-
-    int initialIndex = 0;
-    if (widget.initialStatus == 'PENDING' && !isSuperAdmin) {
-      initialIndex = 1;
-    }
-
-    return DefaultTabController(
-      length: 3, // Super Admin: All, Approved, Deleted. Admin: All, Pending, Approved. Both have 3 tabs now.
-      initialIndex: initialIndex,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        body: Stack(
-          children: [
-            // 1. Background Image & Overlay
-            if (isSuperAdmin)
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LuxuryTheme.backgroundGradient,
-                ),
-              )
-            else ...[
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.25,
-                  child: Image.asset(
-                    'assets/images/Chat.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withOpacity(0.9),
-                        Colors.white.withOpacity(0.4),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-  
-            SafeArea(
-              child: Column(
+          const SizedBox(height: Space.lg),
+          if (deleted)
+            AppButton(
+              label: 'กู้คืนบัญชี',
+              icon: AppIcons.undo,
+              expand: true,
+              onPressed: () => pick(_DetailAction.restore),
+            )
+          else ...[
+            if (pending)
+              Row(
                 children: [
-                  // 2. Header Content
-                  if (!isEmbedded)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                      child: Row(
-                        children: [
-                          Container(
-                              decoration: BoxDecoration(
-                                color: isSuperAdmin ? LuxuryTheme.glassSurface : Colors.white,
-                                shape: BoxShape.circle,
-                                border: isSuperAdmin ? Border.all(color: LuxuryTheme.glassBorder) : null,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(isSuperAdmin ? 0.3 : 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            child: IconButton(
-                              icon: const HeroIcon(
-                                HeroIcons.arrowLeft,
-                                color: Colors.black87,
-                              ),
-                              onPressed: () {
-                                if (context.canPop()) {
-                                  context.pop();
-                                } else {
-                                  final isSuperAdmin = context.read<AuthProvider>().user?.role == UserRole.superAdmin;
-                                  context.go(isSuperAdmin ? '/super-admin/dashboard' : '/admin/dashboard');
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              'รายชื่อสมาชิก',
-                              style: isSuperAdmin 
-                                  ? GoogleFonts.outfit(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    )
-                                  : GoogleFonts.prompt(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.info_outline,
-                              color: AppColors.primary,
-                            ),
-                            onPressed: () => _showDebugInfo(context),
-                            tooltip: 'ตรวจสอบข้อมูล Admin',
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    // Embedded header (Hero Style)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'รายชื่อสมาชิก',
-                            style: isSuperAdmin
-                                ? GoogleFonts.outfit(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: LuxuryTheme.neonShadow(LuxuryTheme.cyanNeon),
-                                    height: 1,
-                                  )
-                                : GoogleFonts.prompt(
-                                    fontSize: 32, // Large and Bold
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                    height: 1,
-                                  ),
-                          ),
-                          // Debug Button
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.info_outline,
-                                color: isSuperAdmin
-                                    ? AppColors.superAdminPrimary
-                                    : AppColors.adminPrimary,
-                              ),
-                              onPressed: () => _showDebugInfo(context),
-                              tooltip: 'ตรวจสอบข้อมูล Admin',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-  
-                  // 3. Floating Search Bar (Glass)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSuperAdmin
-                                ? Colors.black.withOpacity(0.2) // Dark glass for better blending
-                                : (isEmbedded
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.95)),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isSuperAdmin 
-                                    ? Colors.transparent 
-                                    : Colors.black.withOpacity(0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: isSuperAdmin 
-                                  ? Colors.white.withOpacity(0.1) // Subtle border
-                                  : Colors.white.withOpacity(0.6),
-                              width: 1.0,
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextField(
-                            onChanged: _onSearchChanged,
-                            style: isSuperAdmin
-                                ? GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  )
-                                : GoogleFonts.prompt(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.transparent, // Override global theme
-                              icon: HeroIcon(
-                                HeroIcons.magnifyingGlass,
-                                color: isSuperAdmin 
-                                    ? LuxuryTheme.textSecondary 
-                                    : AppColors.textSecondary,
-                              ),
-                              hintText: 'ค้นหาชื่อ, เบอร์โทร...',
-                              hintStyle: GoogleFonts.prompt(
-                                color: isSuperAdmin 
-                                    ? LuxuryTheme.textDisabled 
-                                    : AppColors.textTertiary,
-                              ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-  
-                  const SizedBox(height: 20),
-  
-                  // 4. Modern Tabs with Role-based colors
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: isSuperAdmin ? LuxuryTheme.glassSurface : Colors.white,
-                      borderRadius: BorderRadius.circular(23),
-                      border: isSuperAdmin ? Border.all(color: LuxuryTheme.glassBorder) : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      indicator: BoxDecoration(
-                        color: isSuperAdmin
-                            ? LuxuryTheme.cyanNeon
-                            : AppColors.adminPrimary,
-                        borderRadius: BorderRadius.circular(23),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isSuperAdmin
-                                    ? LuxuryTheme.cyanNeon
-                                    : AppColors.adminPrimary)
-                                .withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      labelColor: isSuperAdmin ? Colors.black : Colors.white,
-                      unselectedLabelColor: isSuperAdmin 
-                          ? LuxuryTheme.textSecondary 
-                          : Colors.grey[600],
-                      labelStyle: isSuperAdmin
-                          ? GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            )
-                          : GoogleFonts.prompt(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                      dividerColor: Colors.transparent,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      padding: const EdgeInsets.all(4),
-                      tabs: [
-                        const Tab(text: 'ทั้งหมด'),
-                        if (!isSuperAdmin) const Tab(text: 'รออนุมัติ'),
-                        const Tab(text: 'สมาชิก'),
-                        if (isSuperAdmin) const Tab(text: 'ถูกลบ'),
-                      ],
-                    ),
-                  ),
-  
-                  const SizedBox(height: 16),
-  
-                  // 5. List Content
                   Expanded(
-                    child: isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : error != null
-                        ? _buildErrorState(error)
-                        : TabBarView(
-                            children: [
-                              _buildUserList(_filterUsers(allUsers)),
-                              if (!isSuperAdmin)
-                                _buildUserList(
-                                  _filterUsers(pendingUsers),
-                                  showActions: true,
-                                ),
-                              _buildUserList(_filterUsers(approvedUsers)),
-                              if (isSuperAdmin)
-                                _buildUserList(
-                                  _filterUsers(provider.deletedUsers),
-                                  isDeletedTab: true,
-                                ),
-                            ],
-                          ),
+                    child: AppButton.secondary(
+                      label: 'ไม่อนุมัติ',
+                      onPressed: () => pick(_DetailAction.reject),
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: AppButton(
+                      label: 'อนุมัติ',
+                      icon: AppIcons.check,
+                      onPressed: () => pick(_DetailAction.approve),
+                    ),
                   ),
                 ],
               ),
-            ),
+            if (approved && user.role == UserRole.farmer)
+              AppButton.secondary(
+                label: 'ดูแปลงของสมาชิก',
+                icon: AppIcons.map,
+                expand: true,
+                onPressed: () => pick(_DetailAction.plots),
+              ),
+            if (superAdmin && approved) ...[
+              const SizedBox(height: Space.md),
+              ListGroup(
+                children: [
+                  ListRow(
+                    icon: AppIcons.userSwitch,
+                    title: 'เปลี่ยนสิทธิ์การใช้งาน',
+                    subtitle: 'ปัจจุบัน: ${StatusLabels.role(user.role)}',
+                    onTap: () => pick(_DetailAction.role),
+                  ),
+                  if (user.role == UserRole.farmer)
+                    ListRow(
+                      icon: AppIcons.officers,
+                      title: 'ย้ายไปให้เจ้าหน้าที่คนอื่น',
+                      onTap: () => pick(_DetailAction.reassign),
+                    ),
+                  ListRow(
+                    icon: AppIcons.delete,
+                    title: 'ลบบัญชี',
+                    destructive: true,
+                    onTap: () => pick(_DetailAction.delete),
+                  ),
+                ],
+              ),
+            ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const HeroIcon(
-            HeroIcons.exclamationTriangle,
-            size: 48,
-            color: AppColors.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'เกิดข้อผิดพลาด',
-            style: GoogleFonts.prompt(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: GoogleFonts.prompt(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => context.read<AdminStateProvider>().loadUsers(),
-            icon: const Icon(Icons.refresh),
-            label: Text('ลองใหม่', style: GoogleFonts.prompt()),
-          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildUserList(List<UserModel> users, {bool showActions = false, bool isDeletedTab = false}) {
-    final isSuperAdmin = context.watch<AuthProvider>().user?.role == UserRole.superAdmin;
+class _RolePicker extends StatefulWidget {
+  const _RolePicker({required this.current});
 
-    if (users.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            HeroIcon(
-              isDeletedTab ? HeroIcons.trash : HeroIcons.users,
-              size: 48,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isDeletedTab ? 'ไม่มีผู้ใช้ที่ถูกลบ' : 'ไม่พบสมาชิก',
-              style: GoogleFonts.prompt(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
+  final UserRole current;
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await context.read<AdminStateProvider>().loadUsers();
-        if (isSuperAdmin) {
-          await context.read<AdminStateProvider>().loadDeletedUsers();
-        }
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: users.length,
-        itemBuilder: (context, index) {
-          final user = users[index];
-          return UserListItem(
-            user: user,
-            showActions: showActions || isDeletedTab,
-            isDeleted: isDeletedTab,
-            showRole: isSuperAdmin,
-            isLuxury: isSuperAdmin,
-            onApprove: isDeletedTab ? () => _restoreUser(user) : () => _approveUser(user),
-            onReject: isDeletedTab ? null : () => _rejectUser(user),
-            onTap: () {
-              if (widget.onUserSelected != null) {
-                widget.onUserSelected!(user);
-              } else {
-                _showUserDetail(user, isDeleted: isDeletedTab);
-              }
-            },
-          );
-        },
+  @override
+  State<_RolePicker> createState() => _RolePickerState();
+}
+
+class _RolePickerState extends State<_RolePicker> {
+  late UserRole _role = widget.current;
+
+  static const _descriptions = {
+    UserRole.farmer: 'บันทึกแปลงและข้อมูล GAP ของตนเอง',
+    UserRole.admin: 'ตรวจแปลงและอนุมัติสมาชิกในพื้นที่ที่ได้รับมอบหมาย',
+    UserRole.superAdmin: 'จัดการผู้ใช้ เจ้าหน้าที่ และข้อมูลทั้งระบบ',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Space.xl,
+        0,
+        Space.xl,
+        Space.xl + MediaQuery.paddingOf(context).bottom,
       ),
-    );
-  }
-
-  Future<void> _restoreUser(UserModel user) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-
-    try {
-      await context.read<AdminStateProvider>().restoreUser(user.id);
-      if (!mounted) return;
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'กู้คืน ${user.fullName} สำเร็จ',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(context, e, operation: 'กู้คืนผู้ใช้');
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  /// Delete User (SUPER_ADMIN only)
-  Future<void> _deleteUser(UserModel user) async {
-    if (_isProcessing) return;
-
-    // Confirmation dialog
-    final confirmed = await LuxuryDialog.show(
-      context,
-      title: 'ลบผู้ใช้',
-      content: 'คุณต้องการลบ ${user.fullName} หรือไม่?\nผู้ใช้จะถูก Soft Delete และสามารถกู้คืนได้ภายหลัง',
-      icon: HeroIcons.trash,
-      accentColor: AppColors.error,
-      confirmText: 'ลบผู้ใช้',
-      isDestructive: true,
-    );
- 
-    if (confirmed != true) return;
-    setState(() => _isProcessing = true);
-
-    try {
-      final service = context.read<SuperAdminService>();
-      await service.deleteUser(user.id);
-      if (!mounted) return;
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'ลบ ${user.fullName} สำเร็จ',
-        detail: 'ผู้ใช้ถูก Soft Delete สามารถกู้คืนได้ในแท็บ "ถูกลบ"',
-      );
-      // Refresh lists
-      await context.read<AdminStateProvider>().loadUsers();
-      if (_isSuperAdmin) {
-        await context.read<AdminStateProvider>().loadDeletedUsers();
-      }
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(context, e, operation: 'ลบผู้ใช้');
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  /// Show dialog to change user role (SUPER_ADMIN only)
-  Future<void> _showChangeRoleDialog(UserModel user) async {
-    UserRole? selectedRole = user.role;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const HeroIcon(
-                  HeroIcons.userCircle,
-                  color: AppColors.warning,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'เปลี่ยนสิทธิ์ผู้ใช้',
-                style: GoogleFonts.prompt(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'เปลี่ยนสิทธิ์ของ ${user.fullName}',
-                style: GoogleFonts.prompt(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              ...UserRole.values.map((role) {
-                return RadioListTile<UserRole>(
-                  title: Text(_getRoleName(role), style: GoogleFonts.prompt()),
-                  subtitle: Text(
-                    _getRoleDescription(role),
-                    style: GoogleFonts.prompt(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  value: role,
-                  groupValue: selectedRole,
-                  activeColor: AppColors.superAdminPrimary,
-                  onChanged: (value) {
-                    setState(() => selectedRole = value);
-                  },
-                );
-              }),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('ยกเลิก', style: GoogleFonts.prompt()),
-            ),
-            ElevatedButton(
-              onPressed: selectedRole != user.role
-                  ? () => Navigator.pop(context, true)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.superAdminPrimary,
-              ),
-              child: Text(
-                'บันทึก',
-                style: GoogleFonts.prompt(color: AppColors.textLight),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed == true && selectedRole != null && selectedRole != user.role) {
-      await _applyRoleChange(user, selectedRole!);
-    }
-  }
-
-  Future<void> _applyRoleChange(UserModel user, UserRole newRole) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-
-    try {
-      String roleString;
-      switch (newRole) {
-        case UserRole.superAdmin:
-          roleString = 'SUPER_ADMIN';
-          break;
-        case UserRole.admin:
-          roleString = 'ADMIN';
-          break;
-        case UserRole.farmer:
-          roleString = 'USER';
-          break;
-      }
-
-      await context.read<AdminStateProvider>().updateUserRole(user.id, roleString);
-      if (!mounted) return;
-      AdminErrorHandler.showSuccess(
-        context,
-        message: 'เปลี่ยนสิทธิ์ ${user.fullName} เป็น ${_getRoleName(newRole)} สำเร็จ',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      AdminErrorHandler.handle(context, e, operation: 'เปลี่ยนสิทธิ์');
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  String _getRoleDescription(UserRole role) {
-    switch (role) {
-      case UserRole.farmer:
-        return 'ผู้ใช้ทั่วไป - บันทึกข้อมูลแปลงและ GAP';
-      case UserRole.admin:
-        return 'Admin - อนุมัติแปลง ดูแลสมาชิกในพื้นที่';
-      case UserRole.superAdmin:
-        return 'Super Admin - สิทธิ์สูงสุด จัดการทั้งระบบ';
-    }
-  }
-
-  void _showUserDetail(UserModel user, {bool isDeleted = false}) {
-    final isSA = context.read<AuthProvider>().user?.role == UserRole.superAdmin;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: BoxDecoration(
-          color: isSA ? const Color(0xFF0F172A) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: isSA ? const Border(top: BorderSide(color: LuxuryTheme.cyanNeon, width: 1)) : null,
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isSA ? Colors.grey[700] : Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final role in UserRole.values) ...[
+            AppCard(
+              onTap: () => setState(() => _role = role),
+              padding: const EdgeInsets.all(Space.md + 2),
+              color: _role == role ? p.brandSoft : p.surface,
+              borderColor: _role == role ? p.brand : p.line,
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: isSA
-                        ? LuxuryTheme.cyanNeon.withOpacity(0.15)
-                        : AppColors.primary.withValues(alpha: 0.1),
-                    child: Text(
-                      user.firstName.isNotEmpty
-                          ? user.firstName[0].toUpperCase()
-                          : '?',
-                      style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isSA ? LuxuryTheme.cyanNeon : AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user.fullName,
-                          style: isSA
-                              ? GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                )
-                              : GoogleFonts.prompt(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                        ),
-                        Text(
-                          user.phone,
-                          style: isSA
-                              ? GoogleFonts.outfit(color: LuxuryTheme.textSecondary)
-                              : GoogleFonts.prompt(color: Colors.grey),
-                        ),
+                        Text(StatusLabels.role(role), style: context.text.titleSmall),
+                        Text(_descriptions[role]!, style: context.text.bodySmall),
                       ],
                     ),
                   ),
-                  _buildStatusBadge(user.membershipStatus),
-                ],
-              ),
-            ),
-
-            // ⭐ Role Change (SUPER_ADMIN — prominent, right after header)
-            if (isSA && user.membershipStatus == MembershipStatus.approved)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: LuxuryTheme.goldNeon.withOpacity(0.5)),
-                    color: LuxuryTheme.goldNeon.withOpacity(0.08),
-                  ),
-                  child: ListTile(
-                    leading: const HeroIcon(
-                      HeroIcons.userCircle,
-                      color: LuxuryTheme.goldNeon,
-                      size: 24,
-                    ),
-                    title: Text(
-                      'เปลี่ยนสิทธิ์ (Role)',
-                      style: GoogleFonts.outfit(
-                        color: LuxuryTheme.goldNeon,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Role ปัจจุบัน: ${_getRoleName(user.role)}',
-                      style: GoogleFonts.prompt(
-                        color: LuxuryTheme.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: const HeroIcon(
-                      HeroIcons.chevronRight,
-                      color: LuxuryTheme.goldNeon,
-                      size: 20,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showChangeRoleDialog(user);
-                    },
-                  ),
-                ),
-              ),
-
-            // Assigned info
-            if (!isSA && user.membershipStatus == MembershipStatus.approved)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.success.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_add_alt_1,
-                        size: 16,
-                        color: AppColors.success,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '✅ สมาชิกของคุณ (Assigned to you)',
-                          style: GoogleFonts.prompt(
-                            fontSize: 12,
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-
-            // Menu: View Plots (For Approved Users)
-            if (user.membershipStatus == MembershipStatus.approved)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AdminPlotListScreen(
-                          userId: user.id,
-                          userName: user.fullName,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: HeroIcon(HeroIcons.map,
-                    color: isSA ? LuxuryTheme.emeraldNeon : AppColors.primary),
-                  label: Text(
-                    'ดูแปลงเกษตร',
-                    style: GoogleFonts.prompt(
-                      color: isSA ? LuxuryTheme.emeraldNeon : AppColors.primary,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: isSA ? LuxuryTheme.emeraldNeon.withOpacity(0.5) : AppColors.primary,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                ),
-              ),
-
-            Divider(color: isSA ? Colors.white12 : null),
-            // Details
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  _buildDetailRowStyled('อาชีพ', user.job ?? 'ไม่ระบุ', isSA),
-                  _buildDetailRowStyled('ภูมิภาค', user.region ?? 'ไม่ระบุ', isSA),
-                  _buildDetailRowStyled('จังหวัด', user.province ?? 'ไม่ระบุ', isSA),
-                  _buildDetailRowStyled('อำเภอ', user.district ?? 'ไม่ระบุ', isSA),
-                  _buildDetailRowStyled('ตำบล', user.subdistrict ?? 'ไม่ระบุ', isSA),
-                  _buildDetailRowStyled(
-                    'วันเกิด',
-                    user.birthDate != null
-                        ? '${user.birthDate!.day}/${user.birthDate!.month}/${user.birthDate!.year}'
-                        : 'ไม่ระบุ',
-                    isSA,
+                  Icon(
+                    _role == role ? AppIcons.checkCircleFill : AppIcons.checkCircle,
+                    color: _role == role ? p.brand : p.lineStrong,
                   ),
                 ],
               ),
             ),
-            // Actions for pending users
-            if (!isSA && user.membershipStatus == MembershipStatus.pending)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
+            const SizedBox(height: Space.sm),
+          ],
+          if (_role == UserRole.superAdmin && widget.current != UserRole.superAdmin)
+            const Padding(
+              padding: EdgeInsets.only(bottom: Space.sm),
+              child: InlineBanner(
+                tone: Tone.warning,
+                title: 'สิทธิ์สูงสุดของระบบ',
+                message: 'ผู้ดูแลระบบลบบัญชีและเปลี่ยนสิทธิ์ผู้อื่นได้ มอบให้เฉพาะผู้ที่ไว้ใจได้',
+              ),
+            ),
+          const SizedBox(height: Space.sm),
+          AppButton(
+            label: 'บันทึก',
+            expand: true,
+            onPressed: _role == widget.current ? null : () => Navigator.of(context).pop(_role),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OfficerPicker extends StatelessWidget {
+  const _OfficerPicker({required this.admins});
+
+  final List<dynamic> admins;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(
+        Space.xl,
+        0,
+        Space.xl,
+        Space.xl + MediaQuery.paddingOf(context).bottom,
+      ),
+      itemCount: admins.length,
+      separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+      itemBuilder: (context, i) {
+        final a = Map<String, dynamic>.from(admins[i] as Map);
+        final name = '${a['firstName'] ?? ''} ${a['lastName'] ?? ''}'.trim();
+        final scope = [
+          if ((a['district'] ?? '').toString().isNotEmpty) 'อ.${a['district']}',
+          if ((a['province'] ?? '').toString().isNotEmpty) 'จ.${a['province']}',
+        ].join(' ');
+        return AppCard(
+          padding: const EdgeInsets.all(Space.md),
+          onTap: () => Navigator.of(context).pop(a['id']?.toString()),
+          child: Row(
+            children: [
+              InitialsAvatar(name: name.isEmpty ? '?' : name, size: 40),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _rejectUser(user);
-                        },
-                        icon: const Icon(Icons.close, color: AppColors.error),
-                        label: Text(
-                          'ปฏิเสธ',
-                          style: GoogleFonts.prompt(color: AppColors.error),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.error),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _approveUser(user);
-                        },
-                        icon: const Icon(Icons.check),
-                        label: Text('อนุมัติ', style: GoogleFonts.prompt()),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
+                    Text(name.isEmpty ? 'ไม่ระบุชื่อ' : name, style: context.text.titleSmall),
+                    Text(
+                      scope.isEmpty ? '${a['phone'] ?? ''}' : '${a['phone'] ?? ''} · $scope',
+                      style: context.text.bodySmall?.tabular,
                     ),
                   ],
                 ),
               ),
-            // Super Admin action buttons
-            Builder(
-              builder: (context) {
-                final authProvider = context.watch<AuthProvider>();
-                final isSuperAdmin =
-                    authProvider.user?.role == UserRole.superAdmin;
-
-                if (isSuperAdmin &&
-                    user.membershipStatus == MembershipStatus.approved) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                    child: Row(
-                      children: [
-                        // Reassign Button
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _showReassignDialog(user);
-                            },
-                            icon: const HeroIcon(
-                              HeroIcons.arrowsRightLeft,
-                              size: 18,
-                              color: LuxuryTheme.cyanNeon,
-                            ),
-                            label: Text(
-                              'ย้าย Admin',
-                              style: GoogleFonts.prompt(
-                                color: LuxuryTheme.cyanNeon,
-                                fontSize: 13,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: LuxuryTheme.cyanNeon.withOpacity(0.5),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Delete User Button
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _deleteUser(user);
-                            },
-                            icon: const HeroIcon(
-                              HeroIcons.trash,
-                              size: 18,
-                              color: AppColors.error,
-                            ),
-                            label: Text(
-                              'ลบผู้ใช้',
-                              style: GoogleFonts.prompt(
-                                color: AppColors.error,
-                                fontSize: 13,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: AppColors.error,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.prompt(color: AppColors.textSecondary),
+              const Icon(AppIcons.chevronRight, size: 18),
+            ],
           ),
-          const Spacer(),
-          Text(value, style: GoogleFonts.prompt(fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRowStyled(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.prompt(
-              color: isDark ? LuxuryTheme.textSecondary : AppColors.textSecondary,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.prompt(
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(MembershipStatus status) {
-    Color color;
-    String text;
-    switch (status) {
-      case MembershipStatus.pending:
-        color = AppColors.warning;
-        text = 'รออนุมัติ';
-        break;
-      case MembershipStatus.approved:
-        color = AppColors.success;
-        text = 'สถานะปกติ';
-        break;
-      case MembershipStatus.rejected:
-        color = AppColors.error;
-        text = 'ถูกปฏิเสธ';
-        break;
-      case MembershipStatus.none:
-        color = AppColors.textSecondary;
-        text = 'ไม่ระบุ';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.prompt(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+        );
+      },
     );
   }
 }

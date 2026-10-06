@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Taptom</string>
+	<string>TAPTOM</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ใช้กล้องเพื่อถ่ายภาพแปลงและสแกน QR Code ตรวจสอบย้อนกลับ</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>เลือกภาพจากคลังเพื่อแนบเป็นหลักฐานประกอบแปลงและบันทึก GAP</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ใช้ตำแหน่งปัจจุบันเพื่อช่วยวาดขอบเขตแปลงบนแผนที่</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ใช้ไมโครโฟนเพื่อพิมพ์ข้อความด้วยเสียง</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>แปลงเสียงพูดเป็นข้อความเมื่อพิมพ์ด้วยเสียง</string>
 </dict>
 </plist>

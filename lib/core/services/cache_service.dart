@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -16,7 +16,7 @@ class CacheService {
       }
     } catch (e) {
       // Log error or silently fail (it's cache clearing, not critical)
-      print('Error clearing cache: $e');
+      debugPrint('Error clearing cache: $e');
     }
   }
 }

@@ -1,12 +1,12 @@
 {
-    "name": "taptom",
-    "short_name": "taptom",
+    "name": "TAPTOM",
+    "short_name": "TAPTOM",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#FFFFFF",
+    "theme_color": "#245A33",
+    "description": "บันทึกแปลง มาตรฐาน GAP และการตรวจสอบย้อนกลับสำหรับเกษตรกรผู้ปลูกกระท่อม",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
@@ -31,5 +31,6 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "lang": "th"
 }
