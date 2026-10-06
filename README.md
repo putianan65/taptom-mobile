@@ -104,7 +104,7 @@ Farmers register plots by drawing their boundaries on satellite imagery, record 
 - The router guard and the territory check mirror the server rules, so screens never offer an action that would be rejected
 
 ### Ask Lung Tom
-- An assistant for questions about fertiliser, plant disease and GAP steps, with voice input (built-in sample answers when no Gemini key is set)
+- An assistant for questions about fertiliser, plant disease and GAP steps, with voice input; questions go through the backend, which holds the Gemini key (built-in sample answers in demo mode or when the server has no key)
 - Lung Tom, a farmer mascot drawn in code, greets on login, fills empty states and reacts while the assistant thinks
 
 ### Also Included
@@ -185,7 +185,7 @@ More in [docs/architecture.md](docs/architecture.md).
 | **Networking** | `dio` | HTTP client with interceptors |
 | | `pretty_dio_logger` | Request logging in debug builds |
 | | `flutter_dotenv` | `.env` configuration |
-| | `http` | Gemini API calls for the assistant |
+| | `http` | Plot photos embedded in PDF reports |
 | **Maps & Location** | `maplibre_gl` | Satellite map, plot drawing and overlays |
 | | `geolocator` | Device position |
 | | `permission_handler` | Runtime permissions |
@@ -248,10 +248,9 @@ Create a `.env` file in the project root. Each value can also be passed with `--
 ```env
 API_BASE_URL=https://your-api-domain.com/api
 MAPTILER_API_KEY=            # optional, Esri imagery is used without it
-GEMINI_API_KEY=              # optional, the assistant uses sample answers without it
 ```
 
-The `.env` file is bundled into the app, so any key in it can be read from the installed package. For production, call Gemini through the backend instead of shipping the key.
+The `.env` file is bundled into the app, so it holds nothing secret. Ask Lung Tom calls the backend's `POST /assistant/chat`, which keeps the Gemini key on the server; when the server has no key the app answers from built-in samples.
 
 ### Tests
 

@@ -60,6 +60,9 @@ the GAP domain in one place.
 - Adds the bearer token, refreshes it once on 401 (concurrent requests share the
   same refresh), retries 429 with backoff, and maps every failure to
   `ApiException` with a Thai message.
+- Ask Lung Tom posts the recent conversation to the backend's
+  `/assistant/chat`, which holds the Gemini key and system prompt, so the app
+  ships no AI credentials.
 - In demo builds a `DemoInterceptor` sits after the auth interceptor and answers
   requests from memory, so the real request pipeline, including token handling,
   still runs.

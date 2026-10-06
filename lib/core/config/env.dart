@@ -15,7 +15,6 @@ abstract final class Env {
 
   static const String _apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
   static const String _mapTilerDefine = String.fromEnvironment('MAPTILER_API_KEY');
-  static const String _geminiDefine = String.fromEnvironment('GEMINI_API_KEY');
 
   static String _read(String define, String key) {
     if (define.isNotEmpty) return define;
@@ -37,7 +36,6 @@ abstract final class Env {
 
   static String get mapTilerApiKey => _read(_mapTilerDefine, 'MAPTILER_API_KEY');
 
-  static String get geminiApiKey => _read(_geminiDefine, 'GEMINI_API_KEY');
 
   static Future<void> init() async {
     try {

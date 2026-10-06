@@ -37,8 +37,8 @@ The login screen in demo builds shows one-tap buttons for each account.
 - Satellite imagery: MapTiler when `MAPTILER_API_KEY` is set, otherwise Esri
   World Imagery with no key. Without internet access the map shows a plain
   ground colour and the plot outlines still draw.
-- Ask Lung Tom answers from built-in samples in demo builds and whenever no
-  `GEMINI_API_KEY` is configured.
+- Ask Lung Tom answers from built-in samples in demo builds, and whenever the
+  backend has no `GEMINI_API_KEY` (its `/assistant/chat` endpoint answers 503).
 
 ## Screenshots
 

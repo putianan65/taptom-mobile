@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/config/env.dart';
 import '../../../core/services/chat_service.dart';
 import '../../../core/services/database_helper.dart';
 import '../../../core/services/voice_service.dart';
@@ -97,9 +98,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     String answer;
     try {
-      answer = image != null
-          ? await _chat.sendMessageWithImage(question.content, File(image.path))
-          : await _chat.sendMessage(question.content);
+      answer = await _chat.ask(
+        question.content,
+        imageBytes: image == null ? null : await image.readAsBytes(),
+        imageName: image?.name,
+      );
     } on Object catch (_) {
       answer = 'ตอนนี้ลุงต้อมตอบไม่ได้ ลองใหม่อีกครั้งในอีกสักครู่';
     }
@@ -181,7 +184,13 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Text('ถามลุงต้อม', style: context.text.titleMedium),
                 Text(
-                  _thinking ? 'กำลังคิด' : (ChatService.offline ? 'โหมดสาธิต คำตอบตัวอย่าง' : 'เหลือ $_remaining คำถามวันนี้'),
+                  _thinking
+                      ? 'กำลังคิด'
+                      : (ChatService.offline
+                            ? (Env.demoMode
+                                  ? 'โหมดสาธิต คำตอบตัวอย่าง'
+                                  : 'คำตอบตัวอย่าง ผู้ช่วยยังไม่เปิดบนเซิร์ฟเวอร์')
+                            : 'เหลือ $_remaining คำถามวันนี้'),
                   style: context.text.labelSmall,
                 ),
               ],
@@ -202,9 +211,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     controller: _scroll,
                     padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.md),
                     itemCount: _messages.length + (_thinking ? 1 : 0),
-                    itemBuilder: (context, i) => i == _messages.length
-                        ? const _Typing()
-                        : _Bubble(message: _messages[i]).entrance(context),
+                    itemBuilder: (context, i) =>
+                        i == _messages.length ? const _Typing() : _Bubble(message: _messages[i]).entrance(context),
                   ),
           ),
           if (_image != null)
@@ -215,7 +223,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(Radii.sm),
-                    child: Image.file(File(_image!.path), width: 48, height: 48, fit: BoxFit.cover),
+                    child: _localImage(_image!.path, width: 48, height: 48),
                   ),
                   const SizedBox(width: Space.md),
                   Expanded(child: Text('แนบรูป 1 รูป', style: context.text.bodySmall)),
@@ -224,13 +232,20 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           Container(
-            decoration: BoxDecoration(color: p.surface, border: Border(top: BorderSide(color: p.line))),
+            decoration: BoxDecoration(
+              color: p.surface,
+              border: Border(top: BorderSide(color: p.line)),
+            ),
             padding: EdgeInsets.fromLTRB(Space.sm, Space.sm, Space.sm, Space.sm + MediaQuery.paddingOf(context).bottom),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (mobile)
-                  IconButton(tooltip: 'แนบรูปพืช', onPressed: _thinking ? null : _pickImage, icon: const Icon(AppIcons.camera)),
+                  IconButton(
+                    tooltip: 'แนบรูปพืช',
+                    onPressed: _thinking ? null : _pickImage,
+                    icon: const Icon(AppIcons.camera),
+                  ),
                 Expanded(
                   child: TextField(
                     controller: _input,
@@ -345,7 +360,7 @@ class _Bubble extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: Space.sm),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(Radii.sm),
-                    child: Image.file(File(image), height: 160, fit: BoxFit.cover),
+                    child: _localImage(image, height: 160),
                   ),
                 ),
               SelectableText(
@@ -381,13 +396,16 @@ class _Typing extends StatelessWidget {
           children: [
             for (var i = 0; i < 3; i++)
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(color: p.inkSubtle, shape: BoxShape.circle),
-              )
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(color: p.inkSubtle, shape: BoxShape.circle),
+                  )
                   .animate(onPlay: (c) => c.repeat())
-                  .fadeIn(delay: Duration(milliseconds: i * 160), duration: Motion.base)
+                  .fadeIn(
+                    delay: Duration(milliseconds: i * 160),
+                    duration: Motion.base,
+                  )
                   .then()
                   .fadeOut(duration: Motion.base),
           ],
@@ -396,3 +414,8 @@ class _Typing extends StatelessWidget {
     );
   }
 }
+
+/// A picked photo: a file on mobile, a blob URL on the web.
+Widget _localImage(String path, {double? width, double? height}) => kIsWeb
+    ? Image.network(path, width: width, height: height, fit: BoxFit.cover)
+    : Image.file(File(path), width: width, height: height, fit: BoxFit.cover);

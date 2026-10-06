@@ -9,6 +9,7 @@ and may no longer exist.
 - `refactor-guidelines/` code quality, performance and testing guidelines
 - `pdf-generator/` drafts of the GAP report PDF generator
 
-`refactor-guidelines/เกษตรกร ทดสอบ.txt` lists test accounts for the
-development backend. Do not reuse those credentials on any shared or
-production server.
+Test account credentials that used to sit in `refactor-guidelines/` were
+removed because this repository is public. Use the demo accounts in
+`docs/demo-mode.md`, or create staff with the backend's
+`scripts/create-super-admin.js`.
